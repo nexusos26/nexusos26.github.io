@@ -195,12 +195,16 @@ body.mat-solid #dockBar { background: rgba(250, 251, 253, 0.97) !important; }
     margin-bottom: 6px;
     border: 1px solid rgba(255, 255, 255, 0.22);
 }
-/* 底图：彩色渐变，用来看出材质到底透不透 */
+/* 底图：11-14 换成自然壁纸感的斜向渐变，用来看出材质到底透不透。
+   旧版彩虹 conic（含紫色值）就是「石油高光」，且违反全面禁紫，作废。
+   壁纸只提供透射内容；玻璃本体是发光体，边缘出中性白光（见 FangLux flx1）。 */
 .mat-thumb::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: conic-gradient(from 210deg at 40% 40%, #ff9a3c, #ff5f6d, #a06bff, #3ec9ff, #46e0a8, #ff9a3c);
+    background:
+        linear-gradient(148deg, #12233f 0%, #2b567d 38%, #7ba3bd 62%, #d7b98a 84%, #f0d6a8 100%),
+        #2b567d;
 }
 /* 前景：一小块该材质的面板 */
 .mat-thumb::after {

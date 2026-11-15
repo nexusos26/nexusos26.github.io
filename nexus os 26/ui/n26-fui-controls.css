@@ -1,0 +1,210 @@
+/* ============================================================================
+   ui/n26-fui-controls.css · 戳 fc2 · 2026-11-15 · 四风格共享控件层
+   ----------------------------------------------------------------------------
+   用户 11-14：「四风格还是没有全部适配，不仅是小组件……侧边栏按钮，
+   其他的按钮开关等等一系列之类的」。
+
+   宿主已有 fangui/core/*.css（按 [data-ui] 挂 .fu-btn/.fu-switch/.fu-card），
+   但 31 个 iframe 应用里只有 3 页引过它 —— 桥层 ensureCSS 现已逐份补挂；
+   本层再补 fangui 没覆盖的**具体控件类名**：设置页与各应用的侧栏项、
+   通用按钮、开关轨道，宿主 / iframe 同一套规则。
+
+   四风格语义（与 fam5/beau4/dk4 一致）：
+     flat       纯平：零阴影、小圆角、无磨砂
+     neu-solid  轻拟物：按钮凸、选中项凹、开关轨道凹 + 滑块凸
+     neu-glass  玻璃拟物：磨砂底 + 内缘亮线 + 轻凸
+     liquid     零规则 —— 保持各应用原有液态玻璃，绝不动
+   颜色纪律：只写中性白 / 墨 / 冷白，不刷彩、不带紫、零 radial/conic。
+   挂载点是实时写入的 html[data-ui] + html[data-neu]（不是 data-fui）。
+   fc2（11-15「确保所有的页面真的适配 4 个样式」）：审计宿主 DOM 后补齐
+   一批从未进过四风格规则的专有控件类名 —— 表单、OOBE 卡片、安装步骤、
+   右键菜单、办公工具条、窗口按钮、电源项、风格 / 角色选项卡、开关旧类名。
+   只写形态（平 / 凸 / 凹 / 磨砂内缘），不碰身份色与内容层。
+   ============================================================================ */
+
+/* 选择器清单：:is() 内不放后代组合符（工程铁律），只列类名 */
+/* ---- 1 · Flat：所有共享控件纯平 ---- */
+html[data-ui="flat"] :is(.settings-item, .as-rail-item, .fm-sidebar-item,
+    .ag-side-item, .side-item, .nav-item, .wp-soft-btn, .wp-cat-btn,
+    .btn, .btn-sm, .fu-btn, .of-btn, .icon-btn, .fc-btn, .v-btn, .v-cbtn,
+    .ma-btn, .glass-btn, .chip, .tab, .bili-tab) {
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border-radius: 8px !important;
+}
+html[data-ui="flat"] :is(.settings-item, .as-rail-item, .fm-sidebar-item,
+    .ag-side-item, .side-item, .nav-item, .wp-soft-btn, .wp-cat-btn).active,
+html[data-ui="flat"] :is(.settings-item, .as-rail-item, .fm-sidebar-item,
+    .ag-side-item, .side-item, .nav-item, .wp-soft-btn, .wp-cat-btn).on {
+    box-shadow: none !important;
+    background-color: rgba(15, 23, 42, .09) !important;
+}
+html[data-ui="flat"] :is(.fu-switch, .n26-switch, .switch) {
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border-radius: 999px !important;
+}
+html[data-ui="flat"] :is(.fu-switch, .n26-switch, .switch)::after {
+    box-shadow: none !important;
+}
+html[data-ui="flat"] :is(.btn, .btn-sm, .fu-btn, .of-btn, .icon-btn, .fc-btn,
+    .v-btn, .v-cbtn, .ma-btn, .glass-btn):active {
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* ---- 2 · neu-solid：凸控件 / 凹轨道 ---- */
+html[data-ui="neu"][data-neu="solid"] :is(.settings-item, .as-rail-item,
+    .fm-sidebar-item, .ag-side-item, .side-item, .nav-item, .wp-soft-btn,
+    .wp-cat-btn, .btn, .btn-sm, .fu-btn, .of-btn, .icon-btn, .fc-btn,
+    .v-btn, .v-cbtn, .ma-btn, .glass-btn, .chip, .tab, .bili-tab) {
+    box-shadow: 1px 1px 4px rgba(17, 24, 39, .12),
+                -1px -1px 4px rgba(255, 255, 255, .62) !important;
+}
+html[data-ui="neu"][data-neu="solid"] :is(.settings-item, .as-rail-item,
+    .fm-sidebar-item, .ag-side-item, .side-item, .nav-item, .wp-soft-btn,
+    .wp-cat-btn).active,
+html[data-ui="neu"][data-neu="solid"] :is(.settings-item, .as-rail-item,
+    .fm-sidebar-item, .ag-side-item, .side-item, .nav-item, .wp-soft-btn,
+    .wp-cat-btn).on {
+    box-shadow: inset 1px 1px 4px rgba(17, 24, 39, .14),
+                inset -1px -1px 4px rgba(255, 255, 255, .58) !important;
+}
+html[data-ui="neu"][data-neu="solid"] :is(.fu-switch, .n26-switch, .switch) {
+    box-shadow: inset 1px 1px 4px rgba(17, 24, 39, .16),
+                inset -1px -1px 4px rgba(255, 255, 255, .54) !important;
+}
+html[data-ui="neu"][data-neu="solid"] :is(.fu-switch, .n26-switch, .switch)::after {
+    box-shadow: 1px 1px 3px rgba(17, 24, 39, .16),
+                -1px -1px 3px rgba(255, 255, 255, .68) !important;
+}
+
+/* ---- 3 · neu-glass：磨砂底 + 内缘亮线 ---- */
+html[data-ui="neu"][data-neu="glass"] :is(.settings-item, .as-rail-item,
+    .fm-sidebar-item, .ag-side-item, .side-item, .nav-item, .wp-soft-btn,
+    .wp-cat-btn, .btn, .btn-sm, .fu-btn, .of-btn, .icon-btn, .fc-btn,
+    .v-btn, .v-cbtn, .ma-btn, .glass-btn) {
+    -webkit-backdrop-filter: blur(12px) saturate(150%) !important;
+    backdrop-filter: blur(12px) saturate(150%) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .56),
+                inset 0 0 0 1px rgba(255, 255, 255, .22),
+                0 2px 6px rgba(8, 14, 26, .10) !important;
+}
+html[data-ui="neu"][data-neu="glass"] :is(.fu-switch, .n26-switch, .switch) {
+    -webkit-backdrop-filter: blur(10px) saturate(140%) !important;
+    backdrop-filter: blur(10px) saturate(140%) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .48),
+                inset 1px 1px 4px rgba(17, 24, 39, .12) !important;
+}
+
+/* ---- 4 · 夜 / 深色：白色高光收敛，暗影加深（不刷黑卡） ---- */
+html[data-n26-phase="night"][data-ui="neu"][data-neu="solid"] :is(.settings-item,
+    .as-rail-item, .fm-sidebar-item, .ag-side-item, .side-item, .nav-item,
+    .wp-soft-btn, .wp-cat-btn, .btn, .btn-sm, .fu-btn, .of-btn, .icon-btn),
+html[data-ui="neu"][data-neu="solid"] body.dark-mode :is(.settings-item,
+    .as-rail-item, .fm-sidebar-item, .ag-side-item, .side-item, .nav-item,
+    .wp-soft-btn, .wp-cat-btn, .btn, .btn-sm, .fu-btn, .of-btn, .icon-btn) {
+    box-shadow: 1px 1px 4px rgba(0, 0, 0, .30),
+                -1px -1px 4px rgba(255, 255, 255, .12) !important;
+}
+
+
+/* ==========================================================================
+   fc2 · 宿主专有控件补齐（11-15 全项目四风格审计）
+   --------------------------------------------------------------------------
+   fc1 的类名清单只有约 20 个，宿主 DOM 里高频出现的 form-* / oobe-* /
+   install-step* / context-menu-item / glass-card-clear / n26tier-chip /
+   style-option / office-tbtn / fm-toolbar-btn / window-btn 全都没命中。
+   这里按同一套语义补齐：
+     flat        纯平：零阴影、零磨砂、小圆角
+     neu-solid   轻拟物：容器凸 / 输入凹 / 选中凹
+     neu-glass   玻璃拟物：磨砂底 + 内缘亮线 + 轻凸
+     liquid      零规则 —— 保持原有液态玻璃，绝不动
+   颜色纪律：只写中性白 / 墨 / 冷白，零彩色、零 radial / conic、零紫。
+   :is() 内不放后代组合符（工程铁律）。
+   ========================================================================== */
+
+/* ---- 容器 / 卡片 / 面板 ---- */
+html[data-ui="flat"] :is(.form-group, .oobe-card, .oobe-card-form, .install-step,
+    .install-step-element, .glass-card-clear, .n26-info-cell, .pe-tool-card,
+    .step-title, .step-subtitle, .btn-row, .primary, .glass) {
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border-radius: 8px !important;
+}
+html[data-ui="neu"][data-neu="solid"] :is(.form-group, .oobe-card, .oobe-card-form,
+    .install-step, .glass-card-clear, .n26-info-cell, .pe-tool-card) {
+    box-shadow: 2px 2px 7px rgba(17, 24, 39, .12),
+                -2px -2px 7px rgba(255, 255, 255, .60) !important;
+}
+html[data-ui="neu"][data-neu="glass"] :is(.form-group, .oobe-card, .oobe-card-form,
+    .install-step, .glass-card-clear, .n26-info-cell, .pe-tool-card) {
+    -webkit-backdrop-filter: blur(14px) saturate(150%) !important;
+    backdrop-filter: blur(14px) saturate(150%) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .56),
+                inset 0 0 0 1px rgba(255, 255, 255, .22),
+                0 3px 10px rgba(8, 14, 26, .10) !important;
+}
+
+/* ---- 输入 / 标签：Neu 两档凹，Flat 纯平 ---- */
+html[data-ui="flat"] :is(.form-input, .form-label, .form-select, .form-textarea) {
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border-radius: 7px !important;
+}
+html[data-ui="neu"][data-neu="solid"] :is(.form-input, .form-select, .form-textarea) {
+    box-shadow: inset 2px 2px 5px rgba(17, 24, 39, .14),
+                inset -2px -2px 5px rgba(255, 255, 255, .56) !important;
+}
+html[data-ui="neu"][data-neu="glass"] :is(.form-input, .form-select, .form-textarea) {
+    -webkit-backdrop-filter: blur(10px) saturate(140%) !important;
+    backdrop-filter: blur(10px) saturate(140%) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .48),
+                inset 1px 1px 4px rgba(17, 24, 39, .11) !important;
+}
+
+/* ---- 按钮 / 菜单项 / 选项卡 / 芯片 ---- */
+html[data-ui="flat"] :is(.context-menu-item, .n26tier-chip, .style-option,
+    .role-option, .office-tbtn, .fm-toolbar-btn, .window-btn, .power-item,
+    .toggle-switch, .n26-switch) {
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border-radius: 8px !important;
+}
+html[data-ui="neu"][data-neu="solid"] :is(.context-menu-item, .n26tier-chip,
+    .style-option, .role-option, .office-tbtn, .fm-toolbar-btn, .window-btn,
+    .power-item, .toggle-switch) {
+    box-shadow: 1px 1px 4px rgba(17, 24, 39, .12),
+                -1px -1px 4px rgba(255, 255, 255, .62) !important;
+}
+html[data-ui="neu"][data-neu="solid"] :is(.context-menu-item, .n26tier-chip,
+    .style-option, .role-option, .office-tbtn, .fm-toolbar-btn, .window-btn,
+    .power-item, .toggle-switch):is(.active, .on, .selected) {
+    box-shadow: inset 1px 1px 4px rgba(17, 24, 39, .15),
+                inset -1px -1px 4px rgba(255, 255, 255, .56) !important;
+}
+html[data-ui="neu"][data-neu="glass"] :is(.context-menu-item, .n26tier-chip,
+    .style-option, .role-option, .office-tbtn, .fm-toolbar-btn, .window-btn,
+    .power-item, .toggle-switch) {
+    -webkit-backdrop-filter: blur(12px) saturate(150%) !important;
+    backdrop-filter: blur(12px) saturate(150%) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .54),
+                inset 0 0 0 1px rgba(255, 255, 255, .20),
+                0 2px 6px rgba(8, 14, 26, .10) !important;
+}
+
+/* ---- 夜 / 深色：白色高光收敛，暗影加深（不刷黑卡、不刷彩） ---- */
+html[data-ui="neu"][data-neu="solid"] body.dark-mode :is(.form-group, .oobe-card,
+    .oobe-card-form, .install-step, .glass-card-clear, .context-menu-item,
+    .n26tier-chip, .office-tbtn, .fm-toolbar-btn, .window-btn),
+html[data-n26-phase="night"][data-ui="neu"][data-neu="solid"] :is(.form-group,
+    .oobe-card, .oobe-card-form, .install-step, .glass-card-clear,
+    .context-menu-item, .n26tier-chip, .office-tbtn, .fm-toolbar-btn, .window-btn) {
+    box-shadow: 2px 2px 7px rgba(0, 0, 0, .30),
+                -2px -2px 7px rgba(255, 255, 255, .10) !important;
+}

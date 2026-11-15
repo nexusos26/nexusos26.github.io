@@ -1,0 +1,405 @@
+/* ==========================================================================
+   ui/n26-widget-music-legacy.css · 戳 ml5 · 2026-11-14
+   --------------------------------------------------------------------------
+   ★ 用户原话：「音乐小组件你直接按照我审美再重新做一遍吧，或者说照着苹果的
+     去做」「哪怕同功能，不同大小，功能密度不一样；不同功能不同视觉观感；
+     同大小这种的也会有」「你这高光整的像石油一样」。
+
+   ★ ml4 推翻 ml1/ml2 的「深蓝唱片面」：
+     ml1 = 不透明深蓝黑板；ml2 = 半透深蓝玻璃。两者都把 5 款音乐卡统一刷成
+     一种深色，丢了功能身份，也和用户看过的华为/苹果样张不沾边。
+     ml4 定案（对齐 fam3 中性磨砂 + Apple 小组件库）：
+       ① 卡面 = 中性半透磨砂玻璃，昼 rgba(251,252,255,.42) /
+          夜 rgba(13,19,35,.48) + blur(18px)。不纯黑、不惨白、不刷黄。
+       ② 玻璃本体只有一条中性白上沿高光；暖金/蓝/橙只能来自专辑封面、
+          壁纸或控件内容，绝不由玻璃自己上色（go10 同一条铁律）。
+       ③ 专辑图只待在 .nx-mu-cover / .nx-mu-thumb / .nx-mu-rc-art 里，
+          不再铺满整卡压字 —— 这是 Apple 正在播放卡的做法。
+       ④ 文字随昼夜落墨：昼 #0b1220 / 夜 #eef2fa（wr7 同一套对比度），
+          白色圆形播放键保留深墨字形。
+       ⑤ 五款功能观感分开：正在播放=封面主导；队列=列表与细分隔线；
+          搜索=输入场与词条；推荐=封面网格；电台=图标方块。
+       ⑥ 同功能不同尺寸密度不同：胶囊/小/中/大四档由主壳渲染器给不同 DOM，
+          本层再按 data-cols/data-rows 与 .wcols-N.wrows-N 双写隐藏与字号，
+          预览卡（只有 wcols/wrows）同样生效。
+
+   ★ 层序：本层仍在 music.css / wr7 / fam3 / beau3 / tier1 之后加载，
+     9 写 [data-wtype] 保证压过 wr7 §8.2b 的落墨兜底与 fam3 的卡面令牌。
+   ★ 零 DOM 注入 / 零 radial 油斑 / 零 filter 位移 / 零 transition:all /
+     :is() 内不含 > / 全面禁紫。
+   ★ fb2 勘误（11-15，推翻 ws/beau3 轮「挂载点不存在」结论）：
+     html[data-ui] 其实由 fui-bridge.js boot 写入（读持久化），但运行中切换风格时
+     setFanguiStyle 只更新 data-ui/data-neu，data-ui 停在 boot 旧值 —— 挂它的规则
+     「刷新才对、切了不动」。本文件全部规则已迁到实时挂载点 html[data-ui]+html[data-neu]。
+   ========================================================================== */
+
+/* 机器生成的选择器前缀说明：S = html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]，
+   M = :is(     [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],     [data-wtype="musicReco"], [data-wtype="musicRadio"])。下文以 SM 表示 S+M，全部规则共用。 */
+/* ================= 1 · 卡面：中性磨砂玻璃 + 中性白上沿高光 ================= */html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) {
+    --w-radius: 22px !important;
+    --w-inner-radius: 22px !important;
+    --w-mat-border: transparent !important;
+    --w-mat-bg-img: none !important;
+    --mu-ink: #0b1220;
+    --mu-soft: rgba(11, 18, 32, .62);
+    --mu-faint: rgba(11, 18, 32, .42);
+    --mu-well: rgba(11, 18, 32, .07);
+    --mu-line: rgba(11, 18, 32, .14);
+    --mu-hi: rgba(255, 255, 255, .72);
+    --mu-glass: rgba(251, 252, 255, .42);
+    background-color: var(--mu-glass) !important;
+    background-image: none !important;
+    background-blend-mode: normal !important;
+    border: 1px solid rgba(255, 255, 255, .34) !important;
+    border-radius: var(--w-radius) !important;
+    overflow: hidden !important;
+    -webkit-backdrop-filter: blur(18px) saturate(150%) !important;
+    backdrop-filter: blur(18px) saturate(150%) !important;
+    filter: none !important;
+    mix-blend-mode: normal !important;
+    box-shadow: inset 0 1px 0 var(--mu-hi),
+                0 10px 26px rgba(8, 14, 26, .16),
+                0 2px 6px rgba(8, 14, 26, .10) !important;
+    color: var(--mu-ink) !important;
+}
+/* 夜：同一张玻璃的深色半透，绝不是黑板 */html[data-n26-phase="night"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]),
+html body.dark-mode .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) {
+    --mu-ink: #eef2fa;
+    --mu-soft: rgba(238, 242, 250, .76);
+    --mu-faint: rgba(238, 242, 250, .54);
+    --mu-well: rgba(255, 255, 255, .10);
+    --mu-line: rgba(255, 255, 255, .18);
+    --mu-hi: rgba(255, 255, 255, .30);
+    --mu-glass: rgba(13, 19, 35, .48);
+    background-color: var(--mu-glass) !important;
+    border-color: rgba(255, 255, 255, .16) !important;
+    box-shadow: inset 0 1px 0 var(--mu-hi),
+                0 10px 26px rgba(8, 14, 26, .28),
+                0 2px 6px rgba(8, 14, 26, .16) !important;
+    color: var(--mu-ink) !important;
+}
+/* 内容层不铺底色；.nx-mu-bg 旧「全卡专辑图 / 深蓝渐变」全部作废。
+   专辑图只在封面格内出现（Apple 正在播放卡）。 */html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .widget-inner {
+    /* ml5：MD §2.6 的「全卡铺图例外」随 ml3 已作废，overflow 收回卡内。 */
+    overflow: hidden !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    color: var(--mu-ink) !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .nx-mu > .nx-mu-bg,
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .nx-mu.has-art > .nx-mu-bg {
+    background-color: transparent !important;
+    background-image: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+    pointer-events: none !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .nx-mu.has-art > .nx-mu-bg::before,
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .nx-mu.has-art > .nx-mu-bg::after {
+    content: none !important;
+    display: none !important;
+    background: none !important;
+    filter: none !important;
+}
+/* ================= 2 · 落墨：吃掉 wr7 的直写白字兜底 ================= */html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .widget-inner,
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .widget-inner :is(.nx, .nx2, .nx-mu, .nx-bili) {
+    --w-text: var(--mu-ink) !important;
+    --w-text-strong: var(--mu-ink) !important;
+    --w-text-soft: var(--mu-soft) !important;
+    --w-text-faint: var(--mu-faint) !important;
+    --w-fg: var(--mu-ink) !important;
+    --w-fg-soft: var(--mu-soft) !important;
+    --w-fg-faint: var(--mu-faint) !important;
+    --w-hair: var(--mu-line) !important;
+    --w-well: var(--mu-well) !important;
+    --w-accent: var(--mu-ink) !important;
+    --nx-acc-text: var(--mu-ink) !important;
+    --nx-acc-tint: var(--mu-well) !important;
+    --nx-acc-line: var(--mu-line) !important;
+    color: var(--mu-ink) !important;
+    -webkit-text-fill-color: var(--mu-ink) !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .widget-inner :is(
+    span, b, strong, small, em, p, div, h1, h2, h3, td, th, label, time, a, li, input) {
+    color: var(--mu-ink) !important;
+    -webkit-text-fill-color: var(--mu-ink) !important;
+    text-shadow: none !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .widget-inner :is(
+    .nx-mu-hd .nx-hd-sub, .nx-mu-sub, .nx-mu-fat, .nx-mu-tip,
+    .nx-mu-empty span, .nx-mu-time, .nx-mu-qi span, .nx-mu-rc span) {
+    color: var(--mu-soft) !important;
+    -webkit-text-fill-color: var(--mu-soft) !important;
+}
+/* 白色圆形播放键：中性白 + 深墨字形，昼夜一致 */html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .widget-inner :is(.is-play, .is-play *, .nx-btn-accent, .nx-btn-accent *) {
+    color: #10161f !important;
+    -webkit-text-fill-color: #10161f !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .widget-inner :is(.nx-accent, [class*="accent"], [class*="hlite"]) {
+    color: var(--mu-ink) !important;
+    -webkit-text-fill-color: var(--mu-ink) !important;
+}
+/* ================= 3 · 控件：中性井 + 中性白细边 ================= */html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .widget-inner :is(
+    .nx-mu-btn, .nx-mu-go, .nx-mu-sbtn, .nx-mu-chip, .nx-mu-qi, .nx-mu-rc,
+    .nx-mu-rd, .nx-mu-input, .nx-mu-sbox) {
+    background-color: var(--mu-well) !important;
+    background-image: none !important;
+    border: 1px solid var(--mu-line) !important;
+    border-radius: 12px !important;
+    box-shadow: none !important;
+    color: var(--mu-ink) !important;
+    -webkit-text-fill-color: var(--mu-ink) !important;
+    text-shadow: none !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .widget-inner .nx-mu-btn {
+    width: 28px !important; height: 28px !important;
+    border-radius: 50% !important; font-size: 10px !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .widget-inner .nx-mu-btn.is-play {
+    width: 34px !important; height: 34px !important;
+    background: #ffffff !important; border-color: rgba(255, 255, 255, .9) !important;
+    box-shadow: 0 2px 8px rgba(8, 14, 26, .18) !important;
+    color: #10161f !important; -webkit-text-fill-color: #10161f !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .widget-inner :is(.nx-mu-cover, .nx-mu-thumb, .nx-mu-rc-art, .nx-mu-qi-art) {
+    border-radius: 14px !important; border: 0 !important; overflow: hidden !important;
+    background: var(--mu-well) !important;
+    box-shadow: 0 4px 12px rgba(8, 14, 26, .18), inset 0 1px 0 rgba(255, 255, 255, .34) !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .widget-inner :is(.nx-mu-prog, .nx-mu-vol input[type="range"]) {
+    background: var(--mu-line) !important; border: 0 !important;
+    height: 3px !important; border-radius: 3px !important; box-shadow: none !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .widget-inner :is(.nx-mu-prog i, .nx-mu-vol input[type="range"]::-webkit-slider-thumb) {
+    background: var(--mu-ink) !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .widget-inner .nx-mu-empty > i {
+    color: var(--mu-faint) !important; -webkit-text-fill-color: var(--mu-faint) !important;
+}
+/* ================= 4 · 五款功能各自观感（同尺寸也不同） ================= *//* 正在播放：封面是唯一主角，标题压在封面下方，绝不压字 */html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="music"]) .widget-inner :is(.nx-mu-cover, .nx-mu-thumb) {
+    box-shadow: 0 6px 16px rgba(8, 14, 26, .22), inset 0 1px 0 rgba(255, 255, 255, .42) !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="music"]) .widget-inner .nx-mu-tt {
+    font-weight: 700 !important; letter-spacing: -.01em !important;
+}
+/* 播放队列：列表感 = 细分隔线 + 行号井，不做封面网格 */html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="musicQueue"]) .widget-inner .nx-mu-qi {
+    border: 0 !important; border-bottom: 1px solid var(--mu-line) !important;
+    border-radius: 0 !important; background: transparent !important;
+    display: flex !important; align-items: center !important; gap: 8px !important;
+    padding: 3px 2px !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="musicQueue"]) .widget-inner .nx-mu-qi > i {
+    flex: 0 0 18px !important; width: 18px !important; height: 18px !important;
+    border-radius: 6px !important; background: var(--mu-well) !important;
+    color: var(--mu-soft) !important; -webkit-text-fill-color: var(--mu-soft) !important;
+    display: inline-flex !important; align-items: center !important; justify-content: center !important;
+    font-size: 8px !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="musicQueue"]) .widget-inner .nx-mu-qi.on {
+    background: var(--mu-well) !important; border-radius: 9px !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="musicQueue"]) .widget-inner .nx-mu-qi.on > i {
+    color: var(--mu-ink) !important; -webkit-text-fill-color: var(--mu-ink) !important;
+}
+/* 音乐搜索：输入场是主角，词条退成轻胶囊 */html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="musicSearch"]) .widget-inner .nx-mu-sbox {
+    background-color: rgba(255, 255, 255, .56) !important;
+    border-color: rgba(255, 255, 255, .72) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .82) !important;
+    border-radius: 14px !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="musicSearch"]) .widget-inner .nx-mu-input {
+    background: transparent !important; border: 0 !important;
+    color: var(--mu-ink) !important; -webkit-text-fill-color: var(--mu-ink) !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="musicSearch"]) .widget-inner .nx-mu-chip {
+    border-radius: 999px !important; padding: 2px 9px !important;
+}
+/* 每日推荐：封面网格，两张/三张/四张/六张按尺寸给 */html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="musicReco"]) .widget-inner .nx-mu-rc {
+    background: transparent !important; border: 0 !important;
+    display: flex !important; flex-direction: column !important; align-items: flex-start !important;
+    gap: 3px !important; padding: 0 !important; text-align: left !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="musicReco"]) .widget-inner .nx-mu-rc-art {
+    width: 100% !important; aspect-ratio: 1 / 1 !important;
+    display: block !important;
+}
+/* 电台：图标方块，选中态只用中性白环，不刷彩色 */html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="musicRadio"]) .widget-inner .nx-mu-rd {
+    display: flex !important; flex-direction: column !important; align-items: flex-start !important;
+    justify-content: center !important; gap: 4px !important;
+    border-radius: 14px !important; border: 1px solid var(--mu-line) !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="musicRadio"]) .widget-inner .nx-mu-rd > i {
+    color: var(--mu-ink) !important; -webkit-text-fill-color: var(--mu-ink) !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="musicRadio"]) .widget-inner .nx-mu-rd.on {
+    background-color: rgba(255, 255, 255, .52) !important;
+    border-color: rgba(255, 255, 255, .86) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .72) !important;
+}
+/* ================= 5 · 尺寸 = 信息密度（桌面卡 + 预览卡双写） =================
+   主壳渲染器已经按 cols/rows 给不同 DOM；这里再按真实网格收口字号与次要信息，
+   让「同功能不同大小」在视觉上一眼可辨，而不是单纯等比缩放。 *//* 胶囊 / 一行档：只留标题 + 播放键，其他信息全部收起 */html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]):is(.wsize-capsule, .wrows-1, [data-rows="1"]) .widget-inner :is(
+    .nx-mu-hd, .nx-mu-fat, .nx-mu-time, .nx-mu-tip, .nx-mu-vol, .nx-mu-sub) {
+    display: none !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]):is(.wsize-capsule, .wrows-1, [data-rows="1"]) .widget-inner .nx-mu-tt {
+    font-size: 11px !important;
+}
+/* 小档（≤2×2）：标题 + 封面 + 播放键，副信息收起 */html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]):is(.wsize-s, [data-cols="2"][data-rows="2"], .wcols-2.wrows-2) .widget-inner :is(
+    .nx-hd-sub, .nx-mu-fat, .nx-mu-time, .nx-mu-vol, .nx-mu-tip) {
+    display: none !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]):is(.wsize-s, [data-cols="2"][data-rows="2"], .wcols-2.wrows-2) .widget-inner .nx-mu-tt {
+    font-size: 10.5px !important;
+}
+/* 中档：标题/歌手/进度/三键 */html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]):is(.wsize-m, [data-cols="3"][data-rows="2"], .wcols-3.wrows-2,
+    [data-cols="2"][data-rows="3"], .wcols-2.wrows-3) .widget-inner .nx-mu-tt {
+    font-size: 13px !important;
+}
+/* 大档：全部信息 + 音量 + 时间 */html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]):is(.wsize-l, [data-cols="4"][data-rows="3"], .wcols-4.wrows-3,
+    [data-cols="4"][data-rows="4"], .wcols-4.wrows-4,
+    [data-cols="5"][data-rows="5"], .wcols-5.wrows-5) .widget-inner .nx-mu-tt {
+    font-size: 16px !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]):is(.wsize-l, [data-cols="4"][data-rows="3"], .wcols-4.wrows-3,
+    [data-cols="4"][data-rows="4"], .wcols-4.wrows-4,
+    [data-cols="5"][data-rows="5"], .wcols-5.wrows-5) .widget-inner .nx-mu-cover {
+    border-radius: 18px !important;
+}
+/* ================= 6 · 2×2 老版版式护栏 + 不溢出 ================= */html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="music"]) .nx-mu.is-mini {
+    height: 100% !important; gap: 4px !important; position: relative !important;
+    overflow: hidden !important; min-width: 0 !important; min-height: 0 !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="music"]) .nx-mu.is-mini > * {
+    position: relative !important; z-index: 1 !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="music"]) .nx-mu.is-mini > .nx-mu-bg {
+    z-index: 0 !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="music"]) .nx-mu.is-mini .nx-mu-cover.is-mini-cv {
+    flex: 1 1 auto !important; min-height: 0 !important; width: 100% !important;
+    margin: 0 !important; border-radius: 14px !important; border: 0 !important;
+    overflow: hidden !important; background: var(--mu-well) !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="music"]) .nx-mu.is-mini .nx-mu-cover.is-mini-cv img {
+    width: 100% !important; height: 100% !important; object-fit: cover !important;
+    display: block !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="music"]) .nx-mu.is-mini .nx-mu-mini-row {
+    position: static !important; left: auto !important; right: auto !important;
+    bottom: auto !important; flex: none !important; display: flex !important;
+    align-items: center !important; gap: 6px !important; min-width: 0 !important;
+    max-width: 100% !important; height: 24px !important; padding: 0 !important;
+    margin: 0 !important; background: none !important; border: 0 !important;
+    box-shadow: none !important; z-index: 1 !important; overflow: hidden !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="music"]) .nx-mu.is-mini .nx-mu-mini-row .nx-mu-tt {
+    flex: 1 1 auto !important; min-width: 0 !important; font-size: 10.5px !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="music"]) .nx-mu.is-mini .nx-mu-btn.sm.is-play {
+    width: 22px !important; height: 22px !important; flex: none !important;
+    font-size: 9px !important; border-radius: 50% !important;
+    background: #ffffff !important; box-shadow: none !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="music"]) .nx-mu.is-mini > .nx-mu-prog {
+    position: absolute !important;
+    left: calc(var(--w-pad, 14px) * -1) !important;
+    right: calc(var(--w-pad, 14px) * -1) !important;
+    bottom: calc(var(--w-pad, 14px) * -1) !important;
+    height: 2px !important; border-radius: 0 !important;
+    background: var(--mu-line) !important; z-index: 3 !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .widget-inner :is(
+    span, b, strong, small, em, p, div, h1, h2, h3, li, label, input, button) {
+    min-width: 0 !important; max-width: 100% !important;
+    overflow: hidden !important; text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .widget-inner :is(
+    .nx, .nx-mu, .nx-mu-hd, .nx-mu-ctl, .nx-mu-vol, .nx-mu-lg,
+    .nx-mu-meta, .nx-mu-mini-row) {
+    min-width: 0 !important; min-height: 0 !important; max-width: 100% !important;
+    overflow: hidden !important; flex-wrap: nowrap !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .widget-inner > .nx.nx-mu {
+    overflow: hidden !important; height: 100% !important; max-height: 100% !important;
+}
+/* ================= 7 · FangUI 四风格：只差阴影，卡面不换色 ================= */html[data-ui="neu"][data-neu="solid"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]),
+html[data-ui="neu"][data-neu="glass"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) {
+    box-shadow: 7px 7px 18px rgba(8, 14, 26, .20),
+                -6px -6px 14px rgba(255, 255, 255, .22),
+                inset 0 1px 0 var(--mu-hi) !important;
+}
+html[data-ui] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .widget-inner * {
+    text-shadow: none !important;
+}
+/* 有封面时不再关 blur：封面只是卡内一格图，玻璃仍然吃壁纸。 */

@@ -1,0 +1,177 @@
+/* ==========================================================================
+   ui/n26-widget-todo.css · 戳 td1 · 2026-11-13
+   --------------------------------------------------------------------------
+   ★ 按 docs/小组件设计规格-全量47款.md §3「待办族（3）」重做的第 4 族。
+     沿用 wt1 骨架：只写 **版式 / 尺寸节奏 / 行数上限 / 身份色点缀**。
+
+   覆盖：todo / todoRing / quickNote（MD §3 的 23~25 号卡）
+
+   ★ 身份色消费 fam2 的 --wf（昼 #0f766e / 夜 #5eead4）。
+     「+」实心按钮、完成环、勾选态、表头图标吃身份色；
+     --wf-ink 由 fam2 按昼夜翻（昼白 / 夜墨），保证实色底上对比度够。
+
+   ★ 行数上限在 CSS 侧落地：渲染器恒定输出全部待办，
+     本层按 cols×rows 把第 N 条之后的 `.widget-todo-item` 直接不显示
+     —— 这是「按尺寸换内容」，不是把行高压缩硬塞（MD §2.3）。
+   ========================================================================== */
+
+/* ---------- 1 · 家族统一骨架：表头 / 列表 / 文本区 ---------- */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="todo"], [data-wtype="todoRing"], [data-wtype="quickNote"])
+    .widget-inner :is(.nx2-hd, .widget-todo-header) {
+    flex: none !important;
+    flex-wrap: nowrap !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="todo"], [data-wtype="todoRing"], [data-wtype="quickNote"])
+    .widget-inner :is(.nx2-sub, .nx2-faint, .nx2-title, .nx2-hd-sub,
+    .widget-todo-title, .widget-todo-count, .widget-todo-empty span) {
+    font-size: clamp(9px, .82vw, 11px) !important;
+    line-height: 1.32 !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="todo"], [data-wtype="todoRing"], [data-wtype="quickNote"])
+    .widget-inner :is(.nx2-num, .nx2-ring b) {
+    font-variant-numeric: tabular-nums !important;
+    font-feature-settings: "tnum" 1 !important;
+    white-space: nowrap !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+
+/* ---------- 2 · 身份色：+ 按钮 / 环 / 勾选 / 表头图标 ---------- */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="todo"], [data-wtype="todoRing"], [data-wtype="quickNote"])
+    .widget-inner :is(.widget-todo-add, .widget-todo-check.done,
+    .nx2-hd i, .nx2-accent) {
+    color: var(--wf, #0f766e) !important;
+    -webkit-text-fill-color: var(--wf, #0f766e) !important;
+}
+/* 「+」是唯一实色身份件：底吃 --wf、字吃 --wf-ink（fam2 昼夜自动翻） */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="todo"]) .widget-inner .widget-todo-add {
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    min-height: 24px !important;
+    flex: none !important;
+    padding: 0 !important;
+    border-radius: 999px !important;
+    background-color: var(--wf, #0f766e) !important;
+    color: var(--wf-ink, #ffffff) !important;
+    -webkit-text-fill-color: var(--wf-ink, #ffffff) !important;
+    overflow: hidden !important;
+}
+/* 完成环：只缩不溢，fam2 已给 --wf 的 conic 进度，不重绘 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="todoRing"]) .widget-inner .nx2-ring {
+    width: auto !important;
+    height: auto !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    aspect-ratio: 1 / 1 !important;
+    flex: 0 1 auto !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="todoRing"]) .widget-inner :is(.nx2-ring-wrap, .nx2-track) {
+    flex: none !important;
+    min-height: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+
+/* ---------- 3 · 列表 / 条目：裁在卡内，标题单行 ---------- */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="todo"]) .widget-inner .widget-todo-list {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="todo"]) .widget-inner .widget-todo-item {
+    flex: none !important;
+    flex-wrap: nowrap !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="todo"]) .widget-inner :is(.widget-todo-text, .widget-todo-empty span) {
+    -webkit-line-clamp: 1 !important;
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow: hidden !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="todo"]) .widget-inner :is(.widget-todo-check, .widget-todo-del) {
+    flex: none !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+
+/* ---------- 4 · 速记：textarea 是历史上最常把卡片撑破的一个 ----------
+   plus.css 给 .nx2-input 写了 min-height:44px，小档会顶出去；
+   这里改成纯 flex 子项，滚动条留在卡内。 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="quickNote"]) .widget-inner .nx2-input {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    max-width: 100% !important;
+    resize: none !important;
+    box-sizing: border-box !important;
+    overflow: auto !important;
+    word-break: break-word !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="quickNote"]) .widget-inner .nx2-faint {
+    flex: none !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+
+/* ---------- 5 · 尺寸即内容：行数按 cols×rows 写死上限 ---------- */
+/* 2×2 → 2 条 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-cols="2"][data-rows="2"], .wcols-2.wrows-2):is([data-wtype="todo"])
+    .widget-inner .widget-todo-item:nth-child(n+3) {
+    display: none !important;
+}
+/* 3×2 / 4×2 → 3 条 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-cols="3"][data-rows="2"], [data-cols="4"][data-rows="2"],
+    .wcols-3.wrows-2, .wcols-4.wrows-2):is([data-wtype="todo"])
+    .widget-inner .widget-todo-item:nth-child(n+4) {
+    display: none !important;
+}
+/* 4×3 / 4×4 / 6×2 → 5 条 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-rows="3"], [data-rows="4"], .wrows-3, .wrows-4):is([data-wtype="todo"])
+    .widget-inner .widget-todo-item:nth-child(n+6) {
+    display: none !important;
+}
+/* 胶囊：只留「N 项待办」+ 一个「+」 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-rows="1"][data-rows="1"], .wrows-1.wrows-1):is(
+    [data-wtype="todo"], [data-wtype="todoRing"]) .widget-inner :is(
+    .widget-todo-list, .widget-todo-empty, .nx2-only-wide,
+    .nx2-line, .nx2-grow, .nx2-ring-wrap, .nx2-track, .nx2-faint) {
+    display: none !important;
+}

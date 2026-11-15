@@ -1,0 +1,133 @@
+/* ==========================================================================
+   ui/n26-widget-plus.css · v1 / 戳 wplus1
+   --------------------------------------------------------------------------
+   18 个新增小组件的结构层。材质 / 四风格 / 昼夜 / 凹凸全部继承
+   ui/n26-widget-redesign.css，这里只管排版与骨架，不写任何底色。
+
+   纪律：零 filter、零 ::before/::after 新层、零 backdrop-filter、
+   零 transition:all、零固定像素撑破（全部 min-width:0 + overflow:hidden）。
+   ========================================================================== */
+
+html body .desktop-widget-card[data-type][data-wtype] .widget-inner .nx2 {
+    display: flex; flex-direction: column; gap: 8px;
+    width: 100%; height: 100%; min-width: 0; min-height: 0;
+    box-sizing: border-box; padding: 1px 0;
+    white-space: normal !important;
+    color: var(--w-text);
+}
+.nx2 * { box-sizing: border-box; min-width: 0; }
+
+/* ---------- 通用骨架 ---------- */
+.nx2-hd { display:flex; align-items:center; gap:6px; flex:0 0 auto; font-size:11.5px; font-weight:700; letter-spacing:.2px; }
+.nx2-hd > i { color:var(--w-accent); font-size:11px; }
+.nx2-hd > span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.nx2-hd-sub { margin-left:auto; font-size:10px; font-weight:600; opacity:.62; }
+.nx2-row { display:flex; align-items:center; gap:8px; min-width:0; }
+.nx2-row.between { justify-content:space-between; }
+.nx2-col { display:flex; flex-direction:column; gap:5px; min-width:0; }
+.nx2-grow { flex:1 1 auto; min-height:0; }
+.nx2-sub { font-size:10.5px; color:var(--w-text-soft); line-height:1.35; }
+.nx2-faint { font-size:9.5px; color:var(--w-text-faint); }
+.nx2-line { height:1px; background:var(--w-hair); flex:0 0 auto; }
+.nx2-accent { color:var(--w-accent); }
+.nx2-tab { font-variant-numeric:tabular-nums; font-feature-settings:"tnum"; }
+
+.nx2-big { font-size:clamp(24px,4vw,44px); font-weight:300; line-height:1; letter-spacing:-1.6px; color:var(--w-text-strong); font-variant-numeric:tabular-nums; }
+.nx2-hero { font-size:clamp(30px,5vw,54px); font-weight:250; line-height:.98; letter-spacing:-2.4px; color:var(--w-text-strong); font-variant-numeric:tabular-nums; }
+.nx2-title { font-size:14px; font-weight:700; color:var(--w-text-strong); }
+.nx2-num { font-size:18px; font-weight:750; color:var(--w-text-strong); font-variant-numeric:tabular-nums; }
+
+.nx2-well { display:flex; align-items:center; gap:6px; padding:7px 9px; border-radius:12px; background:var(--w-well); border:1px solid var(--w-hair); }
+.nx2-panel { padding:8px 10px; border-radius:13px; background:var(--w-well); border:1px solid var(--w-hair); }
+.nx2-chip { display:inline-flex; align-items:center; gap:4px; padding:4px 9px; border-radius:999px; font-size:10px; font-weight:700; background:var(--w-well); border:1px solid var(--w-hair); color:var(--w-text); }
+.nx2-chip.on { background:var(--w-accent); color:#fff; border-color:transparent; }
+.nx2-btn { padding:5px 10px; border-radius:9px; font-size:10.5px; font-weight:700; border:1px solid var(--w-hair); background:var(--w-well); color:var(--w-text); cursor:pointer; }
+.nx2-btn:active { transform:scale(.96); }
+.nx2-knob { width:14px; height:14px; border-radius:50%; background:var(--w-text-strong); flex:0 0 auto; }
+
+.nx2-track { height:7px; border-radius:999px; background:var(--w-well); border:1px solid var(--w-hair); overflow:hidden; flex:0 0 auto; }
+.nx2-fill { display:block; height:100%; border-radius:999px; background:linear-gradient(90deg,var(--w-accent),#7cb2ff); }
+.nx2-input { width:100%; flex:1 1 auto; min-height:44px; resize:none; border:1px solid var(--w-hair); border-radius:11px; padding:7px 9px; font:inherit; font-size:11.5px; line-height:1.5; background:var(--w-well); color:var(--w-text); outline:none; }
+
+.nx2-grid { display:grid; gap:6px; min-height:0; }
+.nx2-g2 { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.nx2-g3 { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.nx2-g4 { grid-template-columns:repeat(4,minmax(0,1fr)); }
+.nx2-g7 { grid-template-columns:repeat(7,minmax(0,1fr)); }
+.nx2-cell { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:5px 2px; border-radius:10px; background:var(--w-well); border:1px solid var(--w-hair); font-size:10px; }
+.nx2-cell b { font-size:12px; color:var(--w-text-strong); }
+.nx2-cell.today { background:var(--w-accent); border-color:transparent; }
+.nx2-cell.today b, .nx2-cell.today span { color:#fff; }
+.nx2-kv { display:flex; align-items:baseline; justify-content:space-between; gap:6px; font-size:10px; color:var(--w-text-soft); }
+.nx2-kv b { font-size:12px; color:var(--w-text-strong); font-variant-numeric:tabular-nums; }
+.nx2-list { display:flex; flex-direction:column; gap:4px; overflow:hidden; }
+.nx2-li { display:flex; align-items:center; gap:6px; padding:4px 7px; border-radius:9px; background:var(--w-well); font-size:10.5px; }
+.nx2-li > span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.nx2-empty { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; flex:1 1 auto; text-align:center; color:var(--w-text-faint); font-size:10.5px; }
+.nx2-empty i { font-size:19px; color:var(--w-accent); opacity:.75; }
+.nx2-empty b { font-size:11.5px; color:var(--w-text-soft); }
+
+/* ---------- 时间族 ---------- */
+.nx2-sec-main { display:flex; align-items:baseline; gap:2px; font-size:clamp(26px,4.6vw,46px); font-weight:280; line-height:1; letter-spacing:-2px; color:var(--w-text-strong); font-variant-numeric:tabular-nums; }
+.nx2-sec { font-size:.5em; color:var(--w-accent); font-weight:650; letter-spacing:0; }
+.nx2-colon { opacity:.45; }
+.nx2-tz { display:flex; flex-direction:column; gap:2px; padding:6px 8px; border-radius:11px; background:var(--w-well); border:1px solid var(--w-hair); }
+.nx2-tz b { font-size:15px; font-weight:650; color:var(--w-text-strong); font-variant-numeric:tabular-nums; }
+.nx2-tz span { font-size:9.5px; color:var(--w-text-soft); }
+
+/* 模拟表盘：三根针用负 animation-delay 对齐当前时刻，零定时器、零 rAF */
+.nx2-dial { width:100%; height:100%; max-height:150px; display:block; }
+.nx2-dial .nx2-face { fill:none; stroke:var(--w-hair); stroke-width:2; }
+.nx2-dial .nx2-tick { stroke:var(--w-text-faint); stroke-width:1.4; }
+.nx2-dial .nx2-tick.major { stroke:var(--w-text-strong); stroke-width:2.4; }
+.nx2-dial .nx2-pin { fill:var(--w-accent); }
+.nx2-hand { transform-box:view-box; transform-origin:50% 50%; animation:nx2-spin 3600s linear infinite; }
+.nx2-hand.h { animation-duration:43200s; }
+.nx2-hand.m { animation-duration:3600s; }
+.nx2-hand.s { animation-duration:60s; }
+.nx2-hand line { stroke:var(--w-text-strong); stroke-linecap:round; }
+.nx2-hand.h line { stroke-width:3.6; }
+.nx2-hand.m line { stroke-width:2.4; }
+.nx2-hand.s line { stroke:var(--w-accent); stroke-width:1.3; }
+@keyframes nx2-spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+
+/* 月相 / 日月弧 */
+.nx2-moon { width:54px; height:54px; border-radius:50%; flex:0 0 auto;
+    background:radial-gradient(circle at 34% 30%, #fff8dc 0%, #e9d9a8 62%, #b9a878 100%);
+    box-shadow:0 0 0 1px var(--w-hair), 0 4px 14px rgba(255,240,190,.22);
+    position:relative; overflow:hidden; }
+.nx2-moon-shade { position:absolute; inset:0; background:#0d1424; border-radius:50%; }
+.nx2-arc { position:relative; height:34px; flex:0 0 auto; border-bottom:1px solid var(--w-hair); }
+.nx2-arc-line { position:absolute; left:6%; right:6%; top:2px; height:32px; border-radius:50% 50% 0 0; border-top:1.5px dashed var(--w-hair); }
+.nx2-orb { position:absolute; width:14px; height:14px; border-radius:50%; bottom:-7px; background:var(--w-accent); box-shadow:0 0 10px var(--w-accent); transform:translateX(-50%); }
+
+/* 环形进度（conic-gradient，不建 SVG 滤镜） */
+.nx2-ring { position:relative; width:74px; height:74px; border-radius:50%; flex:0 0 auto; display:flex; align-items:center; justify-content:center;
+    background:conic-gradient(var(--w-accent) var(--nx2-p,0%), var(--w-well) 0); }
+.nx2-ring::after { content:''; position:absolute; inset:9px; border-radius:50%; background:var(--w-mat-bg, rgba(250,251,254,.96)); }
+.nx2-ring > b { position:relative; z-index:1; font-size:15px; font-weight:750; color:var(--w-text-strong); font-variant-numeric:tabular-nums; }
+.nx2-ring-wrap { position:relative; display:flex; align-items:center; justify-content:center; }
+
+/* 周历条 */
+.nx2-week { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; }
+.nx2-week > div { display:flex; flex-direction:column; align-items:center; gap:3px; padding:5px 0; border-radius:10px; background:var(--w-well); border:1px solid var(--w-hair); font-size:9.5px; }
+.nx2-week > div.on { background:var(--w-accent); border-color:transparent; color:#fff; }
+.nx2-week > div b { font-size:12px; color:var(--w-text-strong); }
+.nx2-week > div.on b { color:#fff; }
+
+/* 天气逐时 / 七日 */
+.nx2-wx-hour { display:flex; flex-direction:column; align-items:center; gap:3px; font-size:9.5px; color:var(--w-text-soft); }
+.nx2-wx-hour i { font-size:15px; color:var(--w-accent); }
+.nx2-wx-hour b { font-size:12px; color:var(--w-text-strong); }
+.nx2-wx-day { display:flex; align-items:center; gap:5px; font-size:10.5px; }
+.nx2-wx-day i { width:16px; color:var(--w-accent); }
+.nx2-wx-day b { margin-left:auto; color:var(--w-text-strong); font-variant-numeric:tabular-nums; }
+
+/* 尺寸分档：小档砍掉次级信息，大档放开 */
+html body .desktop-widget-card[data-type][data-wtype].wsize-s .nx2-hd-sub,
+html body .desktop-widget-card[data-type][data-wtype].wsize-s .nx2-faint { display:none !important; }
+html body .desktop-widget-card[data-type][data-wtype][data-rows="1"] .nx2-hd,
+html body .desktop-widget-card[data-type][data-wtype][data-rows="1"] .nx2-line { display:none !important; }
+html body .desktop-widget-card[data-type][data-wtype][data-rows="1"] .nx2 {
+    flex-direction:row; align-items:center; gap:10px; white-space:nowrap !important;
+}

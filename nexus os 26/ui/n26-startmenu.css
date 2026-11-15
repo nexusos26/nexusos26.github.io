@@ -323,13 +323,14 @@ body.dark-mode .smt-pick-item:hover { background: rgba(255, 255, 255, 0.16); }
    Dock 位置：新增「隐藏」档
    ══════════════════════════════════════════════════════ */
 body.dock-hidden #dock {
-    transform: translateY(140%) !important;
+    /* v2.10.19：必须保留 translateX(-50%)，否则 left:50% 会把 Dock 推到中线右侧 */
+    transform: translateX(-50%) translateY(140%) !important;
     opacity: 0 !important;
     pointer-events: none !important;
     transition: transform 0.3s var(--ease-standard, ease), opacity 0.3s ease;
 }
 body.dock-hidden #dock.dock-peek {
-    transform: translateY(0) !important;
+    transform: translateX(-50%) translateY(0) !important;
     opacity: 1 !important;
     pointer-events: auto !important;
 }

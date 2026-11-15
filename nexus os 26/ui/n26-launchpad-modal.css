@@ -1,0 +1,49 @@
+/* ============================================================================
+   ui/n26-launchpad-modal.css · Nexus OS 26 v2.10.19
+   启动台是模态：打开时「Dock 栏」三段 + 顶部导航栏统一退场并停止交互。
+
+   用户对「Dock 栏」的定义（原话）：Dock Bar + 左侧 AI 小方/回收站 +
+   右侧智能小组件，三者组合才是 Dock 栏，不是只有底部那一条。
+   启动台 z-index 200，而 #dock 9000 / #dockBar 9100 / #finder-bar 9200
+   全都压在它上面且仍能交互 —— 这里统一收掉。
+
+   动效：一条 260ms + cubic-bezier(.2,.7,.2,1)，只动 opacity 与 transform，
+   不碰 filter / backdrop-filter（窗口级滤镜动画会逐帧重采样背景）。
+   ============================================================================ */
+body.n26-lp-open #dock,
+body.n26-lp-open #dockBar,
+body.n26-lp-open #finder-bar,
+body.n26-lp-open #n26LeftDock,
+body.n26-lp-open #n26RightDock,
+body.n26-lp-open #n26DesktopShelf {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: opacity 0.26s cubic-bezier(.2, .7, .2, 1),
+                transform 0.26s cubic-bezier(.2, .7, .2, 1),
+                translate 0.26s cubic-bezier(.2, .7, .2, 1) !important;
+}
+/* #dock 基础靠 left:50% + translateX(-50%) 居中，位移里必须保留水平项 */
+body.n26-lp-open #dock { transform: translateX(-50%) translateY(140%) !important; }
+body.n26-lp-open #dockBar {
+    transform: translateY(-160%) !important;
+    translate: 0 -160% !important;   /* 顶部档用的是独立 translate 属性 */
+}
+body.n26-lp-open #finder-bar { transform: translateY(-100%) !important; }
+body.n26-lp-open #n26LeftDock { transform: translateX(-160%) !important; }
+body.n26-lp-open #n26RightDock { transform: translateX(160%) !important; }
+body.n26-lp-open #n26DesktopShelf { transform: translateY(160%) !important; }
+
+/* 启动台本身抬到最上，避免任何残留常驻层透出来 */
+body.n26-lp-open #launchpad { z-index: 9300; }
+
+/* 弱势动效偏好：直接退场，不做位移 */
+@media (prefers-reduced-motion: reduce) {
+    body.n26-lp-open #dock,
+    body.n26-lp-open #dockBar,
+    body.n26-lp-open #finder-bar,
+    body.n26-lp-open #n26LeftDock,
+    body.n26-lp-open #n26RightDock,
+    body.n26-lp-open #n26DesktopShelf {
+        transition: opacity 0.16s linear !important;
+    }
+}

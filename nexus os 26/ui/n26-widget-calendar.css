@@ -1,0 +1,212 @@
+/* ==========================================================================
+   ui/n26-widget-calendar.css · 戳 cal1 · 2026-11-13
+   --------------------------------------------------------------------------
+   ★ 按 docs/小组件设计规格-全量47款.md §3「日历族（8）」重做的第 3 族。
+     沿用 wt1 骨架：只写 **版式 / 尺寸节奏 / 主数字缩放 / 身份色点缀**。
+
+   覆盖：calendar / schedule / weekStrip / bigDate /
+         dayProgress / dayCard / greeting / todayAgenda
+   逐条对应 MD §3 的 15~22 号卡。
+
+   ★ 身份色消费 fam2 的 --wf（昼 #c2410c / 夜 #fdba74），不自造令牌。
+     「今日」实心圆、时段竖线、进度环、今日柱、日程时刻标签吃身份色；
+     主数字仍吃 wr7 的昼墨夜白。
+
+   ⚠️ 已知边界（诚实记录，见 MD §5）：主壳 `renderCalendarWidget()` 恒定输出
+     42 个日期格，2×2 档「只显示本周 7 格」属于**渲染器内容切片**，
+     CSS 只能藏掉第 3 行以后的格子、不能挑出「本周」那一周。
+     本层做的是不溢出护栏；要完全对齐 MD #15 需改渲染器，另立任务。
+   ========================================================================== */
+
+/* ---------- 1 · 主读数：日号 / 百分比 / 概览数值 ---------- */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="calendar"], [data-wtype="schedule"], [data-wtype="weekStrip"],
+    [data-wtype="bigDate"], [data-wtype="dayProgress"], [data-wtype="dayCard"],
+    [data-wtype="greeting"], [data-wtype="todayAgenda"]) .widget-inner :is(
+    .nx2-hero, .nx2-num, .nx2-week div b, .widget-date-md) {
+    font-variant-numeric: tabular-nums !important;
+    font-feature-settings: "tnum" 1 !important;
+    white-space: nowrap !important;
+    line-height: 1.04 !important;
+    letter-spacing: -.04em !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-size: clamp(26px, 3.3vw, 52px) !important;
+    font-weight: 620 !important;
+}
+/* 概览卡里的 4 个小数值不该跟日号一样大，单独收一档 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="dayCard"]) .widget-inner .nx2-well .nx2-num {
+    font-size: clamp(13px, 1.3vw, 19px) !important;
+    letter-spacing: -.02em !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-cols="2"][data-rows="2"], .wcols-2.wrows-2):is(
+    [data-wtype="calendar"], [data-wtype="schedule"], [data-wtype="weekStrip"],
+    [data-wtype="bigDate"], [data-wtype="dayProgress"], [data-wtype="dayCard"],
+    [data-wtype="greeting"], [data-wtype="todayAgenda"]) .widget-inner :is(
+    .nx2-hero, .nx2-num, .nx2-week div b, .widget-date-md) {
+    font-size: clamp(21px, 2.5vw, 34px) !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-rows="1"][data-rows="1"], .wrows-1.wrows-1):is(
+    [data-wtype="calendar"], [data-wtype="schedule"], [data-wtype="weekStrip"],
+    [data-wtype="bigDate"], [data-wtype="dayProgress"], [data-wtype="dayCard"],
+    [data-wtype="greeting"], [data-wtype="todayAgenda"]) .widget-inner :is(
+    .nx2-hero, .nx2-num, .nx2-week div b, .widget-date-md) {
+    font-size: clamp(17px, 1.9vw, 25px) !important;
+}
+
+/* ---------- 2 · 身份色：今日 / 当前时段 / 进度 / 时刻标签 ---------- */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="calendar"], [data-wtype="schedule"], [data-wtype="weekStrip"],
+    [data-wtype="bigDate"], [data-wtype="dayProgress"], [data-wtype="dayCard"],
+    [data-wtype="greeting"], [data-wtype="todayAgenda"]) .widget-inner :is(
+    .widget-cal-day.today, .nx2-week div.on, .w-sch-dot,
+    .nx2-tab, .nx2-accent, .nx2-hd i) {
+    color: var(--wf, #c2410c) !important;
+    -webkit-text-fill-color: var(--wf, #c2410c) !important;
+}
+/* 「今日」是实心圆：身份色作底，文字回到反色，避免深底深字 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="calendar"], [data-wtype="weekStrip"]) .widget-inner :is(
+    .widget-cal-day.today, .nx2-week div.on) {
+    background-color: var(--wf, #c2410c) !important;
+    /* --wf-ink 由 fam2 §1b/1c 按昼/夜自动翻：昼白字、夜墨字 */
+    color: var(--wf-ink, #ffffff) !important;
+    -webkit-text-fill-color: var(--wf-ink, #ffffff) !important;
+}
+/* 环形 / 横条进度：fam2 已给 --wf 渐变，这里只锁尺寸不重绘 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="dayProgress"], [data-wtype="schedule"])
+    .widget-inner :is(.nx2-ring-wrap, .nx2-track, .w-sch-bar) {
+    flex: none !important;
+    min-height: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="dayProgress"]) .widget-inner .nx2-ring {
+    width: auto !important;
+    height: auto !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    aspect-ratio: 1 / 1 !important;
+    flex: 0 1 auto !important;
+}
+
+/* ---------- 3 · 单行标签与多行标题 ---------- */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="calendar"], [data-wtype="schedule"], [data-wtype="weekStrip"],
+    [data-wtype="bigDate"], [data-wtype="dayProgress"], [data-wtype="dayCard"],
+    [data-wtype="greeting"], [data-wtype="todayAgenda"]) .widget-inner :is(
+    .widget-cal-header span, .nx2-sub, .nx2-faint, .nx2-title,
+    .nx2-hd-sub, .w-sch-hd, .w-sch-t, .w-sch-n) {
+    font-size: clamp(9px, .82vw, 11px) !important;
+    line-height: 1.32 !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="calendar"], [data-wtype="schedule"], [data-wtype="weekStrip"],
+    [data-wtype="bigDate"], [data-wtype="dayProgress"], [data-wtype="dayCard"],
+    [data-wtype="greeting"], [data-wtype="todayAgenda"]) .widget-inner :is(
+    .nx2-clamp2, .nx2-clamp3, .w-sch-item) {
+    -webkit-line-clamp: 1 !important;
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow: hidden !important;
+    min-width: 0 !important;
+}
+
+/* ---------- 4 · 网格与列表：等分、能收缩、裁在卡内 ---------- */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="calendar"], [data-wtype="weekStrip"], [data-wtype="dayCard"])
+    .widget-inner :is(.widget-cal-grid, .nx2-week, .nx2-grid) {
+    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+/* dayCard 是 2×2 四格，不能被上面那条压成 7 列 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="dayCard"]) .widget-inner .nx2-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="calendar"], [data-wtype="weekStrip"])
+    .widget-inner :is(.widget-cal-day, .widget-cal-weekdays div, .nx2-week div) {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="schedule"], [data-wtype="todayAgenda"])
+    .widget-inner :is(.w-sch-list, .nx2-list) {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="schedule"], [data-wtype="todayAgenda"])
+    .widget-inner :is(.w-sch-item, .nx2-li) {
+    flex: none !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+/* 当前时段左侧竖线：只锁宽，别把整行撑开 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="schedule"]) .widget-inner .w-sch-bar {
+    width: 3px !important;
+    flex: none !important;
+}
+
+/* ---------- 5 · 胶囊档：只留一句 / 一个读数 ----------
+   注意别把「主值所在的容器」一起藏掉：weekStrip 的柱、dayCard 的格
+   就是内容本身，这里改为只藏装饰与副信息。 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-rows="1"][data-rows="1"], .wrows-1.wrows-1):is(
+    [data-wtype="calendar"], [data-wtype="schedule"], [data-wtype="weekStrip"],
+    [data-wtype="bigDate"], [data-wtype="dayProgress"], [data-wtype="dayCard"],
+    [data-wtype="greeting"], [data-wtype="todayAgenda"]) .widget-inner :is(
+    .widget-cal-grid, .widget-cal-weekdays, .nx2-hd, .nx2-only-wide,
+    .nx2-only-tall, .nx2-line, .nx2-grow, .nx2-ring-wrap, .nx2-track,
+    .nx2-faint, .w-sch-list, .nx2-list) {
+    display: none !important;
+}
+/* 周历胶囊保留 7 柱但压成一行数字，不画圆点 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-rows="1"][data-rows="1"], .wrows-1.wrows-1):is([data-wtype="weekStrip"])
+    .widget-inner .nx2-week {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    gap: 2px !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-rows="1"][data-rows="1"], .wrows-1.wrows-1):is([data-wtype="weekStrip"])
+    .widget-inner .nx2-week > div {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+}
+/* 2×2 日历：渲染器恒定 42 格，这里裁到前两行（见文件头边界说明） */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-cols="2"][data-rows="2"], .wcols-2.wrows-2):is([data-wtype="calendar"])
+    .widget-inner .widget-cal-grid .widget-cal-day:nth-child(n+15) {
+    display: none !important;
+}

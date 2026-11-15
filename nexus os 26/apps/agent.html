@@ -286,12 +286,13 @@ body.dark-mode .ag-side-item.active { background: rgba(59,130,246,0.22); color: 
 /* 配置浮层不能参与 grid 布局 */
 .ag-cfg { position: fixed !important; }
 </style>
-<link rel="stylesheet" href="../ui/n26-docknav.css?v=2979">
+<link rel="stylesheet" href="../ui/n26-docknav.css?v=2980">
 <!-- v2.9.93：iframe 独立文档用自带折射引擎（宿主 SVG 滤镜跨文档引用不到） -->
-<script src="../ui/n26-lg-core.js?v=lg1"></script>
-<script src="../ui/n26-docknav.js?v=dn12"></script>
+<script src="../ui/n26-lg-core.js?v=lg2"></script>
+<script src="../ui/n26-docknav.js?v=dn15"></script>
 <link rel="stylesheet" href="../ui/n26-switch.css?v=sw12">
-<script src="../ui/n26-switch.js?v=sw12"></script>
+<script src="../ui/n26-switch.js?v=sw15"></script>
+    <script src="../ui/n26-ai-frugal.js?v=frg1"></script>
 </head>
 <body>
 <div class="ag-wrap">
@@ -354,7 +355,7 @@ body.dark-mode .ag-side-item.active { background: rgba(59,130,246,0.22); color: 
 </div>
 
 <script src="_bridge.js"></script>
-<script src="_app.js?v=2.9.97"></script>
+<script src="_app.js?v=3.9.108"></script>
 <script>
 (function () {
     'use strict';
@@ -429,7 +430,11 @@ body.dark-mode .ag-side-item.active { background: rgba(59,130,246,0.22); color: 
             '- 文件路径一律用 C:/xxx/yyy 形式（正斜杠）。',
             '- 写操作会先给用户审批，被拒绝时不要反复重试，改问用户想怎么处理。',
             '- 不确定路径/应用名时，先用 listDir / listApps 查清楚再动手。',
-            '- 今天是 ' + new Date().toLocaleDateString('zh-CN') + '。'
+            '- 需要今天的日期时不要猜，用 systemInfo 拿系统时间。',
+            '',
+            '【页面理解】',
+            '你想知道界面上有什么，用 pageDigest（只回结构化摘要）或 pageFind（检索关键词附近的一段文字）。',
+            '这两个动作在本地解析页面，不会把网页源码发给模型——所以不要试图让用户贴源码，也不要输出大段 HTML。'
         ].join('\n');
     }
 
@@ -595,10 +600,29 @@ body.dark-mode .ag-side-item.active { background: rgba(59,130,246,0.22); color: 
             return { ok: true, user: ctx.user || null, openWindows: procs.map(function (w) { return w.title || w.appId; }) };
         },
         reply: async function (p) { return { ok: true, text: p.text || '' }; },
+        /* ★ frg1：页面理解走宿主本地解析，只拿摘要 / 片段，永不出源码。
+           这一条是「网页源代码由 FangClaw 去解决」的落地形态：
+           解析发生在系统自己的进程里，发到模型那头的只有几十个字的结论。 */
+        pageDigest: async function () {
+            try {
+                var r = await Nexus.call('getPageDigest', []);
+                if (!r || r.ok === false) return { ok: false, error: (r && r.error) || '读取失败' };
+                return { ok: true, page: r.digest };
+            } catch (e) { return { ok: false, error: String(e) }; }
+        },
+        pageFind: async function (p) {
+            var q = String((p && p.query) || '').trim();
+            if (!q) return { ok: false, error: '缺少 query' };
+            try {
+                var r = await Nexus.call('findPageText', [q]);
+                if (!r || r.ok === false) return { ok: false, error: (r && r.error) || '检索失败' };
+                return { ok: true, query: q, hits: r.hits || [], count: r.count || 0 };
+            } catch (e) { return { ok: false, error: String(e) }; }
+        },
     };
 
     /* 风险分级：写操作/开关应用需要审批 */
-    const SAFE_ACTIONS = { reply: 1, listApps: 1, getSettings: 1, listDir: 1, readFile: 1, systemInfo: 1, notify: 1 };
+    const SAFE_ACTIONS = { reply: 1, listApps: 1, getSettings: 1, listDir: 1, readFile: 1, systemInfo: 1, notify: 1, pageDigest: 1, pageFind: 1 };
     const ACT_META = {
         reply:       { name: '回复', icon: 'fa-comment' },
         listApps:    { name: '查看应用列表', icon: 'fa-th-large' },
@@ -612,6 +636,8 @@ body.dark-mode .ag-side-item.active { background: rgba(59,130,246,0.22); color: 
         notify:      { name: '发系统通知', icon: 'fa-bell' },
         screenshot:  { name: '截取全屏', icon: 'fa-camera' },
         systemInfo:  { name: '读取系统信息', icon: 'fa-info-circle' },
+        pageDigest:  { name: '读取页面摘要', icon: 'fa-file-alt' },
+        pageFind:    { name: '页面内检索', icon: 'fa-search' },
     };
 
     /* ================= 审批卡 UI ================= */
@@ -691,17 +717,38 @@ body.dark-mode .ag-side-item.active { background: rgba(59,130,246,0.22); color: 
         if (/\/v\d+$/.test(u)) return u + '/chat/completions';
         return u + '/v1/chat/completions';
     }
+    /* ★ frg1：FangClaw 的出站闸门与缓存。
+       原来 messages 原样发出去，同问一次就是一次全价；现在：
+       ① 逐条白名单 + 剥源码 / dataURL + 整包压到 6000 字符；
+       ② 同一份「模型 + 消息」30 分钟内本地回放，一次请求都不发；
+       ③ 响应里的 usage 记账，设置页 / console 都能看到真实输入量。 */
     async function callAI(messages) {
+        const F = window.N26Frugal;
+        let msgs = messages;
+        if (F) { try { msgs = F.guardMessages(messages, { total: 6000, turns: 6, tool: 400 }); } catch (e) { msgs = messages; } }
+
+        let ck = null;
+        if (F) {
+            try {
+                ck = F.cacheKey(AI.model, msgs, 'claw');
+                const hit = F.cacheGet(ck);
+                if (hit) { try { F.recordUsage(null, true); } catch (e) { } return hit; }
+            } catch (e) { ck = null; }
+        }
+
         const res = await fetch(apiBase(AI.url), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + AI.key },
-            body: JSON.stringify({ model: AI.model, messages: messages, temperature: 0.4, max_tokens: 1200 }),
+            body: JSON.stringify({ model: AI.model, messages: msgs, temperature: 0.4, max_tokens: 700 }),
         });
         if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + (await res.text()).slice(0, 120));
         const j = await res.json();
+        if (F) { try { F.recordUsage(j, false); } catch (e) { } }
         const txt = j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
         if (!txt) throw new Error('AI 返回为空');
-        return txt.trim();
+        const out = txt.trim();
+        if (ck && out) { try { F.cacheSet(ck, out); } catch (e) { } }
+        return out;
     }
     function parseAction(raw) {
         let t = raw.replace(/```(?:json)?/gi, '').trim();
@@ -736,19 +783,33 @@ body.dark-mode .ag-side-item.active { background: rgba(59,130,246,0.22); color: 
     async function agentTurn(userText) {
         busy = true; sendBtn.disabled = true;
         addMe(userText);
+        /* ★ frg1 止损：今日真实输入量（API 自报）超 30 万 token 就停手，
+           别让一次犯轴的任务把整天的额度烧穿。 */
+        try {
+            var _st = window.N26Frugal && N26Frugal.stats();
+            if (_st && _st.prompt > 300000) {
+                addSys('今天已经用掉 ' + Math.round(_st.prompt / 1000) + 'k 输入 token 了，先收手。'
+                    + '要接着干，去「设置 → AI 与 API → 省钱与缓存」点「重置用量统计」。');
+                busy = false; sendBtn.disabled = false; return;
+            }
+        } catch (e) { }
         history.push({ role: 'user', content: userText });
         try {
-            for (let step = 0; step < 6; step++) {
+            /* ★ frg1：轮数 6 → 3。每多一轮就是把同一份历史 + 全部动作定义再付一次钱；
+               绝大多数任务两步内就收敛，6 轮只会在模型犯轴时把账单滚成 6 倍。 */
+            for (let step = 0; step < 3; step++) {
                 if (!AI.url || !AI.model) {
                     addAi('我还没接上 AI 接口，干不了活 😅 点右上角 ⚙ 配置一下接口（跟「AI 小方」共用一套配置）。');
                     break;
                 }
                 // 历史只带最近 8 条，且每条再过一次净化（防止长文件内容反复计费）
+                /* ★ frg1：历史 8 条 → 4 条；体积预算 22000 → 6000 字符（≈ 3700 token）。
+                   22000 字符的预算等于允许一口气塞进一万多 token，那是按「贵价模型随便用」写的。 */
                 const msgs = [{ role: 'system', content: systemPrompt() }]
-                    .concat(history.slice(-8).map(function (m) {
+                    .concat(history.slice(-4).map(function (m) {
                         return { role: m.role, content: agSafeJson(m.content) };
                     }));
-                agShrink(msgs, 22000);
+                agShrink(msgs, 6000);
                 const raw = await callAI(msgs);
                 const act = parseAction(raw);
                 history.push({ role: 'assistant', content: raw });

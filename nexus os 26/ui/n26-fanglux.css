@@ -1,0 +1,171 @@
+/* ==========================================================================
+   FangLux 方曜 · 局部光传输引擎 / 视觉层 · 戳 flx2 · 2026-11-14
+   --------------------------------------------------------------------------
+   用户 11-14 纠错原话：「不是背景发光，就是玻璃发光」「会照到其他的软件
+   上面，软件边缘会发光，并且也就那一点部分」「确保这个物理引擎有个牌子」。
+
+   ★ 光源归属（推翻 11-14 白天那版「壁纸透射」结论）：
+     玻璃 / Dock / 侧栏 / 小组件面板本身就是**导光板式发光体**，光从玻璃
+     自己的边缘出来，不是壁纸在发光、也不是颜色透过玻璃。参考图里 Dock
+     上沿那条连续白线、计时器发光管的 bloom、胶囊的上亮下暗，都是发光体
+     自己的边缘出光；壁纸的金色丝状纹理方向和光带方向根本不同。
+
+   ★ 光传输（本引擎真正解决的问题）：
+     光会溢出到邻近的软件 / 控件上，但只把**朝向光源的那一侧、靠近光源的
+     那一小段**照亮，不是整圈描边。亮度按边缘距离衰减、按迎光角度衰减，
+     亮段中心跟着光源投影走。参考图 201203 里红钮银环左上亮右下暗、
+     195553 里胶囊上沿亮下沿暗，就是这个关系。单跳传输：受光件不再二次
+     发光，杜绝自激回路。
+
+   ★ 颜色纪律不变：玻璃出光与受光高光一律中性白 / 冷白 / 银灰细线，
+     零彩虹 conic、零色散、零色相漂移、零彩色 radial。「石油高光」指的是
+     玻璃自己带色，不是玻璃发光这件事。白天蓝 / 黄昏金 / 夜间深蓝只属于
+     天空内容层（sky4 的 9 档时段 × 16 天气），不许刷到玻璃上。
+
+   ★ flx2（11-14 去惨白）：桌面小组件卡 / 预览卡从发光体白名单里摘掉，
+     它们只做受光件。47 张卡各叠四边白渐变 = 整片泛白，光源只留大块玻璃。
+   ★ 性能纪律（沿用 P0 教训）：零 filter、零 backdrop-filter、零 radial、
+     零 conic、零 keyframes、零动画、零 transition:all；只在宿主文档运行，
+     不注入 31 个 iframe；几何一次性批量读完再批量写；子层 absolute inset:0，
+     不改父节点几何，写完不会反过来触发重新计算。
+   ========================================================================== */
+
+/* ---------- ① 发光体：玻璃自己的边缘出光 ---------- */
+.flx-emitter,
+.flx-receiver {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 4;
+}
+.flx-emitter {
+    overflow: visible;
+    --flx-power: 1;
+}
+/* 昼间浅壁纸上白光的加色余量小，整体压一档，夜里回到满强度。 */
+html:not([data-n26-phase="night"]) body:not(.dark-mode) .flx-emitter {
+    --flx-power: .74;
+}
+.flx-emitter::before,
+.flx-emitter::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: var(--flx-power, 1);
+}
+/* 导光板：上沿是主出光边（连续白线），左右次之，下沿最弱。
+   四个渐变都垂直于自己那条边，沿边等亮、只朝玻璃内侧衰减 —— 是光，不是波。 */
+.flx-emitter::before {
+    background-image:
+        linear-gradient(180deg, rgba(255,255,255,.88) 0%, rgba(248,251,255,.28) 5%, rgba(236,242,250,0) 20%),
+        linear-gradient(0deg,   rgba(255,255,255,.30) 0%, rgba(240,245,252,.08) 4%, rgba(240,245,252,0) 12%),
+        linear-gradient(90deg,  rgba(255,255,255,.42) 0%, rgba(240,245,252,.12) 3%, rgba(240,245,252,0) 9%),
+        linear-gradient(270deg, rgba(255,255,255,.42) 0%, rgba(240,245,252,.12) 3%, rgba(240,245,252,0) 9%);
+    background-repeat: no-repeat;
+}
+/* 外溢光：真正跑出玻璃边界，照到旁边的软件上。发光一律 box-shadow。 */
+.flx-emitter::after {
+    box-shadow:
+        0 -7px 20px rgba(255,255,255,.30),
+        0 0 26px 8px rgba(238,244,252,.16),
+        inset 0 1px 0 rgba(255,255,255,.70),
+        inset 0 0 0 1px rgba(226,234,244,.22);
+}
+
+/* ---------- ② 受光件：只有迎光侧的一小段边缘亮 ---------- */
+.flx-receiver {
+    overflow: hidden;
+    --flx-i: 0;
+    --flx-span: 38%;
+    --flx-shift: 31%;
+}
+.flx-receiver::after {
+    content: '';
+    position: absolute;
+    opacity: var(--flx-i, 0);
+    pointer-events: none;
+    background-repeat: no-repeat;
+}
+/* 光源在左：亮左侧一小段，光从左边往里衰减。 */
+.flx-receiver[data-flx-side="left"]::after {
+    left: 0;
+    top: var(--flx-shift, 31%);
+    width: 14px;
+    height: var(--flx-span, 38%);
+    background-image: linear-gradient(90deg,
+        rgba(255,255,255,.94), rgba(244,249,255,.46) 32%, rgba(230,238,248,0));
+    box-shadow: inset 1px 0 0 rgba(255,255,255,.62);
+}
+/* 光源在右。 */
+.flx-receiver[data-flx-side="right"]::after {
+    right: 0;
+    top: var(--flx-shift, 31%);
+    width: 14px;
+    height: var(--flx-span, 38%);
+    background-image: linear-gradient(270deg,
+        rgba(255,255,255,.94), rgba(244,249,255,.46) 32%, rgba(230,238,248,0));
+    box-shadow: inset -1px 0 0 rgba(255,255,255,.62);
+}
+/* 光源在上：亮上沿一小段，对应参考图胶囊「上亮下暗」。 */
+.flx-receiver[data-flx-side="top"]::after {
+    top: 0;
+    left: var(--flx-shift, 31%);
+    height: 14px;
+    width: var(--flx-span, 38%);
+    background-image: linear-gradient(180deg,
+        rgba(255,255,255,.94), rgba(244,249,255,.46) 32%, rgba(230,238,248,0));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.62);
+}
+/* 光源在下。 */
+.flx-receiver[data-flx-side="bottom"]::after {
+    bottom: 0;
+    left: var(--flx-shift, 31%);
+    height: 14px;
+    width: var(--flx-span, 38%);
+    background-image: linear-gradient(0deg,
+        rgba(255,255,255,.90), rgba(244,249,255,.42) 32%, rgba(230,238,248,0));
+    box-shadow: inset 0 -1px 0 rgba(255,255,255,.58);
+}
+/* reduced-motion 本层没有动画，只把光强收一档，避免静态亮边太抢。 */
+@media (prefers-reduced-motion: reduce) {
+    .flx-receiver::after { opacity: 0; }
+}
+
+/* ---------- ③ 品牌标识（材质页 / 关于本机可见） ---------- */
+.n26-flx-brand {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 10px 0 4px;
+    padding: 9px 12px;
+    border: 1px solid rgba(255,255,255,.44);
+    border-radius: 14px;
+    background: rgba(251,252,255,.34);
+    /* 品牌条只是说明牌，不叠新材质层：不吃 backdrop-filter、不建 backdrop root。 */
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.72), 0 4px 14px rgba(8,14,26,.08);
+    color: #eef2fa;
+    font-size: 12px;
+    line-height: 1.5;
+}
+html:not([data-n26-phase="night"]) body:not(.dark-mode) .n26-flx-brand {
+    color: #0b1220;
+    border-color: rgba(15,23,42,.10);
+    background: rgba(251,252,255,.48);
+}
+.n26-flx-brand b {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .3px;
+}
+.n26-flx-brand .n26-flx-tag {
+    padding: 1px 7px;
+    border-radius: 999px;
+    border: 1px solid rgba(148,163,184,.42);
+    font-size: 11px;
+    opacity: .86;
+}
+.n26-flx-brand .n26-flx-sub { opacity: .72; }

@@ -25,7 +25,7 @@
       L-1 压暗      #covi-stage::before
       L0  弥散      #covi-ambient   （3 个大气团）
       L1  主绸带    .covi-edge-wash  （blur 70 / 11s）
-      L2  副绸带    .covi-edge-bloom （blur 46 + hue-rotate / 15s 反向）
+      L2  副绸带    .covi-edge-bloom （blur 46 / 15s 反向；go10 起无色相漂移）
       L3  光源热点  .covi-edge-core  （plus-lighter）
       L4  起爆      #covi-white
       L5  颗粒      #covi-stage::after
@@ -50,12 +50,15 @@
     --covi-gain: 1;              /* 状态增益：listening 1 / thinking .5 / speaking .9 */
     --covi-boost: 0;             /* 语音脉冲：0~1，JS 实时写入 */
     --covi-dim: 0.55;            /* 压暗强度：给光留亮度余量 */
-    --covi-tint-g: 186 240 214;  /* 绿：更亮更淡的薄荷（替代 #30D158） */
-    --covi-tint-b: 170 214 255;  /* 蓝 */
-    --covi-tint-y: 255 226 168;  /* 暖黄 */
-    --covi-teal: 118 236 208;    /* 青绿：四边光的主色 */
-    --covi-ice: 214 255 244;     /* 冰青白：贴边亮芯，带一点青，不发灰 */
-    --covi-core: 255 252 246;    /* 光源白：微暖，不发灰 */
+    /* 11-14 晚反转：玻璃自身是发光体，出光只出中性白 / 冷白 / 银灰细高光；
+       旧版青绿 + 薄荷 + 暖黄 + 蓝的绸带就是「石油高光」，仍然作废。
+       光溢出照到邻近软件那一小段边缘，由 FangLux 方曜（flx1）负责，本层不补色。 */
+    --covi-tint-g: 226 232 240;  /* 银灰 */
+    --covi-tint-b: 238 243 249;  /* 冷白 */
+    --covi-tint-y: 255 252 246;  /* 暖白（仅极淡，不刷黄） */
+    --covi-teal: 230 236 244;    /* 银灰：四边光的主色 */
+    --covi-ice: 255 255 255;     /* 纯白：贴边亮芯 */
+    --covi-core: 255 252 246;    /* 光源白 */
     --covi-halo: 0.5;            /* 彩色层倍率：待命 0.32（明显可见），说话时 JS 写到 1.10 */
     --covi-blur-1: 70px;
     --covi-blur-2: 46px;
@@ -125,9 +128,9 @@
     transition: opacity 0.5s ease;
 }
 @keyframes coviAmbient {
-    0%   { transform: translate3d(-1.6%, 1.2%, 0) scale(1.00); filter: hue-rotate(-4deg) brightness(0.96); }
-    50%  { transform: translate3d(1.2%, -1.0%, 0) scale(1.04); filter: hue-rotate(3deg)  brightness(1.04); }
-    100% { transform: translate3d(-0.8%, 0.6%, 0) scale(1.02); filter: hue-rotate(6deg)  brightness(0.98); }
+    0%   { transform: translate3d(-1.6%, 1.2%, 0) scale(1.00); filter: brightness(0.96); }
+    50%  { transform: translate3d(1.2%, -1.0%, 0) scale(1.04); filter: brightness(1.04); }
+    100% { transform: translate3d(-0.8%, 0.6%, 0) scale(1.02); filter: brightness(0.98); }
 }
 
 /* ---------- 语音驱动光：真实麦克风音量 → 底部一团会收放的光 ---------- */
@@ -191,7 +194,7 @@ body.n26-a11y-reduce-motion #covi-voice { filter: blur(14px); }
     100% { transform: translate3d(-4%, 5%, 0) rotate(-9deg) scale(1.05); filter: blur(var(--covi-blur-1)) brightness(calc(0.98 * var(--covi-br-1))); }
 }
 
-/* ---------- L2 副绸带：反向 + 色相漂移 = 色散/视差 ---------- */
+/* ---------- L2 副绸带：反向 = 视差厚度（11-14 作废色散/色相漂移） ---------- */
 /* 同屏两层周期 11s / 15s 不整除，方向相反，位移更小，
    叠在一起就有"厚度"，也不会露出循环点。 */
 .covi-edge-bloom {
@@ -209,15 +212,15 @@ body.n26-a11y-reduce-motion #covi-voice { filter: blur(14px); }
         rgb(var(--covi-tint-g) / 0.20) 58%,
         rgb(var(--covi-core) / 0.12) 74%,
         rgb(var(--covi-core) / 0) 90%);
-    filter: blur(var(--covi-blur-2)) hue-rotate(0deg);
+    filter: blur(var(--covi-blur-2));
     opacity: calc(0.78 * var(--covi-gain) * var(--covi-halo));
     animation: coviRibbonB var(--covi-loop-2) var(--covi-ease) infinite alternate-reverse;
     transition: opacity 0.45s ease;
 }
 @keyframes coviRibbonB {
-    0%   { transform: translate3d(3%, -2%, 0) rotate(-5deg) scale(1.00); filter: blur(var(--covi-blur-2)) hue-rotate(0deg)   brightness(calc(0.98 * var(--covi-br-2))); }
-    60%  { transform: translate3d(-4%, 3%, 0) rotate(-9deg) scale(1.06); filter: blur(calc(var(--covi-blur-2) + 4px)) hue-rotate(16deg) brightness(calc(1.06 * var(--covi-br-2))); }
-    100% { transform: translate3d(5%, 0%, 0)  rotate(-4deg) scale(1.02); filter: blur(var(--covi-blur-2)) hue-rotate(-7deg)  brightness(calc(0.96 * var(--covi-br-2))); }
+    0%   { transform: translate3d(3%, -2%, 0) rotate(-5deg) scale(1.00); filter: blur(var(--covi-blur-2)) brightness(calc(0.98 * var(--covi-br-2))); }
+    60%  { transform: translate3d(-4%, 3%, 0) rotate(-9deg) scale(1.06); filter: blur(calc(var(--covi-blur-2) + 4px)) brightness(calc(1.06 * var(--covi-br-2))); }
+    100% { transform: translate3d(5%, 0%, 0)  rotate(-4deg) scale(1.02); filter: blur(var(--covi-blur-2)) brightness(calc(0.96 * var(--covi-br-2))); }
 }
 
 /* ---------- L3 光源热点：白做核，色做晕 ---------- */
@@ -532,7 +535,7 @@ body.dark-mode #covi-stage.on .covi-edge-core {
     background-position: 0 0, 0 0, 0 0;
     -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.78) 18%, rgba(0, 0, 0, 0) 84%);
     mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.78) 18%, rgba(0, 0, 0, 0) 84%);
-    filter: blur(10px) saturate(1.34);
+    filter: blur(10px);
     animation: coviRingBreathA 5.6s ease-in-out infinite alternate,
                coviRingFlowX 9s ease-in-out infinite alternate;
 }
@@ -558,7 +561,7 @@ body.dark-mode #covi-stage.on .covi-edge-core {
     background-position: 0 0, 0 0, 0 0;
     -webkit-mask-image: linear-gradient(0deg, #000 0%, rgba(0, 0, 0, 0.78) 18%, rgba(0, 0, 0, 0) 84%);
     mask-image: linear-gradient(0deg, #000 0%, rgba(0, 0, 0, 0.78) 18%, rgba(0, 0, 0, 0) 84%);
-    filter: blur(10px) saturate(1.34);
+    filter: blur(10px);
     animation: coviRingBreathA 5.6s ease-in-out infinite alternate,
                coviRingFlowX 9s ease-in-out infinite alternate;
 }
@@ -584,7 +587,7 @@ body.dark-mode #covi-stage.on .covi-edge-core {
     background-position: 0 0, 0 0, 0 0;
     -webkit-mask-image: linear-gradient(90deg, #000 0%, rgba(0, 0, 0, 0.78) 18%, rgba(0, 0, 0, 0) 84%);
     mask-image: linear-gradient(90deg, #000 0%, rgba(0, 0, 0, 0.78) 18%, rgba(0, 0, 0, 0) 84%);
-    filter: blur(10px) saturate(1.34);
+    filter: blur(10px);
     animation: coviRingBreathB 6.4s ease-in-out infinite alternate,
                coviRingFlowY 10.5s ease-in-out infinite alternate;
 }
@@ -610,7 +613,7 @@ body.dark-mode #covi-stage.on .covi-edge-core {
     background-position: 0 0, 0 0, 0 0;
     -webkit-mask-image: linear-gradient(270deg, #000 0%, rgba(0, 0, 0, 0.78) 18%, rgba(0, 0, 0, 0) 84%);
     mask-image: linear-gradient(270deg, #000 0%, rgba(0, 0, 0, 0.78) 18%, rgba(0, 0, 0, 0) 84%);
-    filter: blur(10px) saturate(1.34);
+    filter: blur(10px);
     animation: coviRingBreathB 6.4s ease-in-out infinite alternate,
                coviRingFlowY 10.5s ease-in-out infinite alternate-reverse;
 }
@@ -748,3 +751,62 @@ body.dark-mode #n26AiChat#n26AiChat#n26AiChat#n26AiChat {
 #n26AiChat .n26ai-avatar {
     animation: none !important;
 }
+
+/* ==========================================================================
+   v4 · 稳态侧发光（2026-11-12 / 戳 2965）
+   --------------------------------------------------------------------------
+   用户原话：「液态玻璃的侧边发出光，不是这种波，是光。」
+   v3 的四边光里还留着两样「波」：
+     ① 每条边第三层 radial 光斑被 coviRingFlowX/Y 推着沿边跑（会跑的亮团）；
+     ② #covi-ripple 的点击涟漪。
+   v4 全部停掉：每条边只剩 2 个**垂直于边、沿边等亮**的线性渐变，
+   加上 .covi-edge-core 的均匀内发光 —— 整块面同时亮，没有任何形状在移动。
+   语音联动仍保留（--covi-boost 改亮度与扩张），那是光强变化，不是波。
+   ★ 屏幕「入水 / 离水」的 #covi-wave 是独立出场转场，不属于侧边光，
+     本层刻意不动它；若要连它一起去掉，单独说一声即可。
+   ========================================================================== */
+.covi-ring-edge {
+    animation: none !important;
+    will-change: opacity !important;
+    filter: blur(8px) saturate(1.10) brightness(1.02) !important;
+}
+/* 四边：沿边 100% 等亮，衰减只朝玻璃内侧；不再有 radial 光斑层 */
+.covi-ring-top {
+    background-image:
+        linear-gradient(180deg, rgb(125 226 220 / .70) 0%, rgb(125 226 220 / .34) 7%, rgb(125 226 220 / .10) 24%, transparent 56%),
+        linear-gradient(180deg, rgb(226 250 255 / .92) 0%, rgb(226 250 255 / .32) 5%, transparent 14%) !important;
+    background-size: 100% 100%, 100% 100% !important;
+    background-position: 0 0, 0 0 !important;
+}
+.covi-ring-bottom {
+    background-image:
+        linear-gradient(0deg, rgb(125 226 220 / .70) 0%, rgb(125 226 220 / .34) 7%, rgb(125 226 220 / .10) 24%, transparent 56%),
+        linear-gradient(0deg, rgb(226 250 255 / .92) 0%, rgb(226 250 255 / .32) 5%, transparent 14%) !important;
+    background-size: 100% 100%, 100% 100% !important;
+    background-position: 0 0, 0 0 !important;
+}
+.covi-ring-left {
+    background-image:
+        linear-gradient(90deg, rgb(125 226 220 / .70) 0%, rgb(125 226 220 / .34) 7%, rgb(125 226 220 / .10) 24%, transparent 56%),
+        linear-gradient(90deg, rgb(226 250 255 / .92) 0%, rgb(226 250 255 / .32) 5%, transparent 14%) !important;
+    background-size: 100% 100%, 100% 100% !important;
+    background-position: 0 0, 0 0 !important;
+}
+.covi-ring-right {
+    background-image:
+        linear-gradient(270deg, rgb(125 226 220 / .70) 0%, rgb(125 226 220 / .34) 7%, rgb(125 226 220 / .10) 24%, transparent 56%),
+        linear-gradient(270deg, rgb(226 250 255 / .92) 0%, rgb(226 250 255 / .32) 5%, transparent 14%) !important;
+    background-size: 100% 100%, 100% 100% !important;
+    background-position: 0 0, 0 0 !important;
+}
+/* 整块面的均匀内发光：四边同时注入，中心也被抬亮，不是四条会跑的带子 */
+.covi-edge-core {
+    background: rgba(206, 246, 255, .055) !important;
+    box-shadow:
+        inset 0 0 0 2px rgb(226 250 255 / .78),
+        inset 0 0 12px 3px rgb(226 250 255 / .52),
+        inset 0 0 48px 14px rgb(125 226 220 / .40),
+        inset 0 0 150px 52px rgb(125 226 220 / .18) !important;
+}
+/* 涟漪是波，不是光 —— 停掉；不影响语音强度与出场起爆 */
+#covi-ripple { display: none !important; }

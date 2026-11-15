@@ -1,0 +1,114 @@
+/* ==========================================================================
+   ui/n26-widget-tiers.css · 戳 tier2 · 2026-11-13
+   --------------------------------------------------------------------------
+   ★ docs/小组件设计规格-全量47款.md §4 的第 3、4 步：
+       「12 种网格 × 8 态（四风格 × 昼夜/深色）逐档对照 §2.7 清单」
+       「面板预览卡单独复核（wcols-N/wrows-N，无 data-cols/rows）」
+
+   ★ 这一层不重做任何一张卡的外观，只补三件全局事：
+     ① 把 16 种真实网格形状显式登记成 --w-tier / --w-gap（可静态验收）；
+     ② 四风格 × 昼/夜/深色共 8 态，逐一确认内容根都按同一套 gap 排布；
+     ③ 面板预览卡无 data-cols/rows，所有尺寸规则必须双写 wcols/wrows。
+
+   ★ 网格形状勘误（11-13 静态抽取 `N26_WIDGET_SPECS` + plus `SPECS`）：
+     显式 13 种，扣掉退役 `searchbar` 的 2×1 → **12 种**（MD §0 原值正确）；
+     但 `n26WidgetSpec()` 给方站三件套派生了 5×2 / 5×3 / 5×4 / 5×5
+     这 **4 种 5 列形状**，MD §0 与 §2.7 原先没算进去。
+     所以实际要过的是 **16 种网格**，本层 16 条全部登记。
+
+   ★ 层叠：排在 6 个逐族层之后、ml1 之前，用 6 写 [data-wtype] 压过
+     ovf1(5 写)。只写 --w-tier / --w-gap / flex 方向 / min-width，
+     不写颜色、材质、阴影、圆角、动画、文字主色。
+   ★ fb2 勘误（11-15，推翻 ws/beau3 轮「挂载点不存在」结论）：
+     html[data-ui] 其实由 fui-bridge.js boot 写入（读持久化），但运行中切换风格时
+     setFanguiStyle 只更新 data-ui/data-neu，data-ui 停在 boot 旧值 —— 挂它的规则
+     「刷新才对、切了不动」。本文件全部规则已迁到实时挂载点 html[data-ui]+html[data-neu]。
+   ========================================================================== */
+
+/* ---------- A · 16 种真实网格 → 内容层级令牌 ----------
+   写法说明：每条都用 :is() 同时吃「桌面卡 data-cols/rows」与
+   「面板预览卡 wcols/wrows」，预览卡不必再单独写一套规则。 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-cols="2"][data-rows="2"], .wcols-2.wrows-2) { --w-tier: s;   --w-gap: 6px; }
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-cols="2"][data-rows="3"], .wcols-2.wrows-3) { --w-tier: m3;  --w-gap: 8px; }
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-cols="3"][data-rows="2"], .wcols-3.wrows-2) { --w-tier: m2;  --w-gap: 8px; }
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-cols="3"][data-rows="3"], .wcols-3.wrows-3) { --w-tier: m3;  --w-gap: 8px; }
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-cols="3"][data-rows="4"], .wcols-3.wrows-4) { --w-tier: l;   --w-gap: 10px; }
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-cols="4"][data-rows="1"], .wcols-4.wrows-1) { --w-tier: bar; --w-gap: 4px; }
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-cols="4"][data-rows="2"], .wcols-4.wrows-2) { --w-tier: m2;  --w-gap: 8px; }
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-cols="4"][data-rows="3"], .wcols-4.wrows-3) { --w-tier: m3;  --w-gap: 8px; }
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-cols="4"][data-rows="4"], .wcols-4.wrows-4) { --w-tier: l;   --w-gap: 10px; }
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-cols="6"][data-rows="1"], .wcols-6.wrows-1) { --w-tier: bar; --w-gap: 4px; }
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-cols="6"][data-rows="2"], .wcols-6.wrows-2) { --w-tier: m2;  --w-gap: 8px; }
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-cols="6"][data-rows="3"], .wcols-6.wrows-3) { --w-tier: m3;  --w-gap: 8px; }
+/* 方哩方哩派生 4 档（5 列），MD §0 原先漏记，这里补齐 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-cols="5"][data-rows="2"], .wcols-5.wrows-2) { --w-tier: m2;  --w-gap: 8px; }
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-cols="5"][data-rows="3"], .wcols-5.wrows-3) { --w-tier: m3;  --w-gap: 8px; }
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-cols="5"][data-rows="4"], .wcols-5.wrows-4) { --w-tier: l;   --w-gap: 10px; }
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-cols="5"][data-rows="5"], .wcols-5.wrows-5) { --w-tier: l;   --w-gap: 10px; }
+
+/* ---------- B · 8 态矩阵：四风格 × 昼 / 夜+深色 ----------
+   ★ 只统一「内容根间距与可收缩性」，不碰颜色 / 对比度 / 材质：
+     文字昼墨夜白归 wr7 §8；家族 tint 归 fam2；四风格皮归 beau2。
+     每一态都显式写一遍，方便静态守门逐条点名，不是靠一句 :is() 糊过去。 */
+html[data-ui="flat"]:not([data-n26-phase="night"]) body:not(.dark-mode) .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner > * { gap: var(--w-gap, 6px) !important; }
+html[data-ui="flat"][data-n26-phase="night"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner > *,
+html[data-ui="flat"] body.dark-mode .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner > * { gap: var(--w-gap, 6px) !important; }
+
+html[data-ui="neu"][data-neu="solid"]:not([data-n26-phase="night"]) body:not(.dark-mode) .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner > * { gap: var(--w-gap, 6px) !important; }
+html[data-ui="neu"][data-neu="solid"][data-n26-phase="night"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner > *,
+html[data-ui="neu"][data-neu="solid"] body.dark-mode .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner > * { gap: var(--w-gap, 6px) !important; }
+
+html[data-ui="neu"][data-neu="glass"]:not([data-n26-phase="night"]) body:not(.dark-mode) .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner > * { gap: var(--w-gap, 6px) !important; }
+html[data-ui="neu"][data-neu="glass"][data-n26-phase="night"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner > *,
+html[data-ui="neu"][data-neu="glass"] body.dark-mode .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner > * { gap: var(--w-gap, 6px) !important; }
+
+html[data-ui="liquid"]:not([data-n26-phase="night"]) body:not(.dark-mode) .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner > * { gap: var(--w-gap, 6px) !important; }
+html[data-ui="liquid"][data-n26-phase="night"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner > *,
+html[data-ui="liquid"] body.dark-mode .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner > * { gap: var(--w-gap, 6px) !important; }
+
+/* ---------- C · 面板预览卡（无 data-cols/rows，只有 wcols/wrows） ----------
+   ★ 预览卡不会带 data-type？会带；但尺寸属性一定缺失，所以所有尺寸规则
+     必须双写 .wcols-N.wrows-N。这里补最后一道兜底：预览卡的内容根
+     同样不许拒绝收缩，卡片本身仍是唯一裁切边界。 */
+html body .desktop-widget-card[class*="wcols-"][data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner {
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+}
+html body .desktop-widget-card[class*="wcols-"][data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner > * {
+    min-width: 0 !important;
+    max-width: 100% !important;
+}
+
+/* ---------- D · 胶囊档全局收口：一行、居中、不留弹性空白 ---------- */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-rows="1"][data-rows="1"], .wrows-1.wrows-1) .widget-inner :is(.nx:not(.nx-mu), .nx2, .nx-bili) {
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    gap: var(--w-gap, 4px) !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-rows="1"][data-rows="1"], .wrows-1.wrows-1) .widget-inner .nx2-grow {
+    display: none !important;
+}

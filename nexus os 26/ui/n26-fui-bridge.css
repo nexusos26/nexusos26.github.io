@@ -1,0 +1,250 @@
+/* ============================================================================
+   ui/n26-fui-bridge.css · v2.10.21 · FangUI 四风格全局桥接层
+   ----------------------------------------------------------------------------
+   为什么需要这一层：
+     宿主原有 615 条视觉规则挂在 body.style-flat / style-skeuomorphic / style-glass
+     （老三风格），而设置面板选的是 fanguiStyle 四风格，只落 <html data-ui data-neu>。
+     两套体系互不相认 —— 切扁平/拟物时窗口、Dock、菜单、小组件纹丝不动。
+     iframe 应用里也只有 4/29 用了 fu-* 组件类，其余自绘 UI 不消费任何风格变量。
+
+   本层做法（加层不改层）：
+     ① 用 data-ui 保留「完整风格 id」（data-ui 分不出 neu-solid / neu-glass），
+        四风格各写一套 --n26-fui-* 令牌，深色模式再覆盖一层；
+     ② 非液态三风格下，把令牌映射到通用控件的视觉属性（只改 background /
+        border / radius / box-shadow / backdrop-filter，绝不碰布局）；
+     ③ 液态玻璃下零覆盖 —— 自研折射引擎独占，保证默认外观零回归；
+     ④ 只在切换那一瞬（html.n26-fui-switching）才加过渡，平时不碰任何
+        应用的 transition，避免把别人的 transform 动效冲掉。
+
+   铁律：禁紫 / 无 transition: all / 不动画 backdrop-filter 半径 / 降级齐全。
+   ★ fb3 勘误（11-15，推翻 ws/beau3 轮「挂载点不存在」结论）：
+     html[data-fui] 其实由 fui-bridge.js boot 写入（读持久化），但运行中切换风格时
+     setFanguiStyle 只更新 data-ui/data-neu，data-fui 停在 boot 旧值 —— 挂它的规则
+     「刷新才对、切了不动」。本文件全部规则已迁到实时挂载点 html[data-ui]+html[data-neu]。
+   ============================================================================ */
+
+/* ---------- 1. 四风格令牌 ---------- */
+:root {
+    --n26-fui-surface:      rgba(255, 255, 255, 0.15);
+    --n26-fui-surface-2:    rgba(255, 255, 255, 0.10);
+    --n26-fui-border:       rgba(255, 255, 255, 0.30);
+    --n26-fui-border-w:     1px;
+    --n26-fui-radius:       12px;
+    --n26-fui-radius-sm:    10px;
+    --n26-fui-shadow:       0 8px 40px rgba(0, 0, 0, 0.20);
+    --n26-fui-shadow-raise: 0 8px 40px rgba(0, 0, 0, 0.20);
+    --n26-fui-shadow-press: inset 0 1px 3px rgba(0, 0, 0, 0.18);
+    --n26-fui-blur:         var(--n26-blur, 26px);
+    --n26-fui-sat:          148%;
+    --n26-fui-text:         #1c2028;
+    --n26-fui-text-muted:   rgba(28, 32, 40, 0.56);
+    --n26-fui-hi:           inset 0 1px 0 rgba(255, 255, 255, 0.55);
+    --n26-fui-dur:          300ms;   /* 液态玻璃：丝滑流淌 */
+    --n26-fui-ease:         cubic-bezier(.2, .7, .2, 1);
+}
+
+/* 扁平化：纯色、无模糊、轻边、明显圆角（用户钦定「扁平化要圆角」） */
+html[data-ui="flat"] {
+    --n26-fui-surface:      #f4f5f7;
+    --n26-fui-surface-2:    #e9ebef;
+    --n26-fui-border:       rgba(16, 24, 40, 0.10);
+    --n26-fui-border-w:     1px;
+    --n26-fui-radius:       16px;
+    --n26-fui-radius-sm:    10px;
+    --n26-fui-shadow:       0 2px 8px rgba(16, 24, 40, 0.08);
+    --n26-fui-shadow-raise: 0 2px 8px rgba(16, 24, 40, 0.08);
+    --n26-fui-shadow-press: inset 0 1px 2px rgba(16, 24, 40, 0.10);
+    --n26-fui-blur:         0px;
+    --n26-fui-sat:          100%;
+    --n26-fui-text:         #1c2028;
+    --n26-fui-text-muted:   rgba(28, 32, 40, 0.56);
+    --n26-fui-hi:           none;
+    --n26-fui-dur:          150ms;
+    --n26-fui-ease:         cubic-bezier(.2, .7, .2, 1);
+}
+
+/* 拟物化：双向阴影凸起，按下 / 选中内凹 */
+html[data-ui="neu"][data-neu="solid"] {
+    --n26-fui-surface:      #e8e9ee;
+    --n26-fui-surface-2:    #dfe1e7;
+    --n26-fui-border:       rgba(255, 255, 255, 0.62);
+    --n26-fui-border-w:     1px;
+    --n26-fui-radius:       14px;
+    --n26-fui-radius-sm:    9px;
+    --n26-fui-shadow:       4px 4px 10px rgba(17, 24, 39, 0.18), -4px -4px 10px rgba(255, 255, 255, 0.92);
+    --n26-fui-shadow-raise: 4px 4px 10px rgba(17, 24, 39, 0.18), -4px -4px 10px rgba(255, 255, 255, 0.92);
+    --n26-fui-shadow-press: inset 3px 3px 7px rgba(17, 24, 39, 0.20), inset -3px -3px 7px rgba(255, 255, 255, 0.86);
+    --n26-fui-blur:         0px;
+    --n26-fui-sat:          100%;
+    --n26-fui-text:         #22262e;
+    --n26-fui-text-muted:   rgba(34, 38, 46, 0.58);
+    --n26-fui-hi:           inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    --n26-fui-dur:          400ms;
+    --n26-fui-ease:         cubic-bezier(.34, 1.56, .64, 1);
+}
+
+/* 玻璃拟态 = 拟物化 + 当前磨砂玻璃（半径吃用户磨砂滑杆，不写死） */
+html[data-ui="neu"][data-neu="glass"] {
+    --n26-fui-surface:      rgba(255, 255, 255, 0.58);
+    --n26-fui-surface-2:    rgba(255, 255, 255, 0.42);
+    --n26-fui-border:       rgba(255, 255, 255, 0.72);
+    --n26-fui-border-w:     1px;
+    --n26-fui-radius:       14px;
+    --n26-fui-radius-sm:    9px;
+    --n26-fui-shadow:       4px 4px 12px rgba(17, 24, 39, 0.14), -4px -4px 12px rgba(255, 255, 255, 0.72);
+    --n26-fui-shadow-raise: 4px 4px 12px rgba(17, 24, 39, 0.14), -4px -4px 12px rgba(255, 255, 255, 0.72);
+    --n26-fui-shadow-press: inset 3px 3px 7px rgba(17, 24, 39, 0.16), inset -3px -3px 7px rgba(255, 255, 255, 0.78);
+    --n26-fui-blur:         var(--n26-blur, 18px);
+    --n26-fui-sat:          140%;
+    --n26-fui-text:         #1c2028;
+    --n26-fui-text-muted:   rgba(28, 32, 40, 0.58);
+    --n26-fui-hi:           inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    --n26-fui-dur:          260ms;
+    --n26-fui-ease:         cubic-bezier(.2, .7, .2, 1);
+}
+
+/* 深色模式：四风格各自换底，不用一套黑走天下 */
+html[data-ui="flat"]:has(body.dark-mode),
+html[data-ui="flat"][data-mode="dark"] {
+    --n26-fui-surface: #23262d; --n26-fui-surface-2: #2b2f37;
+    --n26-fui-border: rgba(255, 255, 255, 0.10);
+    --n26-fui-text: #eef1f6; --n26-fui-text-muted: rgba(238, 241, 246, 0.58);
+    --n26-fui-shadow: 0 2px 8px rgba(0, 0, 0, 0.34);
+}
+html[data-ui="neu"][data-neu="solid"]:has(body.dark-mode),
+html[data-ui="neu"][data-neu="solid"][data-mode="dark"] {
+    --n26-fui-surface: #26272d; --n26-fui-surface-2: #2d2f36;
+    --n26-fui-border: rgba(255, 255, 255, 0.06);
+    --n26-fui-text: #eef1f6; --n26-fui-text-muted: rgba(238, 241, 246, 0.58);
+    --n26-fui-shadow-raise: 4px 4px 10px rgba(0, 0, 0, 0.52), -4px -4px 10px rgba(255, 255, 255, 0.07);
+    --n26-fui-shadow-press: inset 3px 3px 7px rgba(0, 0, 0, 0.55), inset -3px -3px 7px rgba(255, 255, 255, 0.06);
+    --n26-fui-hi: inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+html[data-ui="neu"][data-neu="glass"]:has(body.dark-mode),
+html[data-ui="neu"][data-neu="glass"][data-mode="dark"] {
+    --n26-fui-surface: rgba(42, 46, 56, 0.58); --n26-fui-surface-2: rgba(42, 46, 56, 0.42);
+    --n26-fui-border: rgba(255, 255, 255, 0.14);
+    --n26-fui-text: #eef1f6; --n26-fui-text-muted: rgba(238, 241, 246, 0.58);
+    --n26-fui-shadow-raise: 4px 4px 12px rgba(0, 0, 0, 0.42), -4px -4px 12px rgba(255, 255, 255, 0.06);
+    --n26-fui-hi: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+/* ---------- 2. 通用控件：非液态三风格才接管，只改视觉不碰布局 ---------- */
+/* 液态玻璃（data-ui="liquid"）刻意不写任何覆盖 —— 折射引擎零回归。 */
+html[data-ui="flat"] :is(.window, .card, .panel, .glass, .sidebar, .toolbar,
+    .n26ui-glass, .settings-panel, .context-menu, .start-menu, .notification,
+    .widget, .widget-card, .modal-card, .dialog, .app-card, .list-card,
+    .panel-card, .of-grp-row, .card-note, .ppt-prop),
+html[data-ui="neu"][data-neu="solid"] :is(.window, .card, .panel, .glass, .sidebar, .toolbar,
+    .n26ui-glass, .settings-panel, .context-menu, .start-menu, .notification,
+    .widget, .widget-card, .modal-card, .dialog, .app-card, .list-card,
+    .panel-card, .of-grp-row, .card-note, .ppt-prop),
+html[data-ui="neu"][data-neu="glass"] :is(.window, .card, .panel, .glass, .sidebar, .toolbar,
+    .n26ui-glass, .settings-panel, .context-menu, .start-menu, .notification,
+    .widget, .widget-card, .modal-card, .dialog, .app-card, .list-card,
+    .panel-card, .of-grp-row, .card-note, .ppt-prop) {
+    background: var(--n26-fui-surface);
+    border: var(--n26-fui-border-w) solid var(--n26-fui-border);
+    border-radius: var(--n26-fui-radius);
+    box-shadow: var(--n26-fui-shadow), var(--n26-fui-hi);
+    -webkit-backdrop-filter: blur(var(--n26-fui-blur)) saturate(var(--n26-fui-sat));
+    backdrop-filter: blur(var(--n26-fui-blur)) saturate(var(--n26-fui-sat));
+    color: var(--n26-fui-text);
+}
+
+/* 扁平化：明确去掉一切玻璃残留（很多应用把 blur 写死在元素本体上） */
+html[data-ui="flat"] :is(.glass, .n26ui-glass, .sidebar, .toolbar, .window) {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
+
+/* 按钮 / 输入 / 选择：四风格共用一套语义选择器 */
+html[data-ui="flat"] :is(button, .btn, .btn-sm, .fu-btn, .of-btn, .of-select, .of-field,
+   .icon-btn, .fc-btn, .v-btn, .v-cbtn, .ma-btn,
+   input, select, textarea, .form-control),
+html[data-ui="neu"][data-neu="solid"] :is(button, .btn, .btn-sm, .fu-btn, .of-btn, .of-select, .of-field,
+   .icon-btn, .fc-btn, .v-btn, .v-cbtn, .ma-btn,
+   input, select, textarea, .form-control),
+html[data-ui="neu"][data-neu="glass"] :is(button, .btn, .btn-sm, .fu-btn, .of-btn, .of-select, .of-field,
+   .icon-btn, .fc-btn, .v-btn, .v-cbtn, .ma-btn,
+   input, select, textarea, .form-control) {
+    background: var(--n26-fui-surface-2);
+    border: var(--n26-fui-border-w) solid var(--n26-fui-border);
+    border-radius: var(--n26-fui-radius-sm);
+    box-shadow: var(--n26-fui-shadow-raise);
+    color: var(--n26-fui-text);
+}
+html[data-ui="flat"] :is(button, .btn, .btn-sm, .fu-btn, .of-btn, .icon-btn, .fc-btn, .v-btn, .v-cbtn, .ma-btn):active,
+html[data-ui="neu"][data-neu="solid"] :is(button, .btn, .btn-sm, .fu-btn, .of-btn, .icon-btn, .fc-btn, .v-btn, .v-cbtn, .ma-btn):active,
+html[data-ui="neu"][data-neu="glass"] :is(button, .btn, .btn-sm, .fu-btn, .of-btn, .icon-btn, .fc-btn, .v-btn, .v-cbtn, .ma-btn):active,
+html[data-ui="neu"][data-neu="solid"] :is(button, .btn, .btn-sm, .fu-btn, .of-btn, .icon-btn, .fc-btn, .v-btn, .v-cbtn, .ma-btn).active,
+html[data-ui="neu"][data-neu="glass"] :is(button, .btn, .btn-sm, .fu-btn, .of-btn, .icon-btn, .fc-btn, .v-btn, .v-cbtn, .ma-btn).active {
+    box-shadow: var(--n26-fui-shadow-press);
+    transform: translateY(1px);
+}
+
+/* ---------- 3. 拟物化侧边 Dock 栏：凸起可按、按下 / 选中凹陷 ---------- */
+html[data-ui="neu"][data-neu="solid"] :is(#dock .dock-item, #dockBar .n26-db-item,
+    .n26-docknav-host [data-n26dng-on], .n26ui-side-item, .sidebar-item,
+    .n26-docknav-host .n26-dng-on, .rail-item, .nav-item),
+html[data-ui="neu"][data-neu="glass"] :is(#dock .dock-item, #dockBar .n26-db-item,
+    .n26-docknav-host [data-n26dng-on], .n26ui-side-item, .sidebar-item,
+    .n26-docknav-host .n26-dng-on, .rail-item, .nav-item) {
+    box-shadow: var(--n26-fui-shadow-raise);
+    border-radius: var(--n26-fui-radius-sm);
+}
+html[data-ui="neu"][data-neu="solid"] :is(#dock .dock-item, .n26-docknav-host [data-n26dng-on],
+    .n26ui-side-item, .sidebar-item, .rail-item, .nav-item):active,
+html[data-ui="neu"][data-neu="glass"] :is(#dock .dock-item, .n26-docknav-host [data-n26dng-on],
+    .n26ui-side-item, .sidebar-item, .rail-item, .nav-item):active,
+html[data-ui="neu"][data-neu="solid"] :is(.n26-docknav-host [data-n26dng-on="1"],
+    .sidebar-item.active, .nav-item.active, .rail-item.selected, .nav-item.selected),
+html[data-ui="neu"][data-neu="glass"] :is(.n26-docknav-host [data-n26dng-on="1"],
+    .sidebar-item.active, .nav-item.active, .rail-item.selected, .nav-item.selected) {
+    box-shadow: var(--n26-fui-shadow-press);
+    background: var(--n26-fui-surface-2);
+}
+
+/* ---------- 4. 宿主老三风格变量回灌（615 条老规则靠这几个变量活过来） ---------- */
+html[data-ui="flat"] {
+    --glass-bg: var(--n26-fui-surface);
+    --glass-border: var(--n26-fui-border);
+    --glass-blur: 0px;
+    --window-radius: 16px;
+    --btn-radius: 10px;
+    --shadow: 0 2px 8px rgba(16, 24, 40, 0.08);
+}
+html[data-ui="neu"][data-neu="solid"],
+html[data-ui="neu"][data-neu="glass"] {
+    --glass-bg: var(--n26-fui-surface);
+    --glass-border: var(--n26-fui-border);
+    --window-radius: 14px;
+    --btn-radius: 9px;
+    --shadow: var(--n26-fui-shadow-raise);
+}
+html[data-ui="neu"][data-neu="glass"] { --glass-blur: var(--n26-fui-blur); }
+html[data-ui="neu"][data-neu="solid"] { --glass-blur: 0px; }
+
+/* ---------- 5. 切换瞬间的材质过渡（只有这一刻加 transition，平时零干扰） ---------- */
+html.n26-fui-switching :is(.window, .card, .panel, .glass, .sidebar, .toolbar,
+    .n26ui-glass, .widget, .widget-card, .modal-card, .dialog, .panel-card,
+    .of-grp-row, .card-note, .ppt-prop, button, .btn, .btn-sm, .fu-btn,
+    .of-btn, .of-select, .of-field, .icon-btn, .fc-btn, .v-btn, .v-cbtn,
+    .ma-btn, input, select, textarea) {
+    transition:
+        background-color var(--n26-fui-dur) var(--n26-fui-ease),
+        border-color var(--n26-fui-dur) var(--n26-fui-ease),
+        box-shadow var(--n26-fui-dur) var(--n26-fui-ease),
+        border-radius var(--n26-fui-dur) var(--n26-fui-ease);
+}
+
+/* ---------- 6. 降级 ---------- */
+body.perf-mode :is(.glass, .n26ui-glass, .sidebar, .toolbar, .card, .panel) {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+@media (prefers-reduced-motion: reduce) {
+    html.n26-fui-switching :is(*) { transition: none !important; }
+    html[data-ui="neu"][data-neu="solid"] :is(button, .btn, .btn-sm, .fu-btn, .of-btn, .icon-btn, .fc-btn, .v-btn, .v-cbtn, .ma-btn):active,
+    html[data-ui="neu"][data-neu="glass"] :is(button, .btn, .btn-sm, .fu-btn, .of-btn, .icon-btn, .fc-btn, .v-btn, .v-cbtn, .ma-btn):active { transform: none; }
+}

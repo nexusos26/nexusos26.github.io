@@ -115,6 +115,18 @@
         var lw = el.offsetWidth || 0, lh = el.offsetHeight || 0;
         if (!(lw > 0) || !(lh > 0)) return;
         var w = quant((size && size.w) || lw), h = quant((size && size.h) || lh);
+
+        /* ★ v2.10.26 P0：plain 模式 —— 不建 SVG、不做贴图、不写 url(#...)。
+           滑动中的玻璃背着 feImage+feDisplacementMap 每帧全区域重采样，
+           Windows GPU 合成器会直接崩（标签页退出）。plain 只挂原生磨砂链。 */
+        if (opts && opts.plain) {
+            el.style.setProperty('--n26-lg-filter',
+                'blur(var(--n26-blur, 22px)) saturate(1.4) brightness(1.06) contrast(1.04)');
+            el.classList.add('n26-liquid-on');
+            el._n26Lg = { id: id, w: w, h: h, opts: opts || null, map: null, plain: true };
+            return;
+        }
+
         var map = buildMap(w, h, opts);
         if (!map || !(map.scale > 0)) return;
 

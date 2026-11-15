@@ -531,8 +531,8 @@ html body .desktop-widget-card[data-wtype="favorites"] {
     background-image: linear-gradient(158deg, var(--w-tint-a) 0%, var(--w-tint-b) 100%) !important;
 }
 html body .desktop-widget-card[data-wtype="news"] {
-    --w-tint-a: #a34d8f; --w-tint-b: #bb68a8;
-    --w-tint-da: #5e3153; --w-tint-db: #6d3b62;
+    --w-tint-a: #c2574f; --w-tint-b: #dc7a6c;
+    --w-tint-da: #5c2b28; --w-tint-db: #6f3530;
     background-color: var(--w-tint-a) !important;
     background-image: linear-gradient(158deg, var(--w-tint-a) 0%, var(--w-tint-b) 100%) !important;
 }
@@ -720,13 +720,15 @@ html body .desktop-widget-card.widget-preview-card[data-wtype="date"][data-njq-s
 
 /* ============================================================================
  * 9 · 方哩方哩三件套（正在播放 / 为你推荐 / B站搜索）
- *    #fb7299 降到 S40/L52→61（H312），保留品牌识别但不再刺眼
+ *    ★ 2026-11-12 禁紫返工：旧值 #b654a2/#c572b5 色相 305° 落在紫区，用户点名
+ *    骂「紫块」。改回 B站粉本相 #fb7299（H337）降明度不降色相：
+ *    #d95c86(H338) / #e57d9f(H341)，深档 #74304c / #8a3a5c —— 是粉，不是紫。
  * ==========================================================================*/
 html body .desktop-widget-card[data-wtype="biliNow"],
 html body .desktop-widget-card[data-wtype="biliReco"],
 html body .desktop-widget-card[data-wtype="biliSearch"] {
-    --w-tint-a: #b654a2; --w-tint-b: #c572b5;
-    --w-tint-da: #602e56; --w-tint-db: #713865;
+    --w-tint-a: #d95c86; --w-tint-b: #e57d9f;
+    --w-tint-da: #74304c; --w-tint-db: #8a3a5c;
     background-color: var(--w-tint-a) !important;
     background-image: linear-gradient(158deg, var(--w-tint-a) 0%, var(--w-tint-b) 100%) !important;
     color: #fff !important;

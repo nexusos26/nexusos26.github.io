@@ -1,0 +1,296 @@
+/* ==========================================================================
+   Nexus OS 26 · 小组件选择页「底部抽屉 + 全等尺寸」/ 戳 drw6 · 2026-11-15
+   --------------------------------------------------------------------------
+   用户 11-14 原话：「小组件选择页面变成抽屉式的，从底部出来遮挡住底下的
+   Dock 就够了」「小组件的大小就是真实啥样就是真实的长啥样」「遵循我们的
+   四个风格」「现在怎么又变成一片惨白的界面了」。
+
+   ① 抽屉：从底部升起、贴屏幕底边、只盖住 Dock；上半屏仍看得见桌面与壁纸。
+      不再是居中 1340×88vh 的大弹窗。顶栏 32px 不碰（抽屉高 ≤64vh）。
+   ② 全等尺寸（drw4，用户「相似和全等，我要的是全等」）：桌面网格 cell 76 / gap 16（N26_GRID 同公式）
+      1:1 原样呈现，占几格预览就是几格多大，拖出来就是多大。
+      drw4.js 给每张卡写 --wp-cols/--wp-rows/--wp-pw/--wp-ph，这里只做布局。
+   ②b 磨砂链条（drw4 勘误，用户「是不是忘记加磨砂了」）：磨砂不是没写，
+      是被 overlay 自己的 backdrop-filter 弄死的 —— 有 backdrop-filter 的祖先
+      会成为新的 backdrop root，后代面板与卡片的磨砂采样全被锁死在 root 内，
+      整条链一起失效。overlay 只留暗纱、绝不吃 backdrop-filter。
+   ③ 不惨白：抽屉本体是透壁纸的中性磨砂玻璃，不是一层白漆；上沿只留一条
+      极细中性白高光交代玻璃厚度。颜色仍只有中性白 / 冷白 / 银灰 / 墨色。
+   ④ 四风格：Flat / 液态是平的，Neu 两档有凹凸（与 fam3/beau3 同一套语义）。
+   ⑤ drw6（11-15 用户「很多溢出，还有很多空当」）：收掉冗余尺寸滑轨、
+      组头改行内紧凑标签、卡片与组头同一 flex 流、卡片按真实尺寸排序、
+      撤掉预览框 3D 悬停（preserve-3d 会让内容脱离 contain:paint 画出去）。
+   ⑥ drw6 开合动画全权交给 dm1：本层不再写 transform / opacity / transition
+      的 !important，否则 CSS animation 优先级低于 !important 会被压死。
+
+   ★ 层级沿用 wpf4：#widgetPanel 10050 > #finder-bar 9200 / #dock 9000。
+   ★ 不叠新材质层：本层只覆盖几何、材质与四风格，不新建 DOM 结构。
+   ========================================================================== */
+
+/* ---------- ① 抽屉：底部对齐、贴边、从下往上滑 ---------- */
+html body #widgetPanel.widget-panel-overlay {
+    align-items: flex-end !important;
+    justify-content: center !important;
+    background: rgba(8, 12, 24, .42) !important;
+    /* drw4：绝不吃 backdrop-filter（见文件头 ②b）。 */
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
+html body #widgetPanel .widget-panel {
+    width: min(1200px, 94vw) !important;
+    /* drw6：widgets.css 早期给 .widget-panel 写了 min-width/max-width
+       = min(1340px, 87vw)，它不带 !important 但会强制把盒子撑到 1340px，
+       把 width:1200px 整个吃掉 —— 抽屉被拉宽、卡片区跟着错位，
+       是实机「很多溢出」的直接来源之一。这里显式归零并锁上限。 */
+    min-width: 0 !important;
+    max-width: min(1200px, 94vw) !important;
+    height: min(68vh, 620px) !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 14px 22px 18px !important;
+    border-radius: 26px 26px 0 0 !important;
+    border: 1px solid rgba(255, 255, 255, .38) !important;
+    border-bottom: 0 !important;
+    /* 中性透磨砂：能看见壁纸，绝不刷白。 */
+    background: rgba(226, 234, 244, .62) !important;
+    -webkit-backdrop-filter: blur(32px) saturate(155%) !important;
+    backdrop-filter: blur(32px) saturate(155%) !important;
+    box-shadow: 0 -18px 52px rgba(8, 12, 26, .22),
+                inset 0 1px 0 rgba(255, 255, 255, .72),
+                inset 0 0 0 1px rgba(255, 255, 255, .18) !important;
+    /* dm1：开合几何与动画全权交给 n26-widget-drawer-motion.css。
+       本层只写材质，transform / opacity 的 !important 会压死 keyframes。 */
+}
+/* dm1：show 态的 translate / opacity 由状态类托管，此处不再写。 */
+html body[data-n26-phase="night"] #widgetPanel .widget-panel,
+html body.dark-mode #widgetPanel .widget-panel {
+    background: rgba(13, 19, 35, .78) !important;
+    border-color: rgba(255, 255, 255, .12) !important;
+    box-shadow: 0 -18px 52px rgba(0, 0, 0, .34),
+                inset 0 1px 0 rgba(255, 255, 255, .14) !important;
+}
+
+/* 抽屉里的说明文案收掉，把高度让给卡片；搜索 / 完成 / 关闭照旧。 */
+html body #widgetPanel .widget-panel-header { margin-bottom: 2px; flex: 0 0 auto; }
+html body #widgetPanel .widget-panel-title { font-size: 16px; }
+html body #widgetPanel .widget-panel-desc { display: none !important; }
+html body #widgetPanel .widget-panel-sizerail { flex: 0 0 auto; margin-bottom: 8px; }
+html body #widgetPanel .widget-panel-body { flex: 1 1 auto; min-height: 0; gap: 16px; }
+html body #widgetPanel .widget-panel-sidebar { width: 150px; flex: 0 0 150px; }
+
+/* ---------- ② 卡片区：按真实尺寸流式排布 ---------- */
+html body #widgetPanel #widgetPanelGrid {
+    display: block !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;   /* drw4：抽屉里 47 张全等卡靠这里滚，不撑破 68vh */
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 2px 4px 20px !important;
+    margin: 0 !important;
+}
+html body #widgetPanel .wp-soft-group { margin: 0 0 14px; }
+html body #widgetPanel .wp-soft-head {
+    margin-bottom: 8px; padding: 7px 12px;
+    background: rgba(246, 250, 255, .34) !important;
+    border-radius: 10px !important;
+}
+html body.dark-mode #widgetPanel .wp-soft-head,
+html body[data-n26-phase="night"] #widgetPanel .wp-soft-head {
+    background: rgba(255, 255, 255, .09) !important;
+}
+html body #widgetPanel .widget-panel-search input,
+html body #widgetPanel #widgetPanelSearch {
+    background: rgba(246, 250, 255, .34) !important;
+}
+html body #widgetPanel .wp-soft-cards {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: flex-start !important;
+    align-content: flex-start !important;
+    gap: 16px 18px !important;
+}
+html body #widgetPanel .widget-panel-card {
+    position: relative;
+    flex: 0 0 auto !important;
+    width: var(--wp-pw, 168px) !important;
+    height: auto !important;
+    min-height: 0 !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 0 !important;
+    background: transparent !important;
+}
+html body #widgetPanel .widget-panel-card-preview {
+    /* drw4：卡片是唯一裁切边界 —— 内容层级错配时也不许撑出去（MD §2.1）。 */
+    overflow: hidden !important;
+    position: relative;
+    flex: 0 0 auto !important;
+    width: var(--wp-pw, 168px) !important;
+    height: var(--wp-ph, 168px) !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: none !important;
+    max-height: none !important;
+    /* drw5：删掉这行 overflow:visible —— 它与本规则开头的 hidden 自相矛盾，
+       后写者胜，导致 drw4 的「唯一裁切边界」根本没生效（左上露半张卡）。 */
+    isolation: isolate !important;
+    contain: paint !important;
+    display: block !important;
+}
+/* inner 的 inline 宽高由 renderWidgetPreviewInto 写成「自然尺寸 × scale」，
+   与预览框完全一致；卡片本身绝对定位 + 左上原点缩放，不再撑破布局。 */
+html body #widgetPanel .widget-panel-card-preview-inner {
+    position: relative !important;
+    display: block !important;
+    /* drw5：inner 也收口，卡片 absolute 定位仍相对它，不影响 1:1。 */
+    overflow: hidden !important;
+    contain: paint !important;
+    transform: none !important;
+}
+html body #widgetPanel .widget-panel-card-preview-inner .widget-preview-card {
+    border-radius: var(--w-radius, 20px) !important;
+    box-shadow: 0 8px 22px rgba(8, 12, 26, .18),
+                inset 0 1px 0 rgba(255, 255, 255, .62) !important;
+}
+html body #widgetPanel .widget-panel-card-name {
+    width: 100%;
+    max-width: 100%;
+    flex: 0 0 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: center;
+    font-size: 11px;
+    line-height: 1.35;
+    padding: 0 !important;
+}
+/* 尺寸条原来是 absolute bottom:7px，会直接压在预览上；抽屉里回到正常文档流。 */
+html body #widgetPanel .widget-panel-card-sizes {
+    position: static !important;
+    width: 100%;
+    flex: 0 0 auto;
+    min-height: 18px;
+    padding: 0 !important;
+    margin: 0 !important;
+    transform: none !important;
+}
+html body #widgetPanel .widget-panel-card-sizes .wp-size-slider { width: 100%; min-width: 0; }
+html body #widgetPanel .widget-panel-card-sizes .wp-size-readout { font-size: 9.5px; }
+html body #widgetPanel .wp-installed-badge { top: -4px; right: -4px; }
+
+/* ---------- ③ 四风格：Flat / 液态平，Neu 两档凸 ---------- */
+html[data-ui="flat"] body #widgetPanel .widget-panel {
+    border-radius: 18px 18px 0 0 !important;
+    background: rgba(230, 237, 246, .68) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(130%) !important;
+    backdrop-filter: blur(18px) saturate(130%) !important;
+    box-shadow: 0 -8px 24px rgba(8, 12, 26, .14) !important;
+}
+html[data-ui="liquid"] body #widgetPanel .widget-panel {
+    box-shadow: 0 -18px 52px rgba(8, 12, 26, .20),
+                inset 0 1px 0 rgba(255, 255, 255, .84),
+                inset 0 0 0 1px rgba(255, 255, 255, .38) !important;
+}
+html[data-ui="neu"][data-neu="solid"] body #widgetPanel .widget-panel,
+html[data-ui="neu"][data-neu="glass"] body #widgetPanel .widget-panel {
+    background: rgba(232, 239, 247, .70) !important;
+    box-shadow: 0 -18px 52px rgba(8, 12, 26, .20),
+                inset 0 3px 8px rgba(255, 255, 255, .92),
+                inset 0 -3px 10px rgba(15, 23, 42, .13) !important;
+}
+html[data-ui="neu"][data-neu="glass"] body #widgetPanel .widget-panel {
+    -webkit-backdrop-filter: blur(36px) saturate(170%) !important;
+    backdrop-filter: blur(36px) saturate(170%) !important;
+}
+/* 卡片预览也跟风格：Neu 两档给一层轻凹凸，Flat / 液态保持平整玻璃。 */
+html[data-ui="neu"][data-neu="solid"] body #widgetPanel .widget-panel-card-preview-inner .widget-preview-card,
+html[data-ui="neu"][data-neu="glass"] body #widgetPanel .widget-panel-card-preview-inner .widget-preview-card {
+    box-shadow: 0 10px 20px rgba(8, 12, 26, .18),
+                inset 0 2px 5px rgba(255, 255, 255, .86),
+                inset 0 -2px 6px rgba(15, 23, 42, .12) !important;
+}
+
+/* ---------- ④ 小屏兜底 ---------- */
+@media (max-width: 720px) {
+    html body #widgetPanel .widget-panel { width: 100vw !important; height: 68vh !important; padding: 12px 14px 16px !important; }
+    html body #widgetPanel .widget-panel-sidebar { width: 112px; flex-basis: 112px; }
+    html body #widgetPanel .wp-soft-cards { gap: 12px !important; }
+}
+/* dm1：减少动态效果由动画层统一缩短到 140ms，这里不再一刀关掉。 */
+
+
+/* ==========================================================================
+   drw6 · 去溢出 / 去空当（11-15 实机反馈「很多溢出，还有很多空当」）
+   --------------------------------------------------------------------------
+   ① 尺寸滑轨：按软件分组之后它就是冗余整行，直接收掉（DOM 保留，
+      n26BindSizeSlider 的事件绑定不受影响）。
+   ② 组头：从 width:100% 的大横条改成行内紧凑 chip；8 个组头原本各占
+      一整行，是「空当」最直观的来源。副标题 / 已添加徽标收掉，只留
+      图标 + 软件名 + 款数 + 折叠箭头。
+   ③ .wp-soft-cards 改 display:contents：卡片直接成为 .wp-soft-group 的
+      flex 项，与组头同一行流排布。groups.css 头注释当年禁用 contents 是
+      因为主壳 grid-auto-rows:196px 会让组头白占一行 —— 但 drw2 起
+      #widgetPanelGrid 已经是 block，这个前提不再成立。
+   ④ 预览框的 3D 悬停（widgets.css v4 段 perspective / preserve-3d /
+      will-change:transform）会让卡片内容脱离 contain:paint 画到框外；
+      抽屉里不需要悬停翻转，全部归零。
+   ========================================================================== */
+html body #widgetPanel .widget-panel-sizerail { display: none !important; }
+html body #widgetPanel #widgetPanelGrid {
+    padding: 2px 2px 14px !important;
+    overflow-x: hidden !important;
+}
+html body #widgetPanel .wp-soft-group {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-content: flex-start !important;
+    align-items: flex-start !important;
+    gap: 12px 16px !important;
+    margin: 0 0 10px !important;
+    padding: 0 0 10px !important;
+    border-bottom: 1px solid rgba(15, 23, 42, .08) !important;
+}
+html body #widgetPanel .wp-soft-group:last-child { border-bottom: 0 !important; margin-bottom: 0 !important; }
+html body.dark-mode #widgetPanel .wp-soft-group,
+html body[data-n26-phase="night"] #widgetPanel .wp-soft-group {
+    border-bottom-color: rgba(255, 255, 255, .09) !important;
+}
+html body #widgetPanel .wp-soft-head {
+    position: relative !important;
+    width: auto !important;
+    flex: 0 0 auto !important;
+    align-self: flex-start !important;
+    margin: 0 !important;
+    padding: 5px 10px !important;
+    border-radius: 10px !important;
+    gap: 8px !important;
+}
+html body #widgetPanel .wp-soft-head .wp-soft-ico {
+    flex: 0 0 24px !important; width: 24px !important; height: 24px !important;
+    border-radius: 8px !important; font-size: 12px !important;
+}
+html body #widgetPanel .wp-soft-head .wp-soft-txt > b { font-size: 12.5px !important; }
+html body #widgetPanel .wp-soft-head .wp-soft-sub,
+html body #widgetPanel .wp-soft-head .wp-soft-added { display: none !important; }
+html body #widgetPanel .wp-soft-head .wp-soft-count {
+    padding: 2px 6px !important; font-size: 10px !important;
+}
+html body #widgetPanel .wp-soft-cards { display: contents !important; }
+html body #widgetPanel .widget-panel-card {
+    margin: 0 !important;
+    gap: 3px !important;
+}
+html body #widgetPanel .widget-panel-card-name {
+    font-size: 10.5px !important;
+    line-height: 1.2 !important;
+}
+html body #widgetPanel .widget-panel-card-sizes { min-height: 12px !important; }
+html body #widgetPanel .widget-panel-card-preview,
+html body #widgetPanel .widget-panel-card-preview:hover {
+    transform: none !important;
+    transform-style: flat !important;
+    perspective: none !important;
+    will-change: auto !important;
+}

@@ -1,0 +1,406 @@
+/* ==========================================================================
+   Nexus OS 26 · 小组件四风格材质层（v2.10.26 / 戳 ws5 · 纯 CSS，零 JS）
+   --------------------------------------------------------------------------
+   ★ ws5：第 ⑥ 节升级为全风格通用「实拍对齐 · 每类专属底色」：用户定案「不能全是白的，
+     必须按照真实的去美化」—— 时钟/秒表/计算器黑卡、天气深蓝天空渐变、
+     日历类纸白、音乐品牌蓝、便签纸黄；liquid 档色块提到 94% 不再白蒙蒙，
+     并关掉液态档的无谓磨砂（十几张卡 × backdrop 每帧重采样）。
+   --------------------------------------------------------------------------
+   ★ v2.10.26 用户定案：「我说的就只是那么一层而已」—— v2.10.24 做过头了。
+     那版给每张小组件盖了一层 .n26-ws-lens 同尺寸玻璃 + 对角彩虹，还给
+     每张卡挂 SVG feDisplacementMap 折射贴图（canvas 现场生成），点击触发
+     重绘时主线程被贴图堵死 → 「此页面无响应」卡死。这版全部回退：
+
+     ① 不注入任何 DOM、不挂任何 SVG 滤镜、零 JS（模块已删除）；
+     ② 液态档只在卡片**右上角加一道高光**：用多层 background-image 画在
+        卡片自己的背景层上 —— 不建新层、不占伪元素（::before/::after 已被
+        各渲染器占用）、被 border-radius + overflow:hidden 天然裁切，
+        拖动 / 缩放 / 重绘零额外成本；
+     ③ 右上一条细高光边走 --w-mat-shadow 的 inset（同样零新层）；
+     ④ 拟物凹凸 / 扁平化 / 玻璃拟态三档保留（用户没让去掉），
+        依旧只用 text-shadow / box-shadow，绝不用 filter；
+     ⑤ 深色模式四档各一套令牌；切换瞬态逐属性白名单；reduced-motion 降级。
+
+   性能纪律：本文件不含任何新增 backdrop-filter 面、不含 mix-blend-mode、
+   不含 will-change；唯一的视觉增量是一层纯装饰 background-image 渐变。
+   ★ fb2 勘误（11-15，推翻 ws/beau3 轮「挂载点不存在」结论）：
+     html[data-ui] 其实由 fui-bridge.js boot 写入（读持久化），但运行中切换风格时
+     setFanguiStyle 只更新 data-ui/data-neu，data-ui 停在 boot 旧值 —— 挂它的规则
+     「刷新才对、切了不动」。本文件全部规则已迁到实时挂载点 html[data-ui]+html[data-neu]。
+   ========================================================================== */
+
+/* ---------- ① 液态档：右上角高光 ----------
+   高光只此一处：radial-gradient 圆心压在右上角（88% 4%），向左下快速衰减。
+   --w-mat-bg-img 由 widgets.css 的 background-image 消费，画在卡片自己的
+   背景层内，任何像素都出不了圆角。
+
+   ★ v2.10.26 参考实拍（苹果店 MacBook 小组件照片，UU 远程传来）对齐：
+     实拍卡片的环境影非常软、非常大（几乎贴着壁纸晕开），高光只有极轻的一层。
+     所以峰值 alpha 收到 .42、阴影改「一大一小的双软影」，几何锚点不动。 */
+html[data-ui="liquid"] .desktop-widget-card {
+    --w-mat-bg-img:
+        radial-gradient(95% 85% at 88% 4%,
+            rgba(255, 255, 255, .42) 0%,
+            rgba(255, 255, 255, .13) 36%,
+            rgba(255, 255, 255, 0) 64%);
+    --w-mat-shadow:
+        inset -1px 1px 0 rgba(255, 255, 255, .38),
+        inset 0 1px 0 rgba(255, 255, 255, .52),
+        0 18px 44px rgba(15, 23, 42, .16),
+        0 4px 12px rgba(15, 23, 42, .08);
+}
+html[data-ui="liquid"] body.dark-mode .desktop-widget-card {
+    --w-mat-bg-img:
+        radial-gradient(95% 85% at 88% 4%,
+            rgba(255, 255, 255, .16) 0%,
+            rgba(255, 255, 255, .05) 36%,
+            rgba(255, 255, 255, 0) 64%);
+    --w-mat-shadow:
+        inset -1px 1px 0 rgba(255, 255, 255, .12),
+        inset 0 1px 0 rgba(255, 255, 255, .16),
+        0 20px 48px rgba(0, 0, 0, .50),
+        0 4px 14px rgba(0, 0, 0, .32);
+}
+
+/* ---------- ② 轻拟物：文字 / 图标 / 按钮的凹与凸 ----------
+   ★ widgets.css 对几十个组件文字写了 text-shadow:none !important，
+   不跟着加 !important 的话凹凸永远看不见。绝不用 filter。 */
+html[data-ui="neu"][data-neu="solid"] .desktop-widget-card,
+html[data-ui="neu"][data-neu="glass"] .desktop-widget-card {
+    --w-mat-bg: rgba(238, 242, 248, .94);
+    --w-mat-bg-img: linear-gradient(158deg, rgba(255, 255, 255, .62) 0%, rgba(15, 23, 42, .035) 100%);
+    --w-mat-shadow:
+        5px 5px 12px rgba(15, 23, 42, .18),
+        -4px -4px 10px rgba(255, 255, 255, .90),
+        inset 0 1px 0 rgba(255, 255, 255, .92),
+        inset 0 -1px 0 rgba(15, 23, 42, .07);
+}
+/* 主数字 / 主标题 → 凸起 */
+html[data-ui="neu"][data-neu="solid"] .desktop-widget-card .widget-inner :is(
+    [class*="time"], [class*="value"], [class*="temp"], [class*="title"],
+    [class*="num"], [class*="count"], [class*="big"], h1, h2, h3, strong, b),
+html[data-ui="neu"][data-neu="glass"] .desktop-widget-card .widget-inner :is(
+    [class*="time"], [class*="value"], [class*="temp"], [class*="title"],
+    [class*="num"], [class*="count"], [class*="big"], h1, h2, h3, strong, b) {
+    text-shadow: 0 1px 0 rgba(255, 255, 255, .94), 0 -1px 1px rgba(15, 23, 42, .17) !important;
+}
+/* 次要文字 / 标签 / 日期 → 凹下 */
+html[data-ui="neu"][data-neu="solid"] .desktop-widget-card .widget-inner :is(
+    [class*="label"], [class*="sub"], [class*="desc"], [class*="note"],
+    [class*="date"], [class*="week"], [class*="hint"], small, em),
+html[data-ui="neu"][data-neu="glass"] .desktop-widget-card .widget-inner :is(
+    [class*="label"], [class*="sub"], [class*="desc"], [class*="note"],
+    [class*="date"], [class*="week"], [class*="hint"], small, em) {
+    text-shadow: 0 -1px 0 rgba(15, 23, 42, .24), 0 1px 0 rgba(255, 255, 255, .86) !important;
+}
+/* 图标字形 → 凸起；图标井 → 凹 */
+html[data-ui="neu"][data-neu="solid"] .desktop-widget-card .widget-inner :is(
+    [class*="icon"], .fas, .far, .fab, .fa-solid, svg),
+html[data-ui="neu"][data-neu="glass"] .desktop-widget-card .widget-inner :is(
+    [class*="icon"], .fas, .far, .fab, .fa-solid, svg) {
+    text-shadow: 0 1px 1px rgba(255, 255, 255, .92), 0 -1px 1px rgba(15, 23, 42, .20) !important;
+}
+html[data-ui="neu"][data-neu="solid"] .desktop-widget-card .widget-inner :is(
+    [class*="icon-box"], [class*="iconwrap"], [class*="icon-well"]),
+html[data-ui="neu"][data-neu="glass"] .desktop-widget-card .widget-inner :is(
+    [class*="icon-box"], [class*="iconwrap"], [class*="icon-well"]) {
+    box-shadow: inset 3px 3px 7px rgba(15, 23, 42, .17),
+                inset -3px -3px 7px rgba(255, 255, 255, .88) !important;
+}
+/* 一键按钮 → 凸起；按下 / 选中 → 凹陷 */
+html[data-ui="neu"][data-neu="solid"] .desktop-widget-card :is(
+    button, [role="button"], [class*="btn"], [class*="button"]),
+html[data-ui="neu"][data-neu="glass"] .desktop-widget-card :is(
+    button, [role="button"], [class*="btn"], [class*="button"]) {
+    box-shadow: 3px 3px 7px rgba(15, 23, 42, .19),
+                -3px -3px 7px rgba(255, 255, 255, .92),
+                inset 0 1px 0 rgba(255, 255, 255, .78) !important;
+}
+html[data-ui="neu"][data-neu="solid"] .desktop-widget-card :is(
+    button, [role="button"], [class*="btn"], [class*="button"]):active,
+html[data-ui="neu"][data-neu="glass"] .desktop-widget-card :is(
+    button, [role="button"], [class*="btn"], [class*="button"]):active,
+html[data-ui="neu"][data-neu="solid"] .desktop-widget-card :is(
+    button, [role="button"], [class*="btn"], [class*="button"]).on,
+html[data-ui="neu"][data-neu="glass"] .desktop-widget-card :is(
+    button, [role="button"], [class*="btn"], [class*="button"]).on {
+    box-shadow: inset 3px 3px 7px rgba(15, 23, 42, .22),
+                inset -2px -2px 6px rgba(255, 255, 255, .72) !important;
+}
+/* 玻璃拟态 = 拟物凹凸 + 当前磨砂玻璃（吃 --n26-blur 滑杆） */
+html[data-ui="neu"][data-neu="glass"] .desktop-widget-card {
+    -webkit-backdrop-filter: blur(var(--n26-blur, 18px)) saturate(1.35);
+    backdrop-filter: blur(var(--n26-blur, 18px)) saturate(1.35);
+}
+/* 深色拟物 */
+html[data-ui="neu"][data-neu="solid"] body.dark-mode .desktop-widget-card,
+html[data-ui="neu"][data-neu="glass"] body.dark-mode .desktop-widget-card {
+    --w-mat-bg: rgba(44, 47, 54, .92);
+    --w-mat-bg-img: linear-gradient(158deg, rgba(255, 255, 255, .10) 0%, rgba(0, 0, 0, .10) 100%);
+    --w-mat-shadow:
+        5px 5px 14px rgba(0, 0, 0, .52),
+        -4px -4px 12px rgba(255, 255, 255, .09),
+        inset 0 1px 0 rgba(255, 255, 255, .14),
+        inset 0 -1px 0 rgba(0, 0, 0, .34);
+}
+html[data-ui="neu"][data-neu="solid"] body.dark-mode .desktop-widget-card .widget-inner :is(
+    [class*="time"], [class*="value"], [class*="temp"], [class*="title"],
+    [class*="num"], [class*="count"], [class*="big"], h1, h2, h3, strong, b),
+html[data-ui="neu"][data-neu="glass"] body.dark-mode .desktop-widget-card .widget-inner :is(
+    [class*="time"], [class*="value"], [class*="temp"], [class*="title"],
+    [class*="num"], [class*="count"], [class*="big"], h1, h2, h3, strong, b) {
+    text-shadow: 0 1px 0 rgba(255, 255, 255, .16), 0 -1px 1px rgba(0, 0, 0, .58) !important;
+}
+html[data-ui="neu"][data-neu="solid"] body.dark-mode .desktop-widget-card :is(
+    button, [role="button"], [class*="btn"], [class*="button"]),
+html[data-ui="neu"][data-neu="glass"] body.dark-mode .desktop-widget-card :is(
+    button, [role="button"], [class*="btn"], [class*="button"]) {
+    box-shadow: 3px 3px 7px rgba(0, 0, 0, .50),
+                -3px -3px 7px rgba(255, 255, 255, .09),
+                inset 0 1px 0 rgba(255, 255, 255, .12) !important;
+}
+
+/* ---------- ③ 扁平化：圆角、去玻璃、去凹凸 ---------- */
+html[data-ui="flat"] .desktop-widget-card {
+    --w-radius: 16px;
+    --w-inner-radius: 16px;
+    --w-mat-bg: rgba(250, 252, 255, .97);
+    --w-mat-bg-img: none;
+    --w-mat-shadow: 0 2px 8px rgba(15, 23, 42, .10);
+}
+html[data-ui="flat"] body.dark-mode .desktop-widget-card {
+    --w-mat-bg: rgba(38, 41, 48, .97);
+    --w-mat-bg-img: none;
+    --w-mat-shadow: 0 2px 8px rgba(0, 0, 0, .44);
+}
+html[data-ui="flat"] .desktop-widget-card .widget-inner * {
+    text-shadow: none !important;
+}
+html[data-ui="flat"] .desktop-widget-card,
+html[data-ui="flat"] .desktop-widget-card :is(button, [role="button"], [class*="btn"], [class*="button"],
+        [class*="icon-box"], [class*="iconwrap"]) {
+    box-shadow: none !important;
+}
+/* 胶囊档在扁平化下仍是胶囊（圆角档不能被 16px 覆盖） */
+html[data-ui="flat"] body .desktop-widget-card[data-rows="1"] { border-radius: 999px !important; }
+
+/* ---------- ④ 切换瞬态：选择按钮也要及时变化 ----------
+   只列 6 项白名单，绝不 transition: all。 */
+html.n26-fui-switching .desktop-widget-card,
+html.n26-fui-switching .desktop-widget-card .widget-inner :is(
+    [class*="time"], [class*="label"], [class*="title"], [class*="icon"], h1, h2, h3, small),
+html.n26-fui-switching .desktop-widget-card :is(button, [role="button"], [class*="btn"]) {
+    transition: background-color 260ms cubic-bezier(.2, .7, .2, 1),
+                border-color 260ms cubic-bezier(.2, .7, .2, 1),
+                box-shadow 260ms cubic-bezier(.2, .7, .2, 1),
+                border-radius 260ms cubic-bezier(.2, .7, .2, 1),
+                text-shadow 260ms cubic-bezier(.2, .7, .2, 1),
+                opacity 260ms cubic-bezier(.2, .7, .2, 1);
+}
+
+/* ---------- ⑤ 降级 ---------- */
+@media (prefers-reduced-motion: reduce) {
+    html.n26-fui-switching .desktop-widget-card,
+    html.n26-fui-switching .desktop-widget-card * {
+        transition-duration: .01ms !important;
+        transition-delay: 0ms !important;
+        animation-duration: .01ms !important;
+    }
+}
+
+/* =====================================================================
+   ⑥ 实拍对齐 · 每类专属底色（v ws5 · 全风格通用）
+   ---------------------------------------------------------------------
+   用户定案：「不仅是要这个材质，还要对应的颜色、对应的图标、对应的
+   类似字体……不能全是白的，必须按照真实的去美化」。对齐苹果店实拍
+   （MacBook 小组件照片）：色块要**读得出真颜色**，不是白蒙蒙一片。
+
+   真因：widgets.css 的 v3 色块被 color-mix 78% 透明 + 全卡 4px
+   backdrop-filter + ::after 白色渐变冲淡；深色下中性玻璃规则
+   （特异度 0,4,1）压过 v3 色块（0,3,2）→ 全灰白。
+   这里全部用更高特异度压回来：
+     浅色 per-type (0,3,1) ＞ 中性/v3 (0,2,2)
+     深色 per-type (0,4,2) ＞ 中性深色 (0,4,1)
+   ===================================================================== */
+
+/* --- 6.0 全类型：色块提到 94%（实拍卡片基本不透），字体对齐 SF --- */
+html body .desktop-widget-card,
+html body .desktop-widget-card[data-wtype] {
+    background-color: color-mix(in srgb, var(--w-tint-a, #2f6fd0) 94%, transparent) !important;
+    font-family: "SF Pro Display", -apple-system, "SF Pro Text",
+                 "Segoe UI Variable Display", "Segoe UI Variable",
+                 "Segoe UI", system-ui, sans-serif;
+}
+html body.dark-mode .desktop-widget-card[data-type],
+html body.dark-mode .desktop-widget-card[data-type][data-wtype] {
+    background-color: color-mix(in srgb, var(--w-tint-da, #14304f) 94%, transparent) !important;
+}
+/* 卡片已近乎实底：4px 磨砂看不见却让每张卡都占一层 backdrop 合成面
+   （桌面十几张卡 = 十几层每帧重采样）——liquid 档直接关掉，纯赚帧数。
+   3 个 id 抬特异度压过 widgets.css 的 3-id 强制磨砂规则。 */
+html body #desktopWidgets#desktopWidgets#desktopWidgets .desktop-widget-card {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
+
+/* --- 6.1 仪表卡：时钟 / 双时钟 / 秒表 / 计算器 ---
+   ★ v2.10.29 用户定案：实拍那张是**晚上**拍的，黑卡只是夜间的样子，
+     不能默认就黑。浅色模式走浅色仪表卡（冷白实底 + 墨字），只有深色模式
+     才回到实拍那张黑卡（白字白盘）。浅色卡必须补齐墨色令牌，否则白字隐形。 */
+html body .desktop-widget-card[data-wtype="clock"],
+html body .desktop-widget-card[data-wtype="time"],
+html body .desktop-widget-card[data-wtype="dualtime"],
+html body .desktop-widget-card[data-wtype="stopwatch"],
+html body .desktop-widget-card[data-wtype="calculator"] {
+    background-color: rgba(250, 251, 254, .98) !important;
+    --w-mat-bg-img:
+        radial-gradient(95% 85% at 88% 4%,
+            rgba(255, 255, 255, .90) 0%,
+            rgba(226, 234, 246, .32) 36%,
+            rgba(226, 234, 246, 0) 64%),
+        linear-gradient(180deg, #ffffff 0%, #f2f5fa 100%);
+    --w-text: #101923;   --w-text-strong: #050b12;
+    --w-text-soft: rgba(16, 25, 35, .62);
+    --w-text-faint: rgba(16, 25, 35, .40);
+    --w-hair: rgba(16, 25, 35, .10);
+    --w-well: rgba(16, 25, 35, .06);
+    --w-accent: #2f6fd0;
+}
+html body.dark-mode .desktop-widget-card[data-type][data-wtype="clock"],
+html body.dark-mode .desktop-widget-card[data-type][data-wtype="time"],
+html body.dark-mode .desktop-widget-card[data-type][data-wtype="dualtime"],
+html body.dark-mode .desktop-widget-card[data-type][data-wtype="stopwatch"],
+html body.dark-mode .desktop-widget-card[data-type][data-wtype="calculator"] {
+    background-color: #0b0e14 !important;
+    --w-mat-bg-img:
+        radial-gradient(95% 85% at 88% 4%,
+            rgba(255, 255, 255, .13) 0%,
+            rgba(255, 255, 255, .04) 36%,
+            rgba(255, 255, 255, 0) 64%);
+    --w-text: #f5f7fb;   --w-text-strong: #ffffff;
+    --w-text-soft: rgba(245, 247, 251, .72);
+    --w-text-faint: rgba(245, 247, 251, .50);
+    --w-hair: rgba(255, 255, 255, .16);
+    --w-well: rgba(255, 255, 255, .10);
+    --w-accent: #7cb2ff;
+}
+
+/* --- 6.2 天气：深蓝天空渐变（实拍深色玻璃天气卡） ---
+   渐变画进 --w-mat-bg-img（右上角高光叠在最上层，不丢）。 */
+html body .desktop-widget-card[data-wtype="weather"] {
+    background-color: #1c5a9e !important;
+    --w-mat-bg-img:
+        radial-gradient(95% 85% at 88% 4%,
+            rgba(255, 255, 255, .30) 0%,
+            rgba(255, 255, 255, .10) 36%,
+            rgba(255, 255, 255, 0) 64%),
+        linear-gradient(180deg, #3b8dd8 0%, #1e609f 58%, #143f74 100%);
+}
+html body.dark-mode .desktop-widget-card[data-type][data-wtype="weather"] {
+    background-color: #0f2f52 !important;
+    --w-mat-bg-img:
+        radial-gradient(95% 85% at 88% 4%,
+            rgba(255, 255, 255, .16) 0%,
+            rgba(255, 255, 255, .05) 36%,
+            rgba(255, 255, 255, 0) 64%),
+        linear-gradient(180deg, #1e4a78 0%, #143a63 58%, #0c2440 100%);
+}
+
+/* --- 6.3 纸白卡：日历 / 日程 / 待办 / 便签 / 浏览器 / 快启 / 收藏 ---
+   实拍里这类就是白卡（不是白蒙蒙，是干净的白）——浅色提到 98% 实底，
+   深色提到实灰。文字令牌沿用 widgets.css 的墨色/白字两套。 */
+html body .desktop-widget-card[data-wtype="calendar"],
+html body .desktop-widget-card[data-wtype="date"],
+html body .desktop-widget-card[data-wtype="schedule"],
+html body .desktop-widget-card[data-wtype="calendar-events"],
+html body .desktop-widget-card[data-wtype="todo"],
+html body .desktop-widget-card[data-wtype="browser"],
+html body .desktop-widget-card[data-wtype="quicklaunch"],
+html body .desktop-widget-card[data-wtype="searchbar"],
+html body .desktop-widget-card[data-wtype="favorites"],
+html body .desktop-widget-card[data-wtype="toggles"],
+html body .desktop-widget-card[data-wtype="volume"] {
+    background-color: rgba(252, 253, 255, .98) !important;
+}
+html body.dark-mode .desktop-widget-card[data-type][data-wtype="calendar"],
+html body.dark-mode .desktop-widget-card[data-type][data-wtype="date"],
+html body.dark-mode .desktop-widget-card[data-type][data-wtype="schedule"],
+html body.dark-mode .desktop-widget-card[data-type][data-wtype="calendar-events"],
+html body.dark-mode .desktop-widget-card[data-type][data-wtype="todo"],
+html body.dark-mode .desktop-widget-card[data-type][data-wtype="browser"],
+html body.dark-mode .desktop-widget-card[data-type][data-wtype="quicklaunch"],
+html body.dark-mode .desktop-widget-card[data-type][data-wtype="searchbar"],
+html body.dark-mode .desktop-widget-card[data-type][data-wtype="favorites"],
+html body.dark-mode .desktop-widget-card[data-type][data-wtype="toggles"],
+html body.dark-mode .desktop-widget-card[data-type][data-wtype="volume"],
+html body.dark-mode .desktop-widget-card[data-type][data-wtype="smartdevice"] {
+    background-color: rgba(34, 37, 44, .98) !important;
+}
+/* 智能设备 / 浏览器 / 快启三类浅色也归纸白：它们不在 widgets.css 的
+   墨字名单里，白底必须补墨色令牌，否则白字隐形 */
+html body .desktop-widget-card[data-wtype="smartdevice"],
+html body .desktop-widget-card[data-wtype="browser"],
+html body .desktop-widget-card[data-wtype="quicklaunch"] {
+    background-color: rgba(252, 253, 255, .98) !important;
+    --w-text: #101923;   --w-text-strong: #050b12;
+    --w-text-soft: rgba(16, 25, 35, .62);
+    --w-text-faint: rgba(16, 25, 35, .40);
+    --w-hair: rgba(16, 25, 35, .10);
+    --w-well: rgba(16, 25, 35, .06);
+}
+
+/* --- 6.4 系统监视：炭黑仪表（实拍无此卡，按 v3 深炭提实） --- */
+html body .desktop-widget-card[data-wtype="system"] {
+    background-color: #171d28 !important;
+}
+html body.dark-mode .desktop-widget-card[data-type][data-wtype="system"] {
+    background-color: #12161f !important;
+}
+
+/* --- 6.5 音乐：品牌蓝实底（v2.9.97 禁紫定案的身份色，提实不提亮） --- */
+html body .desktop-widget-card[data-wtype="music"] {
+    background-color: #2262d8 !important;
+    --w-mat-bg-img:
+        radial-gradient(95% 85% at 88% 4%,
+            rgba(255, 255, 255, .26) 0%,
+            rgba(255, 255, 255, .08) 36%,
+            rgba(255, 255, 255, 0) 64%),
+        linear-gradient(160deg, #2f6fe8 0%, #1d4ed8 100%);
+}
+html body.dark-mode .desktop-widget-card[data-type][data-wtype="music"] {
+    background-color: #1e3a8a !important;
+    --w-mat-bg-img:
+        radial-gradient(95% 85% at 88% 4%,
+            rgba(255, 255, 255, .14) 0%,
+            rgba(255, 255, 255, .04) 36%,
+            rgba(255, 255, 255, 0) 64%),
+        linear-gradient(160deg, #234f9e 0%, #172d6e 100%);
+}
+
+/* --- 6.6 便签：纸黄提实（FluentOS 便签黄，压到 96% 不再半透） --- */
+html body .desktop-widget-card[data-wtype="note"] {
+    background-color: rgba(255, 248, 191, .96) !important;
+}
+html body.dark-mode .desktop-widget-card[data-type][data-wtype="note"] {
+    background-color: rgba(74, 62, 22, .96) !important;
+}
+
+/* --- 6.7 强调色卡（闹钟 / 番茄 / 红点类）：色块提实，白字 --- */
+html body .desktop-widget-card[data-wtype="alarm"],
+html body .desktop-widget-card[data-wtype="pomodoro"],
+html body .desktop-widget-card[data-wtype="focus"],
+html body .desktop-widget-card[data-wtype="health"],
+html body .desktop-widget-card[data-wtype="stocks"],
+html body .desktop-widget-card[data-wtype="countdown"],
+html body .desktop-widget-card[data-wtype="sleep"] {
+    background-color: color-mix(in srgb, var(--w-tint-a, #e0503f) 96%, transparent) !important;
+}
+html body.dark-mode .desktop-widget-card[data-type][data-wtype="alarm"],
+html body.dark-mode .desktop-widget-card[data-type][data-wtype="pomodoro"],
+html body.dark-mode .desktop-widget-card[data-type][data-wtype="focus"],
+html body.dark-mode .desktop-widget-card[data-type][data-wtype="health"],
+html body.dark-mode .desktop-widget-card[data-type][data-wtype="stocks"],
+html body.dark-mode .desktop-widget-card[data-type][data-wtype="countdown"],
+html body.dark-mode .desktop-widget-card[data-type][data-wtype="sleep"] {
+    background-color: color-mix(in srgb, var(--w-tint-da, #6e2118) 96%, transparent) !important;
+}

@@ -1,0 +1,32 @@
+/* ==========================================================================
+   ui/n26-widget-ink.css · 昼模式小组件字色反转（白字）· 戳 ink1
+   --------------------------------------------------------------------------
+   实机截图（2026-11-15，用户「这几个不应该是白色的字吗」）：昼模式玻璃卡上
+   时钟 / 日历 / 世界时钟 / 天气 / 哔哩正在播放 全是深墨字，贴在亮壁纸的
+   半透磨砂上发闷。定案反转：昼模式玻璃卡文字一律白 + 轻投影（夜模式本就白）。
+   同类型全量生效：桌面卡 + 抽屉预览卡（预览复用 .desktop-widget-card）+
+   右侧胶囊推荐位，一个作用域全覆盖。
+   变量层 + 叶子层双保险：变量翻转给到 .widget-inner，叶子显式白兜住
+   不吃变量的散装 color。只动字色与投影，不碰材质 / 版式 / 裁切。
+   ========================================================================== */
+
+/* ---- 变量层：昼模式卡内文字令牌全部翻白 ---- */
+html:not([data-n26-phase="night"]) body:not(.dark-mode) .desktop-widget-card .widget-inner,
+html:not([data-n26-phase="night"]) body:not(.dark-mode) #n26WidgetView .widget-inner {
+    --w-text-strong: #ffffff !important;
+    --w-fg: #ffffff !important;
+    --w-text: rgba(255, 255, 255, .96) !important;
+    --w-text-soft: rgba(255, 255, 255, .82) !important;
+    --w-text-faint: rgba(255, 255, 255, .64) !important;
+    --nx-acc-text: #ffffff !important;
+}
+
+/* ---- 叶子层：卡内可见文字显式白 + 轻投影（可读性兜底） ---- */
+html:not([data-n26-phase="night"]) body:not(.dark-mode) .desktop-widget-card .widget-inner :is(
+    span, b, strong, em, small, i, p, h1, h2, h3, h4, h5, div, td, th, li, label, a, input, textarea),
+html:not([data-n26-phase="night"]) body:not(.dark-mode) #n26WidgetView .widget-inner :is(
+    span, b, strong, em, small, i, p, h1, h2, h3, h4, h5, div, td, th, li, label, a, input, textarea) {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    text-shadow: 0 1px 2px rgba(8, 14, 26, .30), 0 2px 10px rgba(8, 14, 26, .16) !important;
+}

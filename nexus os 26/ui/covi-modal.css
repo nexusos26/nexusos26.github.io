@@ -1,0 +1,40 @@
+/* ==========================================================================
+   Nexus OS 26 · 小方唤起模态护盾（cm1）
+   --------------------------------------------------------------------------
+   实机 bug（2026-11-15 用户截图）：长按 Space 呼出小方 HUD 后——
+   ① #dock(9000) / 光效舞台(9400, pointer-events:none) 之下 Dock 照样能点；
+   ② 焦点一旦被点击带走（点 Dock / 桌面 / 窗口）就永远回不到输入框，
+      键盘输入从此失灵，输入框成摆设。
+
+   解法：一块透明全屏护盾 #covi-shield（z 9650）——
+   · 在 Dock(9000) / dockBar(9100) / finder-bar(9200) / 窗口(1000+) 之上，
+     在 HUD 与回复气泡(9700) 之下：小方自己的按钮照常可点，其余全部接不住点击；
+   · 点护盾 = 收起小方（Siri 行为，外面不再是有机可乘的死区）；
+   · 焦点守卫：HUD 展开态下焦点离开输入框（focusout）→ 下一帧拉回，
+     思考 / 播报胶囊态不抢（见 sync / guard 的 pill 判定）。
+   JS 侧 API：window.N26CoviModal.sync(open)，由主壳 coviHudShow / coviHudClose 接线。
+   ========================================================================== */
+
+#covi-shield {
+    position: fixed;
+    inset: 0;
+    z-index: 9650;              /* HUD 9700 之下 · Dock 9000 / 舞台 9400 之上 */
+    display: none;
+    background: transparent;
+    cursor: default;
+    /* 发光一律 box-shadow；此处纯透明遮罩，零视觉输出 */
+}
+
+#covi-shield.on {
+    display: block;
+}
+
+/* 兜底：护盾元素万一未挂上（JS 被缓存旧版拦截），CSS :has 直接压住 Dock。
+   Chromium-only 系统可用 :has（本项目 backdrop-filter SVG 滤镜本就 Chromium-only）。 */
+html body:has(#covi-hud.show) #dock,
+html body:has(#covi-hud.show) #dockBar,
+html body:has(#covi-hud.show) #finder-bar,
+html body:has(#covi-hud.show) #n26LeftDock,
+html body:has(#covi-hud.show) #n26RightDock {
+    pointer-events: none !important;
+}

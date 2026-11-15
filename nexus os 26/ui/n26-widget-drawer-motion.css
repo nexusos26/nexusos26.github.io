@@ -1,0 +1,107 @@
+/* ==========================================================================
+   Nexus OS 26 · 小组件抽屉「进 / 出都有动画」权威层 / 戳 dm1 · 2026-11-15
+   --------------------------------------------------------------------------
+   用户 11-15 实机反馈：「小组件选择框进入和弹出的时候没有动画，
+   看起来感觉很烂」。
+
+   三条真因（静态确诊，零浏览器）：
+   ① ui/n26-widgets.css 的 v4 画廊段用
+      html body .widget-panel-overlay { transition: opacity 160ms ... !important }
+      把 n26-perf.css 的 visibility 0s linear .32s 延迟整条覆盖 ——
+      关闭那一刻 visibility 立刻 hidden，退场动画一帧都画不出来。
+   ② 面板位移历史上全靠 transform: ... !important（widgets.css / drawer.css /
+      n26-perf.css 各写一份），而 CSS animation 优先级低于 !important 声明，
+      想靠 keyframes 改 transform 一定被压死。
+   ③ openWidgetPanel() 首次把 #widgetPanel 从 #desktop reparent 到 body，
+      DOM 重挂载会让 transition 丢掉上一帧起点。
+
+   做法：
+    · 位移改用独立属性 translate（CSS Transforms Level 2），与历史
+      transform: !important 分属不同属性，互不冲突；dm1 再把 transform
+      统一归零，清掉 10px 微位移与 .985 缩放。
+    · 全程用 animation + fill-mode:both，不依赖上一帧样式，reparent 后照播。
+    · visibility 由状态类显式 !important 托管，不靠 transition 延迟。
+    · 退场期间保留 backdrop-filter：n26-perf.css 对 :not(.show) .glass
+      会摘掉模糊，这里按状态类补回来，抽屉滑走时玻璃不会突然变透明。
+    · body.n26-dm-closing 在进 / 出全程压住 Dock 与 Finder Bar。
+   ★ 遮罩层绝不吃 backdrop-filter（drw4 backdrop root 铁律）。
+   ★ liquid 四风格不在这里改材质，本层只管开合；零 radial / conic / 紫。
+   ========================================================================== */
+
+/* ---------- 0 · 归零历史冲突：transition 延迟 / transform 位移 ---------- */
+html body #widgetPanel.widget-panel-overlay {
+    transition: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    visibility: hidden;
+    opacity: 0;
+}
+html body #widgetPanel .widget-panel {
+    transform: none !important;          /* 历史 transform:!important 全归零 */
+    translate: 0 102%;                  /* 静息态：整块藏在屏幕下方 */
+    opacity: 0;
+    will-change: translate, opacity;
+}
+
+/* ---------- 1 · 状态：闲置 hidden，进 / 开 / 出全程 visible ---------- */
+html body #widgetPanel.widget-panel-overlay.n26-dm-in,
+html body #widgetPanel.widget-panel-overlay.n26-dm-open,
+html body #widgetPanel.widget-panel-overlay.n26-dm-out {
+    visibility: visible !important;
+}
+/* 兜底：万一有代码绕过包装函数直接给面板加 .show，状态类没跟上时
+   也不许退回「不可见但还占着一层」的死状态。 */
+html body #widgetPanel.widget-panel-overlay.show {
+    visibility: visible !important;
+    opacity: 1;
+}
+html body #widgetPanel.widget-panel-overlay.n26-dm-open { opacity: 1; }
+html body #widgetPanel.widget-panel-overlay.n26-dm-open .widget-panel {
+    translate: none !important;
+    opacity: 1;
+}
+html body #widgetPanel.widget-panel-overlay.n26-dm-out {
+    pointer-events: none !important;
+}
+
+/* ---------- 2 · 关键帧：animate translate，不碰 transform ---------- */
+@keyframes n26DmVeilIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes n26DmVeilOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes n26DmTrayIn  { from { translate: 0 102%; opacity: .50; } to { translate: none; opacity: 1; } }
+@keyframes n26DmTrayOut { from { translate: none; opacity: 1; } to { translate: 0 102%; opacity: .40; } }
+
+html body #widgetPanel.widget-panel-overlay.n26-dm-in {
+    animation: n26DmVeilIn 380ms cubic-bezier(.16, 1, .3, 1) both !important;
+}
+html body #widgetPanel.widget-panel-overlay.n26-dm-in .widget-panel {
+    animation: n26DmTrayIn 460ms cubic-bezier(.16, 1, .3, 1) both !important;
+}
+html body #widgetPanel.widget-panel-overlay.n26-dm-out {
+    animation: n26DmVeilOut 320ms cubic-bezier(.4, 0, 1, 1) both !important;
+}
+html body #widgetPanel.widget-panel-overlay.n26-dm-out .widget-panel {
+    animation: n26DmTrayOut 340ms cubic-bezier(.4, 0, 1, 1) both !important;
+}
+
+/* ---------- 3 · 退场期玻璃不许掉：压过 perf 的 :not(.show) .glass ---------- */
+html body #widgetPanel.widget-panel-overlay.n26-dm-out .widget-panel {
+    -webkit-backdrop-filter: blur(32px) saturate(155%) !important;
+    backdrop-filter: blur(32px) saturate(155%) !important;
+}
+/* 性能模式在 n26-perf.css 里对 .widget-panel-overlay 写过 animation:none，
+   但本层的 animation 带 !important 且带 #widgetPanel（ID）特异度更高，
+   进出场动画在性能模式下照样成立 —— 用户点名要动画，不能一刀砍掉。 */
+
+/* ---------- 4 · 进 / 出全程压住 Dock，避免 9000 层抢在抽屉前面 ---------- */
+html body.n26-dm-closing #dock,
+html body.n26-dm-closing #finder-bar { z-index: 90 !important; }
+
+/* ---------- 5 · 减少动态效果：缩短，但不砍成 0 ---------- */
+@media (prefers-reduced-motion: reduce) {
+    html body #widgetPanel.widget-panel-overlay.n26-dm-in,
+    html body #widgetPanel.widget-panel-overlay.n26-dm-in .widget-panel,
+    html body #widgetPanel.widget-panel-overlay.n26-dm-out,
+    html body #widgetPanel.widget-panel-overlay.n26-dm-out .widget-panel {
+        animation-duration: 140ms !important;
+    }
+}

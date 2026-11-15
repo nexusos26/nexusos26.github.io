@@ -50,14 +50,23 @@ html body #widgetPanel .widget-panel-card-preview {
     box-shadow: none !important;
     border-radius: var(--w-radius, 20px) !important;
 }
+/* wpf4 · 11-14：预览卡必须按真实尺寸档等比呈现（Apple 小组件库同款）。
+   renderWidgetPreviewInto() 会写 inline width/height/transform: scale()，
+   旧版这四条 width/height/transform !important 会把等比缩放整个吃掉：
+   2×2 被拉成 138px 方框、5×5 直接溢出裁切。这里只留非几何属性。 */
 html body #widgetPanel .widget-panel-card-preview .widget-preview-card {
-    width: 100% !important;
-    height: 100% !important;
-    max-width: none !important;
-    max-height: none !important;
-    transform: none !important;
     margin: 0 !important;
     border-radius: var(--w-radius, 20px) !important;
+    max-width: none;
+    max-height: none;
+    transform-origin: center center;
+}
+html body #widgetPanel .widget-panel-card-preview .widget-panel-card-preview-inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    transform-origin: center center;
 }
 html body #widgetPanel .widget-panel-card-preview .widget-preview-card > .widget-inner {
     width: 100%; height: 100%; box-sizing: border-box;

@@ -1,5 +1,6 @@
 /* ============================================================
-   n26-switch.js · 统一开关动效 v4.0（v2.9.93 · 用户钦定四段液态玻璃）
+   n26-switch.js · 统一开关动效 v6.0（v2.9.93 四段液态玻璃 · v2.10.16 白点按下即隐
+                                    · v2.10.23 白点展开成同一块玻璃 / 按住保持 / 跟手慢动）
    ------------------------------------------------------------
    用户原话的规格，逐条落成代码：
      ① 白胶囊隐藏 → 变成「比中间白色的大出来 50%」的一大块液态玻璃；
@@ -32,6 +33,14 @@
     var P2_LAG = 100;       //    后沿晚 100ms 跟上（用户钦定）
     var P3_SETTLE = 100;    // ③ 缩回白色胶囊
     var TOTAL = P1_SWELL + P2_MOVE + P2_LAG + P3_SETTLE;
+
+    /* v2.10.23 ★「按住即展开」：白点和玻璃必须是同一个物体。
+       pointerdown 第一帧就地把白点涨成玻璃并一直保持（纯按住不动也保持），
+       鼠标慢慢动时玻璃低通跟手，松手由 click 链路从当前几何续演四段到另一侧，
+       到位再缩回白点。全程只有一块 .n26-sw-blob，绝不删了再建、绝不重算折射贴图。 */
+    var HOLD_SWELL = 260;    // 白点 → 150% 玻璃（与表面类 260ms 统一节奏）
+    var HOLD_FOLLOW = 0.34;  // 跟手位移系数：慢慢动，不是一格一格跳
+    var HOLD_LAG = 0.22;     // 低通：前片先到、后片慢半拍
 
     /* 折射贴图固定尺寸：一次生成、全站复用，动画首帧就有 url(#...) */
     var LG_SIZE = { w: 48, h: 24 };
@@ -114,36 +123,61 @@
     }
 
     /* ---------- 动效 ---------- */
-    function stop(el) {
+    function stop(el, opts) {
+        opts = opts || {};
+        /* ★ 按住态的 blob 挂在 __n26SwHold 上而不是 __n26Sw —— 旧版 stop 找不到它，
+           会留下一块永不消失的玻璃 / 把白点永久藏掉。这里两个来源统一收。
+           keepBlob:true 只给 play() 复用，保留 blob 与 busy 让视觉不断线。 */
+        var h = el.__n26SwHold;
+        if (h && h.raf) cancelAnimationFrame(h.raf);
+        if (!opts.keepBlob && h && h.blob) {
+            lgClear(h.blob);
+            if (h.blob.parentNode) h.blob.parentNode.removeChild(h.blob);
+        }
         var s = el.__n26Sw;
-        if (!s) return;
-        if (s.raf) cancelAnimationFrame(s.raf);
-        if (s.blob) {
+        if (s && s.raf) cancelAnimationFrame(s.raf);
+        if (!opts.keepBlob && s && s.blob) {
             lgClear(s.blob);
             if (s.blob.parentNode) s.blob.parentNode.removeChild(s.blob);
         }
-        el.classList.remove('n26-sw-busy');
+        if (!opts.keepBlob) el.classList.remove('n26-sw-busy', 'n26-sw-dragging');
         el.__n26Sw = null;
+        el.__n26SwHold = null;
     }
 
+    /* v2.10.16：★「中心小白点按下即隐」—— 消除「点击 → setTimeout(0) 播放」之间
+       那一帧白点（::after）滑过的闪烁。只要 n26-sw-busy 在，①b 规则就把 ::after
+       压成 opacity:0 + visibility:hidden + transition:none；播放结束 / 看门狗收尾时
+       stop() 移除它，白点才在新位置回来。 */
+    function hideKnob(el) { el.classList.add('n26-sw-busy'); }
+    function showKnob(el) { el.classList.remove('n26-sw-busy'); }
+
     function play(el, fromOn, toOn) {
-        stop(el);
-        upgrade(el);
-        if (reduced) return;
+        /* ★ 复用按住态那一块玻璃：白点早已经展开成它了，这里绝不重建。
+           从它当前的涨大程度与跟手位置续演，自始至终只有一个物体。 */
+        var held = el.__n26SwHold;
+        var blob, holdG = 0, holdCX = null;
+        if (held && held.blob && held.blob.parentNode) {
+            blob = held.blob;
+            holdG = clamp(held.g || 0);
+            holdCX = held.cx;
+            stop(el, { keepBlob: true });
+        } else {
+            stop(el);
+            upgrade(el);
+            blob = document.createElement('span');
+            blob.className = 'n26-sw-blob';
+            blob.setAttribute('aria-hidden', 'true');
+            el.appendChild(blob);
+            el.classList.add('n26-sw-busy');
+            var hasLg = lgAttach(blob);
+            blob.classList.toggle('n26-sw-nolg', !hasLg);
+        }
+        if (reduced) { stop(el); return; }
 
         var m = metrics(el);
         var x0 = m.pad + (fromOn ? m.travel : 0);
         var x1 = m.pad + (toOn ? m.travel : 0);
-
-        var blob = document.createElement('span');
-        blob.className = 'n26-sw-blob';
-        blob.setAttribute('aria-hidden', 'true');
-        el.appendChild(blob);
-
-        /* ① 白胶囊隐藏；② 玻璃挂真折射（预热过 → 同步拿到 url(#...)） */
-        el.classList.add('n26-sw-busy');
-        var hasLg = lgAttach(blob);
-        blob.classList.toggle('n26-sw-nolg', !hasLg);
 
         var seq = (el.__n26SwSeq || 0) + 1;
         el.__n26SwSeq = seq;
@@ -157,19 +191,21 @@
             var t = now - t0;
             if (t >= TOTAL) { stop(el); return; }
 
-            /* P1：白胶囊 → 150% 玻璃块 */
+            /* P1：白胶囊 → 150% 玻璃块。按住态已经涨到 holdG，这里只补完
+               剩下的那一截，不从头再涨一次；中心点也从跟手位置平滑归位。 */
             var grow = clamp(t / P1_SWELL);
 
             /* P2：前沿 L(t) 走，后沿 T(t) = L(t - 100ms) 跟上 */
             var mt = clamp((t - P1_SWELL) / P2_MOVE);
             var bt = clamp((t - P1_SWELL - P2_LAG) / P2_MOVE);
-            var lead = x0 + (x1 - x0) * ease(mt);
-            var trail = x0 + (x1 - x0) * ease(bt);
+            var base = (holdCX == null) ? x0 : holdCX + (x0 - holdCX) * ease(grow);
+            var lead = base + (x1 - x0) * ease(mt);
+            var trail = base + (x1 - x0) * ease(bt);
             var span = Math.abs(lead - trail);
 
             /* P3：缩回白胶囊 */
             var shrink = clamp((t - P1_SWELL - P2_MOVE - P2_LAG) / P3_SETTLE);
-            var g = grow * (1 - shrink);
+            var g = (holdG + (1 - holdG) * grow) * (1 - shrink);
 
             var kw = m.kw * (1 + 0.5 * g);
             var kh = m.kh * (1 + 0.5 * g);
@@ -204,6 +240,90 @@
     var DRAG_THRESH = 6;
     function clampN(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
 
+    /* ---------- v2.10.23：按住即展开，白点 → 同一块玻璃 ----------
+       用户规格：「那个小圆点就会展开变成玻璃，到另一个地方了再缩回去，
+       并且这个也是可以鼠标一直摁着，它一直保持玻璃的，然后跟着鼠标慢慢动的」。
+       旧版是白点瞬间 visibility:hidden + 另建一块 blob（两个物体），
+       且只有位移 >6px 才创建玻璃 —— 纯按住不动时开关像坏了一样。 */
+    function beginHold(el, e) {
+        stop(el);
+        upgrade(el);
+        var m = metrics(el);
+        var x0 = m.pad + (isOn(el) ? m.travel : 0);
+        var blob = document.createElement('span');
+        blob.className = 'n26-sw-blob';
+        blob.setAttribute('aria-hidden', 'true');
+        el.appendChild(blob);
+        /* 与白点同帧交接：白点由 n26-sw-busy 即时隐藏，玻璃从白点原位、
+           白点原大小起步，逐帧涨到 150%。起点几何完全一致 = 一个物体在变形。 */
+        el.classList.add('n26-sw-busy');
+        var hasLg = lgAttach(blob);
+        blob.classList.toggle('n26-sw-nolg', !hasLg);
+
+        var h = {
+            blob: blob, raf: 0, g: 0, cx: x0, lag: 0, target: 0, fade: 1, g0: 1,
+            m: m, x0: x0,
+            t0: (window.performance && performance.now) ? performance.now() : Date.now()
+        };
+        el.__n26SwHold = h;
+
+        function paintHold() {
+            var kw = h.m.kw * (1 + 0.5 * h.g);
+            var kh = h.m.kh * (1 + 0.5 * h.g);
+            blob.style.left = (h.cx - (kw - h.m.kw) / 2).toFixed(2) + 'px';
+            blob.style.top = ((h.m.h - kh) / 2).toFixed(2) + 'px';
+            blob.style.width = kw.toFixed(2) + 'px';
+            blob.style.height = kh.toFixed(2) + 'px';
+            blob.style.opacity = String(Math.min(1, 0.35 + h.g * 3) * h.fade);
+        }
+        function holdFrame(now) {
+            if (el.__n26SwHold !== h) return;
+            h.g = clamp((now - h.t0) / HOLD_SWELL);
+            h.lag += (h.target - h.lag) * HOLD_LAG;
+            h.cx = h.x0 + h.lag;
+            paintHold();
+            /* 涨完且没在跟手就停 rAF：纯按住静息态零开销。
+               之后每次 followHold 会重新唤起，不会留一条空转的帧循环。 */
+            if (h.g < 1 || Math.abs(h.target - h.lag) > 0.2) h.raf = requestAnimationFrame(holdFrame);
+            else h.raf = 0;
+        }
+        h.paint = paintHold;
+        h.frame = holdFrame;
+        paintHold();
+        h.raf = requestAnimationFrame(holdFrame);
+    }
+    function followHold(el, dx) {
+        var h = el.__n26SwHold;
+        if (!h) return;
+        /* 慢慢跟：只走位移的一小截，且不超过轨道的 60%，
+           「一直保持玻璃、跟着鼠标慢慢动」，绝不提前判定开 / 关。 */
+        var lim = h.m.travel * 0.6;
+        h.target = clampN(dx * HOLD_FOLLOW, -lim, lim);
+        if (!h.raf) h.raf = requestAnimationFrame(h.frame);
+    }
+    function settleHold(el) {
+        /* 看门狗：click 没来（框选 / 事件被吞 / 节点被重建）时，
+           把玻璃缩回白点，绝不留下永不消失的玻璃。 */
+        var h = el.__n26SwHold;
+        if (!h) return;
+        if (h.raf) cancelAnimationFrame(h.raf);
+        h.g0 = h.g;
+        var t0 = (window.performance && performance.now) ? performance.now() : Date.now();
+        function frame(now) {
+            if (el.__n26SwHold !== h) return;
+            var p = clamp((now - t0) / 180);
+            var q = 1 - Math.pow(1 - p, 3);
+            h.g = (1 - q) * h.g0;
+            h.lag *= (1 - q);
+            h.cx = h.x0 + h.lag;
+            h.fade = 1 - q;
+            h.paint();
+            if (p < 1) h.raf = requestAnimationFrame(frame);
+            else { h.raf = 0; stop(el); }
+        }
+        h.raf = requestAnimationFrame(frame);
+    }
+
     function beginDrag(el, e) {
         var before = isOn(el);
         var m = metrics(el);
@@ -225,16 +345,27 @@
         }
         function begin() {
             active = true;
-            stop(el);
-            upgrade(el);
-            blob = document.createElement('span');
-            blob.className = 'n26-sw-blob';
-            blob.setAttribute('aria-hidden', 'true');
-            el.appendChild(blob);
+            var h = el.__n26SwHold;
+            if (h && h.blob && h.blob.parentNode) {
+                /* ★ 按住态那块玻璃直接接管成拖动态，绝不删了重建 ——
+                   视觉不断线、折射贴图不重算、首帧不闪。 */
+                if (h.raf) cancelAnimationFrame(h.raf);
+                blob = h.blob;
+                el.__n26SwHold = null;
+                curLeft = h.cx - (kw - m.kw) / 2;
+                el.__n26Sw = { blob: blob, raf: 0 };
+            } else {
+                stop(el);
+                upgrade(el);
+                blob = document.createElement('span');
+                blob.className = 'n26-sw-blob';
+                blob.setAttribute('aria-hidden', 'true');
+                el.appendChild(blob);
+                el.__n26Sw = { blob: blob, raf: 0 };
+                var hasLg = lgAttach(blob);
+                blob.classList.toggle('n26-sw-nolg', !hasLg);
+            }
             el.classList.add('n26-sw-busy', 'n26-sw-dragging');
-            var hasLg = lgAttach(blob);
-            blob.classList.toggle('n26-sw-nolg', !hasLg);
-            el.__n26Sw = { blob: blob, raf: 0 };
             paint();
         }
         function settle(toOn) {
@@ -264,11 +395,13 @@
         }
         function onMove(ev) {
             if (ended) return;
+            var dxMove = ev.clientX - startX;
             if (!active) {
-                if (Math.abs(ev.clientX - startX) < DRAG_THRESH) return;
+                /* 6px 以内：不进拖动态，玻璃只低通跟手慢慢动 */
+                if (Math.abs(dxMove) < DRAG_THRESH) { followHold(el, dxMove); return; }
                 begin();
             }
-            curLeft = clampN(x0 - (kw - m.kw) / 2 + (ev.clientX - startX), minLeft, maxLeft);
+            curLeft = clampN(x0 - (kw - m.kw) / 2 + dxMove, minLeft, maxLeft);
             paint();
             if (ev.cancelable) ev.preventDefault();
         }
@@ -278,7 +411,17 @@
             window.removeEventListener('pointermove', onMove, true);
             window.removeEventListener('pointerup', onUp, true);
             window.removeEventListener('pointercancel', onUp, true);
-            if (!active) return;                 // 只是普通点击，交给 click 链路
+            if (!active) {
+                /* 普通点击 / 纯按住：这里绝不收玻璃。click 链路的 play() 会复用
+                   这块 hold 玻璃续演到另一侧再缩回白点 = 全程一个物体。
+                   万一 click 没来（框选、被遮挡、事件被吞），看门狗把它收回，
+                   既不留下永不消失的玻璃，也不把白点永久藏掉。 */
+                var h = el.__n26SwHold;
+                if (h) setTimeout(function () {
+                    if (el.__n26SwHold === h && !el.__n26Sw) settleHold(el);
+                }, 320);
+                return;
+            }
             var toOn = (curLeft + kw / 2) >= (el.offsetWidth / 2);
             /* 拖回原侧：不改状态，不触发业务；只把玻璃收回 */
             if (toOn === before) { settle(toOn); return; }
@@ -325,7 +468,26 @@
         var el = e.target && e.target.closest ? e.target.closest(SEL) : null;
         if (!el) return;
         upgrade(el);
-        if (e.button === 0 && !reduced) beginDrag(el, e);
+        if (e.button !== 0 || reduced) return;
+        /* 按下瞬间就把白点藏掉：之后不管走「点击播放」还是「拖动态」，
+           ::after 都不会再露脸，直到 stop() / 看门狗收尾。松手/取消兜底回收：
+           260ms 后若没有任何动画在跑（__n26Sw 为空）就还白点，避免极端情况
+           （点了却没触发 click，如框选文本）把白点永久藏掉。 */
+        hideKnob(el);
+        /* ★ v2.10.23：按下第一帧就把白点展开成玻璃（同一个物体）。
+           纯按住不动也一直保持，鼠标慢慢动就跟手，松手由 click 续演到另一侧。 */
+        beginHold(el, e);
+        var reclaim = function () {
+            window.removeEventListener('pointerup', reclaim, true);
+            window.removeEventListener('pointercancel', reclaim, true);
+            /* 按住态也算「有动画在跑」，不能这时候把白点放回来 */
+            setTimeout(function () {
+                if (!el.__n26Sw && !el.__n26SwHold) showKnob(el);
+            }, 260);
+        };
+        window.addEventListener('pointerup', reclaim, true);
+        window.addEventListener('pointercancel', reclaim, true);
+        beginDrag(el, e);
     }, true);
 
     document.addEventListener('keydown', function (e) {
@@ -333,6 +495,7 @@
         var el = e.target && e.target.closest ? e.target.closest(SEL) : null;
         if (!el) return;
         e.preventDefault();
+        if (!reduced) hideKnob(el);   /* 键盘激活同样即时藏白点 */
         el.click();
     }, true);
 
@@ -345,9 +508,28 @@
         scan();
         warmLg();
         if (window.MutationObserver && document.body) {
-            var mo = new MutationObserver(function () {
+            var mo = new MutationObserver(function (recs) {
+                /* ★ v2.10.39 P0（心跳实机：卡死在点击后 50–200ms）：
+                   旧写法「任何 childList 都 160ms 后 scan() 全文档」，设置面板
+                   整块 innerHTML 重建会带出几百条记录，正好压在玻璃滑行动画
+                   半途、与光学层 120ms 扫描叠在一起。现在：
+                   ① 只有新增节点里真的出现开关（SEL）才排扫描；
+                   ② 时间从 160ms 挪到 380ms（动画收尾之后）。
+                   开关升级逻辑、四段动效、折射白名单一条未删。 */
+                var hit = false;
+                for (var i = 0; i < recs.length && !hit; i++) {
+                    var a = recs[i].addedNodes;
+                    if (!a) continue;
+                    for (var j = 0; j < a.length; j++) {
+                        var n = a[j];
+                        if (!n || n.nodeType !== 1) continue;
+                        if ((n.matches && n.matches(SEL)) ||
+                            (n.querySelector && n.querySelector(SEL))) { hit = true; break; }
+                    }
+                }
+                if (!hit) return;
                 clearTimeout(mo.__t);
-                mo.__t = setTimeout(scan, 160);
+                mo.__t = setTimeout(scan, 380);
             });
             mo.observe(document.body, { childList: true, subtree: true });
         }
@@ -357,13 +539,17 @@
 
     /* 供自检脚本驱动逐帧坐标（不参与业务） */
     window.N26Switch = {
-        version: '5.0-2.9.94',
+        version: '6.0-2.10.23',
         phases: { swell: P1_SWELL, move: P2_MOVE, lag: P2_LAG, settle: P3_SETTLE },
+        holdSwell: HOLD_SWELL,
         metrics: metrics,
         ease: ease,
         isOn: isOn,
         setOn: setOn,
         dragThreshold: DRAG_THRESH,
-        beginDrag: beginDrag
+        beginDrag: beginDrag,
+        beginHold: beginHold,
+        followHold: followHold,
+        settleHold: settleHold
     };
 })();

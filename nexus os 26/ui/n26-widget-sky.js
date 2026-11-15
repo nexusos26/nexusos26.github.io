@@ -1,14 +1,19 @@
 /* ============================================================================
- * Nexus OS 26 · 小组件「天空」层（独立模块，零侵入主壳）
+ * Nexus OS 26 · 小组件「天空」层（戳 sky5 · 独立模块，零侵入主壳）
  * ----------------------------------------------------------------------------
+ * 用户 11-13 钦定：「这种有时间有变化的小组件，背景都是会变的」，并点名
+ * 9 档时段：日出 / 早晨 / 中午 / 下午 / 黄昏时分 / 蓝调时分 / 傍晚 / 夜晚 / 凌晨，
+ * 天气按常见状况分；难做的天气背景直接取 天气素材/ 里的真实图。
+ *
  * 四件事：
  *  ① 首次 / 空列表时铺截图那套默认四张：时钟 · 日历 · 双区时间 · 天气
  *     （用户已经摆过就绝不覆盖，符合「仅首次/空列表铺」）
- *  ② 时钟 / 双区时间 / 天气三张卡的底图，按「当前天气 × 当前时段」变化
- *  ③ 6 档时段：夜晚 / 日出 / 早晨 / 正午 / 黄金时分 / 日落
- *     —— 优先取天气接口的真实 sunrise/sunset；断网时按城市纬度 + 当前日期
- *        用 NOAA 简化公式算真实日出日落，不写死钟点
- *  ④ 时钟拉大（M/L 档）后补出更详细的日出 / 日落 / 黄金时分 / 当前时段
+ *  ② 时间族 / 天气族共 17 款：底图按「真实天气 × 9 档时段」变化，
+ *     图片来自 ui/n26-widget-sky-bg.js 扫描 209 张素材生成的映射，零 404。
+ *  ③ 日历族 9 款：不铺实景图（会毁掉昼墨夜白的对比度），只叠一层
+ *     极淡的时段色调 --sky-tint-soft，背景照样随 9 档时段变。
+ *  ④ 优先取天气接口真实 sunrise/sunset；断网按城市纬度 + 日期用 NOAA
+ *     简化公式算，不写死钟点。9 档边界单调、无空档、全天连续覆盖。
  *
  * 主壳契约（已逐条核对 Nexus OS 26.html）：
  *   - 坐标存 col/row 网格，不是像素；像素由 n26CellToPx(m,col,row,cols,rows) 算
@@ -17,14 +22,31 @@
  *     → 天空层用真实子 div（z-index:-1），绝不抢伪元素
  *   - 卡片 data-wtype 是配色键，createWidget 会写好
  *
- * 背景文件来自 ui/n26-widget-sky-bg.js（由素材目录扫描生成，零 404）。
  * 全面禁紫：所有时段色调用蓝 / 青 / 琥珀 / 橙 / 中性墨，不出现紫。
  * ==========================================================================*/
 (function () {
     'use strict';
 
     var KEY = 'desktopWidgets';
-    var SKY_TYPES = ['clock', 'weather', 'dualtime'];
+
+    /* ② 照片卡：显示时间 / 天色 / 天气，铺真实实景图 + 压暗层 + 白字。
+       这些都是「有时间有变化」的卡，用户明确要求背景随时间与天气变。 */
+    var SKY_TYPES = [
+        /* 时间族 10 款 */
+        'clock', 'dualtime', 'worldclock', 'clockAnalog', 'timeSeconds',
+        'time', 'alarm', 'stopwatch', 'countdown', 'pomodoro',
+        /* 天气族 7 款 */
+        'weather', 'weatherHour', 'weatherWeek', 'airQuality',
+        'sunrise', 'sunmoon', 'moonphase'
+    ];
+    /* ③ 色调卡：日期会变但内容密集，只随 9 档时段换一层极淡色调，
+       文字对比度继续交给 wr7（昼墨夜白），零风险。 */
+    var TINT_TYPES = [
+        'calendar', 'schedule', 'weekStrip', 'bigDate', 'dayProgress',
+        'dayCard', 'greeting', 'todayAgenda', 'date'
+    ];
+    var PHASES = ['sunrise', 'morning', 'noon', 'afternoon', 'golden',
+                  'bluehour', 'evening', 'night', 'latenight'];
 
     /* 截图里的默认布局：左列「时钟 → 双区时间 → 天气」竖排，日历贴在时钟右侧。
        坐标是网格 col/row（N26_GRID: cell 76 / gap 16 / pitch 92 / margin 28）。
@@ -36,31 +58,50 @@
         { type: 'weather',  col: 0, row: 4 }    // 4×2
     ];
 
-    /* 中文天气状况 → 素材前缀（与主壳 n26WeatherStatus() 的返回字面对齐） */
+    /* 中文天气状况 → 素材前缀（与主壳 n26WeatherStatus() 的返回字面对齐）。
+       16 个前缀全部来自素材目录真实扫描，不臆造。 */
     var COND = {
-        '晴': 'sunny', '基本晴朗': 'sunny', '晴朗': 'sunny',
+        '晴': 'sunny', '基本晴朗': 'sunny', '晴朗': 'sunny', '大晴': 'sunning',
         '晴间多云': 'cloudy', '局部多云': 'cloudy', '多云': 'cloudy', '少云': 'cloudy',
         '阴': 'overcast', '阴天': 'overcast',
-        '毛毛雨': 'drizzle', '小雨': 'rain', '阵雨': 'rain', '雨': 'rain', '中雨': 'rain', '大雨': 'rain', '暴雨': 'storm',
+        '毛毛雨': 'drizzle', '小雨': 'rain', '阵雨': 'rain', '雨': 'rain',
+        '中雨': 'rain', '大雨': 'storm', '暴雨': 'storms', '大暴雨': 'storms',
         '降雪': 'snow', '阵雪': 'snow', '雪': 'snow', '小雪': 'snow',
+        '雨夹雪': 'sleet', '冰雹': 'hailstone',
         '雷雨': 'thunder', '雷阵雨': 'thunder', '雷电': 'thunder',
-        '雾': 'fog', '霾': 'haze', '冰雹': 'hailstone', '雨夹雪': 'sleet', '沙尘暴': 'sandstorm'
+        '雾': 'fog', '霾': 'haze', '沙尘暴': 'sandstorm', '大风': 'wind', '风': 'wind'
     };
 
     var PHASE_CN = {
-        night: '夜晚', sunrise: '日出', morning: '早晨',
-        noon: '正午', golden: '黄金时分', sunset: '日落'
+        sunrise: '日出', morning: '早晨', noon: '中午', afternoon: '下午',
+        golden: '黄昏时分', bluehour: '蓝调时分', evening: '傍晚',
+        night: '夜晚', latenight: '凌晨'
     };
 
-    /* 6 档色调：叠在底图之上的半透明层，保证同一张图不同时段观感明显不同，
+    /* 9 档色调：叠在实景图之上的半透明层，保证同一张图不同时段观感明显不同，
        同时压暗背景让白色数字始终可读。全部无紫。 */
     var TINT = {
-        night:   'linear-gradient(160deg, rgba(8,20,42,.68), rgba(14,32,62,.48))',
-        sunrise: 'linear-gradient(160deg, rgba(255,176,124,.36), rgba(122,176,224,.26))',
-        morning: 'linear-gradient(160deg, rgba(126,196,244,.24), rgba(255,255,255,.10))',
-        noon:    'linear-gradient(160deg, rgba(255,255,255,.14), rgba(150,205,248,.12))',
-        golden:  'linear-gradient(160deg, rgba(255,190,104,.32), rgba(226,146,86,.20))',
-        sunset:  'linear-gradient(160deg, rgba(240,124,84,.40), rgba(72,96,146,.32))'
+        latenight: 'linear-gradient(160deg, rgba(6,14,32,.74), rgba(10,26,52,.54))',
+        sunrise:   'linear-gradient(160deg, rgba(255,168,110,.38), rgba(116,176,224,.28))',
+        morning:   'linear-gradient(160deg, rgba(126,196,244,.24), rgba(255,255,255,.10))',
+        noon:      'linear-gradient(160deg, rgba(255,255,255,.12), rgba(150,205,248,.10))',
+        afternoon: 'linear-gradient(160deg, rgba(255,214,150,.18), rgba(120,180,232,.16))',
+        golden:    'linear-gradient(160deg, rgba(255,186,96,.34), rgba(224,140,80,.22))',
+        bluehour:  'linear-gradient(160deg, rgba(38,86,158,.46), rgba(18,44,92,.40))',
+        evening:   'linear-gradient(160deg, rgba(226,120,84,.34), rgba(58,86,140,.36))',
+        night:     'linear-gradient(160deg, rgba(8,20,42,.68), rgba(14,32,62,.48))'
+    };
+    /* ③ 色调卡的淡版：alpha 一律 ≤ .18，昼墨字 / 夜白字都不受影响。 */
+    var TINT_SOFT = {
+        latenight: 'linear-gradient(158deg, rgba(30,58,110,.18), rgba(20,40,80,.10))',
+        sunrise:   'linear-gradient(158deg, rgba(255,176,124,.17), rgba(122,176,224,.10))',
+        morning:   'linear-gradient(158deg, rgba(126,196,244,.15), rgba(255,255,255,.08))',
+        noon:      'linear-gradient(158deg, rgba(255,255,255,.12), rgba(150,205,248,.09))',
+        afternoon: 'linear-gradient(158deg, rgba(255,214,150,.14), rgba(120,180,232,.10))',
+        golden:    'linear-gradient(158deg, rgba(255,186,96,.17), rgba(224,140,80,.10))',
+        bluehour:  'linear-gradient(158deg, rgba(38,86,158,.18), rgba(18,44,92,.12))',
+        evening:   'linear-gradient(158deg, rgba(226,120,84,.16), rgba(58,86,140,.14))',
+        night:     'linear-gradient(158deg, rgba(8,20,42,.18), rgba(14,32,62,.12))'
     };
 
     /* ---------- 时间工具 ---------- */
@@ -76,21 +117,40 @@
     function sunWindow(sunrise, sunset) {
         var a = toMin(sunrise, 360), b = toMin(sunset, 1110);
         if (b <= a) { a = 360; b = 1110; }
-        /* 黄金时分长度随白昼长度伸缩（约 13%），夹在 40–90 分钟 */
+        /* 黄昏长度随白昼长度伸缩（约 13%），夹在 40–90 分钟 */
         var golden = Math.max(40, Math.min(90, Math.round((b - a) * 0.13)));
         return { a: a, b: b, noon: (a + b) / 2, golden: golden };
     }
-    /* 6 档连续覆盖全天，无空档。golden 是「午后向晚 → 暖光渐起」，
-       sunset 是日落前 w.golden 分钟到日落后 30 分钟。 */
+    /* 9 档连续覆盖全天，无空档。
+       latenight 00:00→日出前 45 分；sunrise 日出前后；morning / noon / afternoon
+       按白昼中点切；golden 黄昏（日落前 golden 分到日落后 10 分）；
+       bluehour 日落后 10~50 分（天空转深蓝）；evening 50~90 分；night 之后到午夜。
+       ★ 每段强制至少 20 分钟并单调递增，冬季白昼极短也不会出现空档或倒序。 */
     function phaseOf(sunrise, sunset, now) {
         var w = sunWindow(sunrise, sunset);
         var cur = now.getHours() * 60 + now.getMinutes();
-        if (cur < w.a - 30 || cur >= w.b + 30) return 'night';
-        if (cur < w.a + 40) return 'sunrise';
-        if (cur < w.noon - 60) return 'morning';
-        if (cur <= w.noon + 60) return 'noon';
-        if (cur < w.b - w.golden) return 'golden';
-        return 'sunset';
+        var b = [
+            w.a - 45,                       // latenight / sunrise
+            w.a + 40,                       // sunrise / morning
+            w.noon - 60,                    // morning / noon
+            w.noon + 45,                    // noon / afternoon
+            w.b - w.golden - 40,            // afternoon / golden
+            w.b + 10,                       // golden / bluehour
+            w.b + 50,                       // bluehour / evening
+            w.b + 90                        // evening / night
+        ];
+        for (var i = 1; i < b.length; i++) {
+            if (b[i] < b[i - 1] + 20) b[i] = b[i - 1] + 20;
+        }
+        if (cur < b[0]) return 'latenight';
+        if (cur < b[1]) return 'sunrise';
+        if (cur < b[2]) return 'morning';
+        if (cur < b[3]) return 'noon';
+        if (cur < b[4]) return 'afternoon';
+        if (cur < b[5]) return 'golden';
+        if (cur < b[6]) return 'bluehour';
+        if (cur < b[7]) return 'evening';
+        return 'night';
     }
 
     /* ---------- 真实日出日落：接口优先，断网用 NOAA 简化公式 ---------- */
@@ -126,9 +186,8 @@
             }
         }
         if (list && list[3] && isFinite(list[3].lat)) return list[3];
-        /* v2.9.97：统一位置服务 ui/n26-geolocation.js 在顶层文档只定位一次，
-           结果写共享 localStorage['n26:geo'] 并广播给所有 iframe。
-           不再各自硬编码深圳（主壳是北京，两边日出日落一直对不上）。 */
+        /* 统一位置服务 ui/n26-geolocation.js 在顶层文档只定位一次，
+           结果写共享 localStorage['n26:geo'] 并广播给所有 iframe。 */
         try {
             var g = (window.N26GeoClient && window.N26GeoClient.get()) ||
                 (window.N26Geo && window.N26Geo.get()) || null;
@@ -174,7 +233,7 @@
                 }
             }
         } catch (e) { }
-        /* ② 离线预设城市：状态一定有，日出日落不一定有 */
+        /* ③ 离线预设城市：状态一定有，日出日落不一定有 */
         try {
             if (typeof weatherActiveCity === 'function') {
                 var c = weatherActiveCity();
@@ -188,7 +247,7 @@
                 }
             }
         } catch (e) { }
-        /* ③ 无网络 / 无预设：按纬度 + 今天日期算真实日出日落 */
+        /* ④ 无网络 / 无预设：按纬度 + 今天日期算真实日出日落 */
         var geo = cityGeo();
         var s = solarSun(geo.lat, geo.lon, new Date());
         if (s) { d.sunrise = s.rise; d.sunset = s.set; d.source = 'solar'; }
@@ -281,17 +340,18 @@
         };
         set('.s-rise', '日出 ' + d.sunrise);
         set('.s-set', '日落 ' + d.sunset);
-        set('.s-golden', '黄金 ' + g0 + '–' + g1);
-        set('.s-phase', '当前 · ' + (PHASE_CN[ph] || ''));
+        set('.s-golden', '黄昏 ' + g0 + '–' + g1);
+        set('.s-phase', PHASE_CN[ph] || '');
     }
 
-    /* ---------- ②③ 背景按「天气 × 时段」落到真节点 ---------- */
+    /* ---------- ②③ 背景按「天气 × 9 档时段」落到真节点 ---------- */
     function apply() {
         var layerRoot = document.getElementById('desktopWidgets');
         if (!layerRoot) return 0;
         var d = skyData();
         var now = new Date();
         var ph = phaseOf(d.sunrise, d.sunset, now);
+        if (PHASES.indexOf(ph) < 0) ph = 'noon';
         var cond = COND[d.status] || 'sunny';
         var table = (window.N26_SKY_BG || {})[cond] || window.N26_SKY_FALLBACK || {};
         var fb = window.N26_SKY_FALLBACK || {};
@@ -310,12 +370,23 @@
         for (var i = 0; i < cards.length; i++) {
             var card = cards[i];
             var t = card.dataset.wtype || card.dataset.type;
-            if (SKY_TYPES.indexOf(t) < 0) continue;
-            card.dataset.sky = '1';
+            var photo = SKY_TYPES.indexOf(t) >= 0;
+            var soft = TINT_TYPES.indexOf(t) >= 0;
+            if (!photo && !soft) continue;
             card.dataset.skyPhase = ph;
             card.dataset.skyCond = cond;
+            card.style.setProperty('--sky-tint-soft', TINT_SOFT[ph] || TINT_SOFT.noon);
+            if (soft && !photo) {
+                /* 日历族：只换淡色调，不铺实景图，昼墨夜白对比度零风险 */
+                card.dataset.skyTint = '1';
+                card.style.removeProperty('--sky-bg');
+                card.style.removeProperty('--sky-tint');
+                continue;
+            }
+            card.dataset.sky = '1';
+            card.dataset.skyTint = '0';
             card.style.setProperty('--sky-bg', 'url("' + url + '")');
-            card.style.setProperty('--sky-tint', TINT[ph]);
+            card.style.setProperty('--sky-tint', TINT[ph] || TINT.noon);
             var sky = ensureLayer(card);
             var tag = sky.querySelector('.n26-sky-tag');
             if (tag && tag.textContent !== PHASE_CN[ph]) tag.textContent = PHASE_CN[ph];
@@ -344,34 +415,40 @@
         var layer = document.getElementById('desktopWidgets');
         if (layer && typeof MutationObserver === 'function') {
             try {
-                obs = new MutationObserver(function () { apply(); });
+                obs = new MutationObserver(function () {
+                    /* 观察器回调抛错会静默停掉后续通知；单点隔离，绝不影响桌面 */
+                    try { apply(); } catch (e) { }
+                });
                 obs.observe(layer, { childList: true });
             } catch (e) { }
         }
-        setInterval(apply, 60000);   /* 每分钟对齐时段与时钟详情 */
-        /* 天气应用切换城市/刷新后会写共享键：主文档能收到 storage 事件，立即换天空，
-           不必等下一次分钟轮询；三处表面同一刻保持一致。 */
+        setInterval(function () { try { apply(); } catch (e) { } }, 60000);   /* 每分钟对齐时段与时钟详情 */
+        /* 天气应用切换城市/刷新后会写共享键：主文档能收到 storage 事件，立即换天空 */
         window.addEventListener('storage', function (ev) {
-            if (ev && ev.key === 'n26:n26_weather_state_v1') apply();
+            if (ev && ev.key === 'n26:n26_weather_state_v1') { try { apply(); } catch (e) { } }
         });
         try { window.N26SkyRefresh = apply; } catch (e) { }
-        document.addEventListener('visibilitychange', function () { if (!document.hidden) apply(); });
-        window.addEventListener('resize', function () { apply(); });
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden) { try { apply(); } catch (e) { } }
+        });
+        window.addEventListener('resize', function () { try { apply(); } catch (e) { } });
         return true;
     }
 
     /* 「模块先于 enterDesktop 加载」的守候：
-       短轮询覆盖常规启动；OOBE 有可能走好几分钟，所以再加一层长期属性监听，
-       桌面 / OOBE 一切换就补一次 boot，不依赖固定时间窗，也不留任何隐藏类。 */
+       短轮询覆盖常规启动；OOBE 有可能走好几分钟，所以再加一层长期属性监听。 */
     var tries = 0;
     (function wait() {
         if (boot()) return;
         if (tries++ > 600) return;   /* 60s 后交由属性监听接管 */
         setTimeout(wait, 100);
     })();
-    if (typeof MutationObserver === 'function') {
-        var bootObs = new MutationObserver(function () { if (!booted) boot(); });
-        bootObs.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    if (typeof MutationObserver === 'function' && (document.body || document.documentElement)) {
+        var bootObs = new MutationObserver(function () {
+            if (!booted) { try { boot(); } catch (e) { } }
+        });
+        bootObs.observe(document.body || document.documentElement,
+            { attributes: true, attributeFilter: ['class'] });
         var deskNode = document.getElementById('desktop');
         if (deskNode) bootObs.observe(deskNode, { attributes: true, attributeFilter: ['style', 'class'] });
         var instNode = document.getElementById('install-screen');
@@ -379,10 +456,18 @@
     }
 
     window.N26WidgetSky = {
-        phase: function (t) { var d = skyData(); return phaseOf(d.sunrise, d.sunset, t ? new Date(t) : new Date()); },
+        phases: function () { return PHASES.slice(); },
+        phase: function (t) {
+            var d = skyData();
+            var dt = t ? new Date(t) : new Date();
+            if (!isFinite(dt.getTime())) dt = new Date();
+            return phaseOf(d.sunrise, d.sunset, dt);
+        },
         sunWindow: function () { var d = skyData(); return sunWindow(d.sunrise, d.sunset); },
         skyData: skyData,
         solarSun: solarSun,
+        skyTypes: function () { return SKY_TYPES.slice(); },
+        tintTypes: function () { return TINT_TYPES.slice(); },
         boot: boot,
         apply: apply,
         defaults: function () { return DEFAULT.map(function (w) { return w.type; }); },

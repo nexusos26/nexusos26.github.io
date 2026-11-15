@@ -679,8 +679,8 @@ body.dark-mode .wp-cat-btn.active { background: rgba(255, 255, 255, .12); }
 }
 .widget-panel {
     transform: scale(.985) translateY(8px);
-    transition: transform 260ms cubic-bezier(.2, .7, .2, 1)),
-                opacity 260ms cubic-bezier(.2, .7, .2, 1)) !important;
+    transition: transform 260ms cubic-bezier(.2, .7, .2, 1),
+                opacity 260ms cubic-bezier(.2, .7, .2, 1) !important;
 }
 html body .widget-panel-overlay.show .widget-panel {
     transform: none !important;

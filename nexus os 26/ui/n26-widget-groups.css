@@ -1,0 +1,153 @@
+/* ==========================================================================
+   Nexus OS 26 · 小组件选择面板「按软件分组」层 / 戳 grp4css · 2026-11-14（drw4 · 组头 sticky）
+   --------------------------------------------------------------------------
+   用户原话：「很多同一个软件的小组件，哪怕它们是不同功能的，都放在一个。
+             一个组的小组件就叫软件的名字，点击之后就会展开软件里头的所有
+             小组件，以及音乐的小组件。」
+
+   本层只做选择面板的编排，不碰主壳业务逻辑（JS 侧包装 renderWidgetPanelGrid）：
+     · 左侧栏由「推荐/全部/基础/应用」换成「全部 + 8 个软件名」
+     · 主区每组一个软件名横条，默认折叠，点击展开该软件下全部小组件
+     · 软件名 = 时钟 / 天气 / 日历 / 待办事项 / 系统监视器 / 音乐 /
+                方哩方哩 / 实用工具（与 fam3 的 8 个家族一一对应）
+     · 音乐 5 款、方哩方哩 3 款、时间 7 款等全部归到同一个软件名下
+
+   ★ 为什么不用 display:contents：主壳 .widget-panel-grid 是
+     grid-auto-rows:196px 的固定行高，组头塞进去会白占一整行 196px。
+     改成「外层 block + 每组内嵌同参数 grid」，组头按自身高度排，
+     卡片仍吃 repeat(auto-fill,minmax(146px,1fr)) 的自适应列。
+   ★ 材质：中性半透磨砂，跟 fam4 卡面同一套语言；11-14 组头也去惨白，
+     不再刷 .42 白漆（用户截图「又变成一片惨白」）。绝不刷整组实色/黄色。
+   ========================================================================== */
+
+#widgetPanelSidebar { width: 158px; }
+
+.wp-soft-side-title {
+    padding: 4px 11px 6px;
+    font-size: 10.5px; font-weight: 700; letter-spacing: .08em;
+    color: rgba(37, 52, 76, .48);
+    text-transform: uppercase;
+}
+body.dark-mode .wp-soft-side-title { color: rgba(223, 231, 243, .48); }
+
+.wp-soft-btn {
+    display: flex; align-items: center; gap: 9px;
+    width: 100%; padding: 9px 10px; border: none; border-radius: 11px;
+    background: transparent; cursor: pointer; text-align: left;
+    font-size: 12.5px; font-weight: 600; color: #25344c;
+    transition: background .2s, color .2s;
+}
+.wp-soft-btn > i { flex: 0 0 16px; font-size: 13px; color: #64748b; text-align: center; transition: color .2s; }
+.wp-soft-btn > span { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wp-soft-btn > em {
+    flex: 0 0 auto; font-style: normal; font-size: 10.5px; font-weight: 700;
+    min-width: 20px; padding: 2px 5px; border-radius: 7px; text-align: center;
+    background: rgba(26, 42, 58, .07); color: rgba(37, 52, 76, .62);
+}
+.wp-soft-btn:hover { background: rgba(26, 42, 58, .06); }
+.wp-soft-btn.active { background: rgba(148, 163, 184, .30); color: #1a2a3a; }
+.wp-soft-btn.active > i { color: var(--primary, #4a9bf5); }
+.wp-soft-btn.active > em { background: rgba(255, 255, 255, .58); color: #1a2a3a; }
+.wp-soft-btn:disabled { opacity: .38; cursor: default; }
+.wp-soft-btn:disabled:hover { background: transparent; }
+body.dark-mode .wp-soft-btn { color: #dfe7f3; }
+body.dark-mode .wp-soft-btn > i { color: rgba(255, 255, 255, .55); }
+body.dark-mode .wp-soft-btn > em { background: rgba(255, 255, 255, .10); color: rgba(223, 231, 243, .72); }
+body.dark-mode .wp-soft-btn.active { background: rgba(255, 255, 255, .14); }
+body.dark-mode .wp-soft-btn.active > em { background: rgba(255, 255, 255, .16); color: #f1f4f9; }
+
+/* ---------------- 主区：外层块流 + 每组一张卡网格 ---------------- */
+#widgetPanelGrid { display: block; }
+
+.wp-soft-group { margin: 0 0 12px; }
+.wp-soft-group[hidden],
+.wp-soft-group > .wp-soft-cards[hidden] { display: none !important; }
+#widgetPanelGrid .widget-panel-card[hidden] { display: none !important; }
+
+.wp-soft-head {
+    position: sticky; top: 0; z-index: 2;   /* drw4：滚动时组头常驻，47 款不迷路 */
+    display: flex; align-items: center; gap: 12px;
+    width: 100%; margin: 0 0 10px; padding: 10px 14px;
+    border-radius: 16px; cursor: pointer; text-align: left;
+    border: 1px solid rgba(255, 255, 255, .62);
+    background: rgba(226, 234, 244, .26);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    backdrop-filter: blur(18px) saturate(150%);
+    box-shadow: 0 4px 16px rgba(8, 12, 26, .08), inset 0 1px 0 rgba(255, 255, 255, .65);
+    color: #0b1220;
+    transition: background .2s, border-color .2s, box-shadow .2s;
+}
+.wp-soft-head:hover { background: rgba(226, 234, 244, .44); border-color: rgba(255, 255, 255, .82); }
+.wp-soft-group.open > .wp-soft-head { box-shadow: 0 6px 20px rgba(8, 12, 26, .11), inset 0 1px 0 rgba(255, 255, 255, .75); }
+
+.wp-soft-ico {
+    flex: 0 0 36px; width: 36px; height: 36px; border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; color: #ffffff;
+    background: var(--wp-soft-accent, #0284c7);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .28), 0 2px 8px rgba(8, 12, 26, .12);
+}
+.wp-soft-txt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.wp-soft-txt > b { font-size: 14px; font-weight: 700; line-height: 1.25; }
+.wp-soft-txt > small {
+    font-size: 11px; font-weight: 500; line-height: 1.3;
+    color: rgba(11, 18, 32, .55);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.wp-soft-count, .wp-soft-added {
+    flex: 0 0 auto; font-size: 10.5px; font-weight: 700;
+    padding: 4px 9px; border-radius: 8px; white-space: nowrap;
+    background: rgba(26, 42, 58, .07); color: rgba(11, 18, 32, .66);
+}
+.wp-soft-added { background: color-mix(in srgb, var(--wp-soft-accent, #0284c7) 16%, transparent); color: var(--wp-soft-accent, #0284c7); }
+.wp-soft-added[hidden] { display: none !important; }
+.wp-soft-chev {
+    flex: 0 0 auto; font-size: 11px; color: rgba(11, 18, 32, .45);
+    transition: transform .24s cubic-bezier(.2, .7, .2, 1);
+}
+.wp-soft-group.open > .wp-soft-head > .wp-soft-chev { transform: rotate(180deg); }
+
+.wp-soft-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(146px, 1fr));
+    grid-auto-rows: 196px;
+    align-content: start;
+    gap: 12px;
+}
+
+/* ---------------- 夜 / 深色模式 ---------------- */
+html[data-n26-phase="night"] .wp-soft-head,
+body.dark-mode .wp-soft-head {
+    background: rgba(13, 19, 35, .48);
+    border-color: rgba(255, 255, 255, .12);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .24), inset 0 1px 0 rgba(255, 255, 255, .08);
+    color: #eef2fa;
+}
+html[data-n26-phase="night"] .wp-soft-head:hover,
+body.dark-mode .wp-soft-head:hover { background: rgba(13, 19, 35, .62); border-color: rgba(255, 255, 255, .20); }
+html[data-n26-phase="night"] .wp-soft-txt > small,
+body.dark-mode .wp-soft-txt > small { color: rgba(238, 242, 250, .58); }
+html[data-n26-phase="night"] .wp-soft-count,
+body.dark-mode .wp-soft-count { background: rgba(255, 255, 255, .10); color: rgba(238, 242, 250, .78); }
+html[data-n26-phase="night"] .wp-soft-chev,
+body.dark-mode .wp-soft-chev { color: rgba(238, 242, 250, .5); }
+
+/* ---------------- FangUI 四风格：真实挂载点是 html[data-ui] + html[data-neu]，
+   不存在 data-fui（drw2 勘误）。flat / liquid 平，neu 两档凸 ---------------- */
+html[data-ui="flat"] .wp-soft-head,
+html[data-ui="liquid"] .wp-soft-head { border-radius: 14px; box-shadow: 0 1px 8px rgba(8, 12, 26, .06); }
+html[data-ui="liquid"] .wp-soft-head { box-shadow: 0 1px 8px rgba(8, 12, 26, .06), inset 0 0 0 1px rgba(255, 255, 255, .55); }
+html[data-ui="neu"][data-neu="solid"] .wp-soft-head,
+html[data-ui="neu"][data-neu="glass"] .wp-soft-head {
+    box-shadow: 0 6px 14px rgba(8, 12, 26, .13), 0 -2px 6px rgba(255, 255, 255, .72) inset,
+                inset 0 1px 0 rgba(255, 255, 255, .82);
+}
+html[data-ui="neu"][data-neu="glass"] .wp-soft-head { -webkit-backdrop-filter: blur(20px) saturate(160%); backdrop-filter: blur(20px) saturate(160%); }
+html[data-n26-phase="night"][data-ui="flat"] .wp-soft-head,
+html[data-n26-phase="night"][data-ui="liquid"] .wp-soft-head,
+body.dark-mode[data-ui="flat"] .wp-soft-head,
+body.dark-mode[data-ui="liquid"] .wp-soft-head { box-shadow: 0 1px 10px rgba(0, 0, 0, .24); }
+
+@media (prefers-reduced-motion: reduce) {
+    .wp-soft-btn, .wp-soft-head, .wp-soft-chev { transition: none !important; }
+}

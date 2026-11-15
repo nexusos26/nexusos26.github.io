@@ -1,0 +1,77 @@
+/* ============================================================================
+   ui/n26-lockflow.css · v2.10.20
+   锁屏「共享控件闭环」的表现层：只负责过渡曲线与统一控件手感，
+   不碰主题色、不碰滤镜半径、不新建任何控件节点。
+   铁律：一个物体只演一条动画；表面类统一 260ms + cubic-bezier(.2,.7,.2,1)。
+   ============================================================================ */
+
+/* 返回锁屏：上层回位与「小钟飞回大钟」对齐到同一条 280ms 曲线，
+   否则时钟落地后面板还要再滑 120ms，看着像控件贴歪了。 */
+html body #lock-screen.n26-lk-back .lock-layer {
+    transition-duration: .28s !important;
+    transition-timing-function: cubic-bezier(.2,.7,.2,1) !important;
+}
+
+/* 跟手阶段：纯 transform，关掉过渡才能 1:1 跟指针。
+   这里绝不挂 backdrop-filter —— 拖动中每帧重采样整屏背景必掉帧。 */
+html body #lock-screen.n26-lk-drag .lock-layer {
+    transition: none !important;
+}
+html body #lock-screen.n26-lk-drag .lock-top {
+    will-change: transform;
+}
+html body #lock-screen.n26-lk-drag .lock-hint {
+    opacity: .28;
+}
+
+/* ---- 重复控件统一手感：锁屏返回键 / 快捷三键 / 电源 / 眼睛 / 提交 / 通知清除 ----
+   一套控件、一套缓动，不再每个按钮各写各的 spring。hover 只改底色，
+   不建合成层、不动 box-shadow，鼠标掠过不会抖一下。 */
+html body #lock-screen :is(
+    .lock-back-btn,
+    .lock-qa-btn,
+    .pw-eye,
+    #passwordSubmitBtn,
+    .power-btn-lock .glass-btn,
+    .lnc-clear
+) {
+    transition:
+        transform 260ms cubic-bezier(.2,.7,.2,1),
+        background-color 260ms cubic-bezier(.2,.7,.2,1) !important;
+}
+html body #lock-screen :is(
+    .lock-back-btn,
+    .lock-qa-btn,
+    .pw-eye,
+    #passwordSubmitBtn,
+    .power-btn-lock .glass-btn,
+    .lnc-clear
+):active {
+    transform: scale(.94) !important;
+}
+
+/* 密码错误抖动：一条关键帧走完，不叠 opacity / visibility / filter */
+html body #lock-screen .password-input.error {
+    animation: n26LkShake .42s cubic-bezier(.36,.07,.19,.97) 1;
+}
+@keyframes n26LkShake {
+    0%, 100% { transform: translateX(0); }
+    18%, 58%, 88% { transform: translateX(-7px); }
+    38%, 74% { transform: translateX(7px); }
+}
+
+/* 磨砂层：半径固定，只有 opacity 在动（见主壳 n26LockFlowCSS）。
+   这里只补一条返回时的提前量，让磨砂和面板同步退场。 */
+html body #lock-screen.n26-lk-back::before {
+    transition-duration: .28s !important;
+}
+
+/* 降级：系统要求减少动态效果时，所有位移与淡入淡出一步到位 */
+@media (prefers-reduced-motion: reduce) {
+    html body #lock-screen.n26-lk-back .lock-layer,
+    html body #lock-screen::before,
+    html body #lock-screen :is(.lock-back-btn, .lock-qa-btn, .pw-eye, #passwordSubmitBtn, .power-btn-lock .glass-btn, .lnc-clear) {
+        transition-duration: .01ms !important;
+    }
+    html body #lock-screen .password-input.error { animation: none; }
+}

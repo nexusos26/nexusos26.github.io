@@ -1,0 +1,221 @@
+/* ==========================================================================
+   ui/n26-widget-time.css · 戳 wt2 · 2026-11-13
+   --------------------------------------------------------------------------
+   ★ 按 docs/小组件设计规格-全量47款.md §3「时间族（7）」重做的**第 1 族样板**。
+     用户：「给每一个小组件都稍微思考一下，列个 MD……然后再重新开始做」。
+     ovf1 铺完通用护栏后，从这里开始逐族落地；后续 7 族沿用同一套骨架。
+
+   覆盖：`clock` / `timeSeconds` / `clockAnalog` / `worldclock` /
+         `dualtime` / `stopwatch` / `countdown`
+
+   ★ 职责边界（和 ovf1 一样刻意收窄）：
+     只写 **版式 / 尺寸节奏 / 主数字缩放 / 身份色点缀**。
+     不写卡面材质、不写文字主色、不写阴影、不写圆角、不写动画 ——
+     材质归 wr7/fam3、四风格归 beau3、对比度归 wr7 §8、护栏归 ovf1。
+     这样「按 MD 重做」不会变成「再叠一层新皮」。
+
+   ★ 家族身份（MD §0，11-13 去黄）：晨曦青蓝，昼 `#0e7490` / 夜 `#67e8f9`。
+     用户原话「不是惨白，你就搞黄色是吧？」—— 时间族旧的暖琥珀整套作废；
+     卡面颜色交给 sky4 的真实天气 × 9 时段实景图，身份色只留在点缀件上。
+     身份色只落在冒号、秒数、秒针、双城分隔线、进度填充这些**点缀件**上，
+     主数字仍吃 wr7 的昼墨夜白 —— 家族内 7 款长得像一家人，
+     家族间靠这一点颜色区分。
+
+   ★ 尺寸即内容：2×2 只留主读数 + 1 个辅助标签；
+     4×2/6×2 加副信息；4×3/4×4 加明细；6×1/4×1 胶囊压成一行。
+     行数/格数上限在渲染器里已经按 tier 切片，本层只负责「不挤、不换行」。
+
+   ★ 层叠：6 写 [data-wtype] + :is() = (0,9,2)，压过 wr7 §0 与 ovf1；
+     不与 fam3(0,11,2) 的中性玻璃令牌、beau3 的四风格皮冲突。
+     零 filter / backdrop-filter / 伪元素 / 动画 / 逐卡片 JS。
+   ========================================================================== */
+
+/* ---------- 0 · 家族令牌 ---------- */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="clock"], [data-wtype="timeSeconds"], [data-wtype="clockAnalog"],
+    [data-wtype="worldclock"], [data-wtype="dualtime"],
+    [data-wtype="stopwatch"], [data-wtype="countdown"]) {
+    --wt-accent: #0e7490 !important;
+}
+html[data-n26-phase="night"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="clock"], [data-wtype="timeSeconds"], [data-wtype="clockAnalog"],
+    [data-wtype="worldclock"], [data-wtype="dualtime"],
+    [data-wtype="stopwatch"], [data-wtype="countdown"]),
+html body.dark-mode .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="clock"], [data-wtype="timeSeconds"], [data-wtype="clockAnalog"],
+    [data-wtype="worldclock"], [data-wtype="dualtime"],
+    [data-wtype="stopwatch"], [data-wtype="countdown"]) {
+    --wt-accent: #67e8f9 !important;
+}
+
+/* ---------- 1 · 主数字：统一缩放节奏（7 款共用一套） ---------- */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="clock"], [data-wtype="timeSeconds"], [data-wtype="clockAnalog"],
+    [data-wtype="worldclock"], [data-wtype="dualtime"],
+    [data-wtype="stopwatch"], [data-wtype="countdown"]) .widget-inner :is(
+    .widget-clock-time, .nx2-sec-main, .w-dual-time,
+    .w-sw-time, .w-cd-n, .nx2-tz > b) {
+    font-variant-numeric: tabular-nums !important;
+    font-feature-settings: "tnum" 1 !important;
+    white-space: nowrap !important;
+    line-height: 1.04 !important;
+    letter-spacing: -.045em !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-size: clamp(26px, 3.4vw, 52px) !important;
+    font-weight: 650 !important;
+}
+/* 2×2 小方档：主数字收一档，给辅助标签留位置 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-cols="2"][data-rows="2"]:is(
+    [data-wtype="clock"], [data-wtype="timeSeconds"], [data-wtype="clockAnalog"],
+    [data-wtype="worldclock"], [data-wtype="dualtime"],
+    [data-wtype="stopwatch"], [data-wtype="countdown"]) .widget-inner :is(
+    .widget-clock-time, .nx2-sec-main, .w-dual-time,
+    .w-sw-time, .w-cd-n, .nx2-tz > b),
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype].wcols-2.wrows-2:is(
+    [data-wtype="clock"], [data-wtype="timeSeconds"], [data-wtype="clockAnalog"],
+    [data-wtype="worldclock"], [data-wtype="dualtime"],
+    [data-wtype="stopwatch"], [data-wtype="countdown"]) .widget-inner :is(
+    .widget-clock-time, .nx2-sec-main, .w-dual-time,
+    .w-sw-time, .w-cd-n, .nx2-tz > b) {
+    font-size: clamp(22px, 2.6vw, 36px) !important;
+}
+/* 胶囊档：主数字再收一档，永远单行 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-rows="1"][data-rows="1"]:is(
+    [data-wtype="clock"], [data-wtype="timeSeconds"], [data-wtype="clockAnalog"],
+    [data-wtype="worldclock"], [data-wtype="dualtime"],
+    [data-wtype="stopwatch"], [data-wtype="countdown"]) .widget-inner :is(
+    .widget-clock-time, .nx2-sec-main, .w-dual-time,
+    .w-sw-time, .w-cd-n, .nx2-tz > b),
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype].wrows-1:is(
+    [data-wtype="clock"], [data-wtype="timeSeconds"], [data-wtype="clockAnalog"],
+    [data-wtype="worldclock"], [data-wtype="dualtime"],
+    [data-wtype="stopwatch"], [data-wtype="countdown"]) .widget-inner :is(
+    .widget-clock-time, .nx2-sec-main, .w-dual-time,
+    .w-sw-time, .w-cd-n, .nx2-tz > b) {
+    font-size: clamp(18px, 2vw, 26px) !important;
+}
+
+/* ---------- 2 · 身份色：只落点缀件 ---------- */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="clock"], [data-wtype="timeSeconds"], [data-wtype="clockAnalog"],
+    [data-wtype="worldclock"], [data-wtype="dualtime"],
+    [data-wtype="stopwatch"], [data-wtype="countdown"]) .widget-inner :is(
+    .widget-clock-time .colon, .nx2-colon, .nx2-sec,
+    .w-dual-sep, .w-dual-sep > i, .nx2-dial .nx2-hand.s,
+    .nx2-fill, .w-sw-mode.down) {
+    color: var(--wt-accent) !important;
+    -webkit-text-fill-color: var(--wt-accent) !important;
+}
+/* 表盘秒针是 stroke，不吃 color */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="clockAnalog"])
+    .widget-inner .nx2-dial .nx2-hand.s line {
+    stroke: var(--wt-accent) !important;
+}
+
+/* ---------- 3 · 辅助标签：统一行高、单行裁切 ---------- */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="clock"], [data-wtype="timeSeconds"], [data-wtype="clockAnalog"],
+    [data-wtype="worldclock"], [data-wtype="dualtime"],
+    [data-wtype="stopwatch"], [data-wtype="countdown"]) .widget-inner :is(
+    .widget-clock-date, .widget-clock-week, .nx2-sub, .nx2-faint,
+    .w-dual-city, .w-dual-sub, .w-cd-hd, .w-cd-s, .w-sw-hd,
+    .nx2-tz > span, .w-sw-lap) {
+    font-size: clamp(9px, .82vw, 11px) !important;
+    line-height: 1.3 !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    flex: none !important;
+}
+/* 胶囊档只留一个辅助标签，其余隐藏（逐条列名，不用 nth-child 误伤） */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-rows="1"][data-rows="1"]:is(
+    [data-wtype="clock"], [data-wtype="timeSeconds"], [data-wtype="clockAnalog"],
+    [data-wtype="worldclock"], [data-wtype="dualtime"],
+    [data-wtype="stopwatch"], [data-wtype="countdown"]) .widget-inner :is(
+    .widget-clock-week, .nx2-only-wide, .nx2-only-tall, .nx2-line,
+    .w-dual-sub, .w-cd-hd, .w-sw-laps, .w-sw-mode,
+    .nx2-hd, .nx2-faint) {
+    display: none !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype].wrows-1:is(
+    [data-wtype="clock"], [data-wtype="timeSeconds"], [data-wtype="clockAnalog"],
+    [data-wtype="worldclock"], [data-wtype="dualtime"],
+    [data-wtype="stopwatch"], [data-wtype="countdown"]) .widget-inner :is(
+    .widget-clock-week, .nx2-only-wide, .nx2-only-tall, .nx2-line,
+    .w-dual-sub, .w-cd-hd, .w-sw-laps, .w-sw-mode,
+    .nx2-hd, .nx2-faint) {
+    display: none !important;
+}
+
+/* ---------- 4 · 表盘 / 城市格 / 双城：只缩不溢 ---------- */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="clockAnalog"])
+    .widget-inner .nx2-dial {
+    width: auto !important;
+    height: auto !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    aspect-ratio: 1 / 1 !important;
+    flex: 0 1 auto !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="worldclock"])
+    .widget-inner .nx2-tz {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="dualtime"])
+    .widget-inner .w-dual-row {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+}
+/* 分隔层里原本就有一个 fa-arrows-rotate 切换图标 —— 只锁住它不占位，
+   不把整层压成实线、不删图标（那会毁掉「点这里换城市」的视觉提示）。 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="dualtime"])
+    .widget-inner .w-dual-sep {
+    flex: none !important;
+    min-height: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+
+/* ---------- 5 · 秒表：控制条锁高、计次列表裁在卡内 ---------- */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="stopwatch"])
+    .widget-inner .w-sw-btns {
+    flex: none !important;
+    flex-wrap: nowrap !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    gap: 4px !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="stopwatch"])
+    .widget-inner .w-sw-b {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: 26px !important;
+    font-size: 9.5px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="stopwatch"])
+    .widget-inner .w-sw-laps {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+}
+/* 2×2 / 胶囊档不显示计次列表（渲染器最多给 3 条，小卡放不下） */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-rows="1"][data-rows="1"]:is([data-wtype="stopwatch"]) .widget-inner .w-sw-laps,
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype].wrows-1:is([data-wtype="stopwatch"]) .widget-inner .w-sw-laps,
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-cols="2"][data-rows="2"]:is([data-wtype="stopwatch"]) .widget-inner .w-sw-laps {
+    display: none !important;
+}

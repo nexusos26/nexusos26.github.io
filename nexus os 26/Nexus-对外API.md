@@ -1,3 +1,5 @@
+> 部署定案：主体验入口是官网 https 静态托管（Cloudflare Pages），仓库内不提供 .bat / 本地启动脚本；本地 file:// 双击同样可运行，只是 blob: Worker / IndexedDB / 同源 iframe 自动降级，三协议共用同一套 UI。
+
 # Nexus OS 26 · 对外接口文档
 
 > **这份文档是写给外部开发者的**：你要把自己的应用装进 Nexus、要让自己的伪系统跟 Nexus 对接、或者要把 Nexus 嵌进自己的页面，请看这里。
@@ -280,6 +282,105 @@ window.APP_I18N = {
 <input data-i18n-placeholder="search">
 <button data-i18n-title="tip"></button>
 ```
+
+#### 2.7.1 FangUI 四风格适配（v2.10.21）
+
+四种界面风格：`flat`（扁平化）/ `neu-solid`（拟物化）/ `neu-glass`（玻璃拟物）/ `liquid`（液态玻璃）。
+桥层 `ui/n26-fui-bridge.js` + `.css` 由 `_app.js` 自动注入（不引 `_app.js` 的打包产物由 `_theme-adapter.js` 补挂），
+第一方应用无需改一行 HTML 即自动跟随；切换当帧生效、不刷新窗口。
+
+| 位置 | 值 | 含义 |
+|---|---|---|
+| `html[data-fui]` | 完整风格 id | **推荐判据**，`data-ui` 分不出 `neu-solid` / `neu-glass` |
+| `html[data-fui-auto="1"]` | 有 | 第一方应用启用通用控件自动适配 |
+| `html[data-fui-off="1"]` | 有 | 退出自动适配，自己消费令牌 |
+| `html.n26-fui-switching` | 260ms | 只在这一瞬有材质过渡 |
+
+可适配的维度（全部走令牌，不碰布局）：表面材质与磨砂半径、边框与内高光、圆角、阴影与深度、
+按下反馈、侧栏凸起/凹陷、深色底色、分风格动效时长与曲线。变量：
+`--n26-fui-surface`、`-surface-2`、`-border`、`-border-w`、`-radius`、`-radius-sm`、
+`-shadow`、`-shadow-raise`、`-shadow-press`、`-blur`、`-sat`、`-text`、`-text-muted`、`-hi`、`-dur`、`-ease`。
+液态玻璃 `data-fui="liquid"` 下桥层**零覆盖**，仍由自研折射引擎渲染。
+
+```js
+// iframe 侧（_app.js 已自动扩展 Nexus）
+const style = await Nexus.getFuiStyle();          // 'flat' | 'neu-solid' | 'neu-glass' | 'liquid'
+await Nexus.setFuiStyle('neu-glass');             // 写设置并全系统广播
+const off = Nexus.onFuiStyle(({ style, previous }) => { /* 及时响应 */ });
+
+// 宿主侧
+N26Fui.STYLES;                                    // 四风格 id 数组
+N26Fui.current(); N26Fui.apply('flat'); N26Fui.set('liquid');
+const off2 = N26Fui.on(d => console.log(d.style));
+N26Fui.tokens();                                  // 当前生效的 --n26-fui-* 值
+```
+
+> 后打开的应用从 `nexus:ready` → `nexus:theme`（现带 `fanguiStyle`）→ `osControl.getSetting` →
+> 同源父窗口 `data-fui` 四路兜底取初值，不会停在默认的液态玻璃。第三方若只想自己画，
+> 在 `<html>` 上加 `data-fui-off="1"`，改读 `N26Fui.on()` 或 `nexus:fuistyle` 事件即可。
+
+#### 2.7.2 设置面板共享控件与外观令牌（v2.10.22）
+
+`ui/n26-settings-flow.js` 挂在主壳末尾，暴露 `window.N26SettingsFlow`（`version = 1.0-v2.10.22`）。
+它的设计原则是**复用同一控件**：壁纸内联展开沿用三级页的 `#n26WgGrid` / `#n26WgSlideshow` 与
+`n26WgThumbHtml / n26WgPick / n26WgPaint / n26WgLazyThumbs`，第三方组件不要再自建第二套缩略图。
+
+| API | 说明 |
+|---|---|
+| `wallInline(themeId \| 'all')` | 在当前页就地展开壁纸组；同 id 再点是收起 |
+| `wallClose()` / `openFullPage(id)` | 收起 / 进完整三级页（多选、幻灯片轮播） |
+| `specialCards()` | 返回「每日必应壁纸」「Wallpaper 壁纸」两张卡的 HTML |
+| `toggleBing()` | 云端可用走 Worker；不通自动降级为本地每日精选，**不会点了没反应** |
+| `pickAll(gi, ev)` / `pickGroup(id, idx, ev)` | 总览 / 单组选图，复用主壳 `n26WgApplyWallpaper` |
+| `colorPage()` / `setAccent(c)` | 颜色二级页 HTML / 写强调色（预设名或 `#rrggbb`） |
+| `previewAccent(hex)` / `commitAccent(hex)` | 拖色盘时**只写 `--primary`、零重绘**；松手才持久化 |
+| `setNavBg(id)` / `setNavBorder(id)` | `merge\|frost\|mica\|liquid` / `none\|hairline\|glow` |
+| `applyNavStyle()` / `renderNavRows()` / `afterRender(cat)` | 重算令牌 / 重绘芯片 / 合帧恢复渲染态 |
+
+外观令牌（写在 `document.documentElement`，只作用于**顶部模式**的 Dock Bar，左/右浮条不受影响）：
+`--n26-nav-bg`、`-blur`、`-border`、`-shadow`、`-fg`、`-preview-bg`。
+强调色统一写 `--primary`，主壳、Dock、窗口标题栏、第一方与第三方应用读同一个变量。
+
+> 第三方组件若要在自己的设置页里放一组壁纸选择，直接调 `wallInline()` 并挂一个
+> `#n26WgInlineHost` 容器即可；不要复制 CSS，样式在 `ui/n26-settings-flow.css`（戳 `sf1`）。
+> 模块防重复初始化、宿主函数逐个判空、`prefers-reduced-motion` 全量降级。
+
+#### 2.7.3 液态玻璃光学层（v2.10.23）
+
+`ui/n26-glass-optics.js` / `.css`（CSS / JS 同为戳 `go6`）挂在主壳末尾，并由 `apps/_app.js` 自动注入到每个第一方 iframe、由 `apps/_theme-adapter.js` 补挂到 Strata / Reelix / Float 等打包产物。iframe 是独立文档，宿主的 SVG 滤镜与 CSS 到不了里面，所以这三处都要挂；模块自带 `__N26_GO_BOOTED__` 幂等护盾，重复引也不会加载两份。
+
+暴露 `window.N26GlassOptics`（`version = 1.0-v2.10.23`）：
+
+| API | 说明 |
+|---|---|
+| `scan()` | 重新扫描玻璃面，幂等注入彩虹层与前后片子层 |
+| `lightAt(x, y, strong)` | 从指针点发出全视口 `screen` 混合亮光，真实提亮下层所有控件与普通元素 |
+| `lightOff()` | 松手淡出；260ms 淡出跑完后整层退出合成（静息态零成本） |
+| `beginGlass(el)` / `settleGlass(el)` | 手动起 / 收三段玻璃动效（一般由状态类自动触发） |
+| `attachLg(el)` | 给单个面挂真 `feDisplacementMap` 折射；尺寸只认 `offsetWidth/offsetHeight` |
+| `isReduced()` / `bulb()` | 降级查询 / 取光源节点 |
+
+命名约定（第三方只要按类名走，光学层自动接管）：`.n26-go-host`（被接管过的玻璃面）、`.n26-go-iris`（对角彩虹层，强度吃 `--n26-disp`，0–20，0 = 零成本关闭）、`--n26-go-iris-k`（单面倍率，按下自动 1.55）、`.n26-go-face.lead` / `.trail`（前片 / 后片，后片固定 60ms 台阶）、`.n26-go-expand` / `.n26-go-moving` / `.n26-go-settle` / `.n26-go-ghost`（展开 / 移动 / 收尾状态）。
+
+> ★ 光学铁律：光源与彩虹层**绝不加** `contain` / `isolation` / 祖先 `filter` / 自身 `opacity<1`，否则会隔离 stacking context，`mix-blend-mode: screen` 只跟自己那层透明背景混合 = 光照不出去。色散只有右上角与左下角有，靠 135deg / 45deg 两个 mask 露弧；`--n26-disp` 由主壳 `N26_GLASS_DEFAULTS.dispersion`（默认 10）广播，宿主全边缘 R/B 位移只留轻微物理色差。
+
+开关侧 `window.N26Switch`（`6.0-2.10.23`）另暴露 `beginHold(el, e)` / `followHold(el, dx)` / `settleHold(el)` / `holdSwell`：按下第一帧白点就地展开成同一块玻璃、纯按住保持、鼠标慢动低通跟手，松手由 click 链路复用同一个 `.n26-sw-blob` 续演到另一侧再缩回白点，全程不删不重建。
+
+#### 2.7.4 小组件四风格材质层（v2.10.26，纯 CSS）
+
+`ui/n26-widget-style.css`（戳 `ws2`）挂在主壳 footer。桌面小组件在宿主文档里，四风格（`liquid / neu-solid / neu-glass / flat`）直接吃 `html[data-fui]`，**没有任何 JS**。
+
+> ★ **v2.10.26 定案：不要覆盖层、不要折射**。v2.10.24 曾给每张卡注入 `.n26-ws-lens` 玻璃层并挂 SVG `feDisplacementMap` 折射贴图（canvas 现场生成），桌面重绘时主线程被贴图生成堵死，点击直接「页面无响应」。现在整个撤掉：不注入 DOM、不挂滤镜、零 JS。液态档只在卡片**右上角加一道高光**（`--w-mat-bg-img` 的 radial-gradient，画在卡片自身背景层上）+ 右上一条细高光边（`--w-mat-shadow` 的 inset），不建新层、不占伪元素、被圆角天然裁切。
+
+给第三方类小组件卡片跟随四风格：卡片根元素挂 `desktop-widget-card` 类（或自带 `--w-mat-bg / --w-mat-bg-img / --w-mat-shadow / --w-radius` 令牌消费），即可吃到同一套四档材质；风格监听用 §2.7.1 的 `Nexus.getFuiStyle()/onFuiStyle()`。CSS 会话铁律：凹凸只用 `text-shadow / box-shadow`，绝不用 `filter`（祖先一有 filter 就新建 backdrop root，玻璃折射全废）；`n26-widgets.css` 对大量组件文字写了 `text-shadow:none !important`，拟物规则必须同样带 `!important`；深色模式四档各有一套令牌。
+
+#### 2.7.5 歌词翻译链路（v2.10.25）
+
+`apps/music.html` 内置歌词翻译，端点 `POST https://ai.fanggame.company/api/translate`（`{q:[...], sl:'auto', tl}` → `{ok,code,data:{items:[{i,t}],cached}}`，CORS 全放行）。
+
+> ★ **缓存键铁律**：Worker 缓存键含 `tl` 但不含 `sl`。`zh-CN` 通道曾存过一批「翻译失败时原样回显」的脏结果，命中后永久返回英文原句 —— 主通道 `TR_TL='zh'`、备用 `TR_TL_ALT='zh-CN'`，同批歌词换 `tl` 立刻绕开脏缓存；改 `sl` / 加请求头都绕不开。
+
+> ★ **前端六条铁律**：① 主通道 `tl='zh'`、备用 `tl='zh-CN'`；② `trEcho()` 拒收回显（归一化去空白/标点/大小写后与原文相同、或译文里压根没有汉字）；③ `TR_BATCH=8` × `TR_CONC=3` 小批并发；④ `TR_META` 过滤作词/作曲等元信息（否则英文歌被中文元信息误判成中文歌）；⑤ 缓存只写真译文（`trCacheGet()` 遇回显脏缓存即作废删除）；⑥ 两轮都失败诚实亮 `trBtn('fail')` + title 写明原因，绝不假亮「译文已开」。诊断手法：`GET ?selftest=1` 看上游通道、`GET ?probe=ai` 单句验证、POST 响应的 `cached` 字段区分「没翻」与「命中脏缓存」。
 
 ### 2.8 可直接复制的应用骨架
 

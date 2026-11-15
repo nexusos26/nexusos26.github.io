@@ -1,0 +1,269 @@
+/* ==========================================================================
+   Nexus OS 26 · 液态玻璃光学层（v2.10.33 / 戳 go11 · 2026-11-14 晚 光源归属反转）
+   ★ go11（用户「不是背景发光，就是玻璃发光」「会照到其他的软件上面，
+     软件边缘会发光，并且也就那一点部分」）：推翻 11-14 白天那版「壁纸透射」
+     结论。玻璃 / Dock / 侧栏本身就是导光板式**发光体**，光从玻璃自己的
+     边缘出来并溢出到邻近控件，只照亮迎光侧的一小段；局部光传输由独立的
+     FangLux 方曜引擎（flx1）负责，本层只管发光体自身的出光。
+   ★ 颜色纪律不变：出光与受光高光一律中性白 / 冷白 / 银灰细线，零彩虹
+     conic、零色散、零色相漂移、零彩色 radial。「石油高光」＝玻璃自己带色，
+     不是玻璃发光。白天蓝 / 黄昏金 / 夜间深蓝属于 sky4 天空内容层，不刷玻璃。
+   --------------------------------------------------------------------------
+   ★ v2.10.33 P0 根治（对照 GitHub v2.10.15 定案）
+     旧版主壳的三处全屏混合（body.n26-on::after overlay / #n26WarmTint
+     multiply / .n26-orb screen）旧版也全都有，却从不卡；唯一新增差异就是
+     本文件里的两处 `mix-blend-mode:screen` —— #n26GoLight（fixed + 最高
+     层级，挂 body）与 .n26-go-iris（inset:0 铺满整条侧栏玻璃）。
+     screen 的 backdrop 是「父 stacking context 内全部下层像素」：
+     v2.10.28 把 inset:0 收敛成 560px 只缩小了输出框，backdrop 仍是整屏；
+     本文件又明写「绝不加 isolation / contain」，等于把唯一能局部化混合
+     范围的手段禁掉。apps/_app.js 把本层注入全部 30 个 iframe，
+     故「所有软件的侧边栏」一起卡。两处 screen 同时存在于每个 iframe。
+
+     修法：改用数学等价的 alpha 加色，不删任何亮光 / 彩虹 / 动画。
+       白色光源下 screen(a, α) = a + α(1-a)，
+       normal 混合 a(1-α) + α·1 = a + α(1-a) —— 完全相同；
+       彩色边缘差异极小，渐变 alpha 原样保留。
+     合成器从此只需一次普通 alpha 混合，不再整屏读回重混。
+     节点、状态机（is-active / is-on / is-strong）、260ms 淡入淡出、
+     对角彩虹、双片展开全部逐像素保留；三种协议视觉完全一致。
+
+   用户规格逐条落地（一条未减）：
+   ① 侧边发光（go8 定案，取代「只有右上角 + 左下角的对角彩虹」）：整块液态玻璃
+      的四条侧边等亮注入光、整面同时提亮，不是角上出发的波带；强度仍吃
+      --n26-disp（此前是纯透传变量，从没被任何 CSS 消费过）。
+   ② 玻璃按下去，在**鼠标按下去的那个点**发出亮光；这层光要能**照亮周围其它
+      控件与元素**（不只是控件，还有普通元素）—— 用指针周围的局部加色光层
+      把下层像素提亮，数学等价于原来的 screen 混合，但不再整屏读回。
+   ③ 侧栏玻璃按下要有「玻璃展开」动画；移动时前片先到、后片慢半拍；
+      松手结尾要收回成普通背景，不能瞬间消失。
+   ④ 所有面都补上折射引擎（.n26ui-glass 以前完全没有）。
+
+   性能纪律：只写 opacity / transform / CSS 变量，不读布局；高频 pointermove
+   只读 clientX/Y；子层绝不加 backdrop-filter（不新建 backdrop root）；
+   祖先绝不加 filter；will-change 不写尺寸；一个物体只演一条动画；
+   表面统一 260ms + cubic-bezier(.2,.7,.2,1)；★ 前后片错落台阶 520ms
+   （11-13 用户钦定「前后片错落 ≥500ms 全系统统一」，原 55~80ms 作废）；
+   reduced-motion 全降级。
+   ========================================================================== */
+
+/* ---------- ① 侧边整片发光（go8 · 2026-11-12 定案） ----------
+   ★ 用户原话：「我说的是液态玻璃侧面发出光，就那一整块液态玻璃都会发光……
+     液态玻璃的侧边发出光，不是这种波，是光。」
+   作废的两版，都是「波」不是「光」：
+     go5/go6：两个 86% radial 大圆盘钉对角 → 「海底漏石油」；
+     go7    ：右上角/左下角出发、沿边快速衰减的青→绿→琥珀渐变带 →
+              亮度沿边变化 = 一条会跑的波带，而且只有两个角亮。
+   go8 的物理模型 = **导光板（edge-lit acrylic）**：光从四条侧边整条注入，
+     沿边**等亮无衰减**，只向玻璃**内侧**做垂直方向的柔和衰减；四条边一起亮，
+     整块面同时被提亮，所以看起来是「一整块玻璃在发光」。
+   硬约束：零 radial 光斑、零沿边渐变、零 conic、零 keyframes 流动、零位移滤镜。
+     只有 4 个方向垂直于边的线性渐变 + 均匀内阴影 + 一层整面微亮。
+   ★ v2.10.33 P0 结论不变：不写 mix-blend-mode:screen、不加 isolation/contain、
+     不加 filter（祖先一有 filter 折射就废），合成器只做普通 alpha 混合。 */
+.n26-go-iris {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: inherit;
+    pointer-events: none;
+    overflow: hidden;
+    --n26-go-iris-k: 1;
+    /* 外溢光：整块玻璃四周都有一层均匀光晕，不是某一角的一坨。
+       内侧 1px 白芯把「侧边」的边界交代清楚。 */
+    box-shadow:
+        0 -7px 20px rgba(255, 255, 255, .26),
+        0 0 26px 6px rgba(240, 246, 255, .20),
+        inset 0 0 0 1px rgba(255, 255, 255, .34) !important;
+    transition: opacity 260ms cubic-bezier(.2, .7, .2, 1);
+}
+/* 玻璃藏起来（静止灰底）时，侧发光一起退场 —— 不留给灰色胶囊。
+   只对 .n26-dng 判，其它玻璃没有 .n26-dng-on，不该被这条误伤。 */
+.n26-go-host.n26-dng:not(.n26-dng-on):not(.n26-go-live) > .n26-go-iris {
+    opacity: 0;
+}
+.n26-go-iris::before,
+.n26-go-iris::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background-repeat: no-repeat;
+    opacity: calc(var(--n26-disp, 10) / 20 * var(--n26-go-iris-k, 1));
+    transition: opacity 260ms cubic-bezier(.2, .7, .2, 1);
+}
+/* 四边等亮注入：每个渐变的方向都**垂直于那条边**，所以沿边每一点亮度完全相同；
+   衰减只发生在朝玻璃内部的方向（0% → 22% 后归零），这就是光，不是波。
+   background-size 用 34% 让四边的漫射在中心自然汇合成一整片亮面。 */
+.n26-go-iris::before {
+    background-image:
+        linear-gradient(180deg, rgba(255, 255, 255, .92) 0%, rgba(240, 244, 250, .34) 4%, rgba(214, 222, 232, .10) 11%, rgba(230, 236, 244, 0) 24%),
+        linear-gradient(0deg,   rgba(255, 255, 255, .92) 0%, rgba(240, 244, 250, .34) 4%, rgba(214, 222, 232, .10) 11%, rgba(230, 236, 244, 0) 24%),
+        linear-gradient(90deg,  rgba(255, 255, 255, .92) 0%, rgba(240, 244, 250, .34) 4%, rgba(214, 222, 232, .10) 11%, rgba(230, 236, 244, 0) 24%),
+        linear-gradient(270deg, rgba(255, 255, 255, .92) 0%, rgba(240, 244, 250, .34) 4%, rgba(214, 222, 232, .10) 11%, rgba(230, 236, 244, 0) 24%);
+    background-position: top, bottom, left, right;
+    background-size: 100% 34%, 100% 34%, 34% 100%, 34% 100%;
+}
+/* 整面微亮 + 均匀内侧光晕：让「整块玻璃都在发光」而不是只有四条亮边。
+   仍然没有任何沿边变化的色标，也没有 radial 圆斑。 */
+.n26-go-iris::after {
+    background-color: rgba(238, 242, 248, .07);
+    background-image: none;
+    border: 1px solid rgba(255, 255, 255, .62);
+    box-shadow:
+        inset 0 0 0 2px rgba(255, 255, 255, .26),
+        inset 0 0 22px 4px rgba(240, 244, 250, .22),
+        inset 0 0 60px 14px rgba(214, 222, 232, .10);
+}
+
+/* ---------- ② 按下亮光：照亮周围所有控件与元素 ---------- */
+#n26GoLight {
+    position: fixed;
+    left: 0;
+    top: 0;
+    /* 560px 的框，以按下点为中心（v2.10.28 起）。 */
+    width: 560px;
+    height: 560px;
+    margin: -280px 0 0 -280px;
+    z-index: 2147483001;
+    pointer-events: none;
+    /* ★ v2.10.33 P0 根治：删掉 `mix-blend-mode:screen`。
+       v2.10.28 以为「把 inset:0 缩成 560px 就局部了」—— 错：screen 混合的
+       backdrop 是父 stacking context 内的全部下层像素，本层 fixed + 挂 body
+       + 最高层级，backdrop 始终是整屏；缩小元素自身只是缩小了输出框。
+       现在走普通 alpha 加色，白色光与 screen 数学等价（见文件头），
+       提亮范围真正等于这 560px，合成器不再整屏读回。
+       ★ 不加 contain / 不加 filter：无需再建离屏表面，光源也不会瞎。 */
+    /* 只在按下那 260ms 可见，松手淡出跑完立刻退出合成，静息态零成本。 */
+    visibility: hidden;
+}
+#n26GoLight.is-active { visibility: visible; }
+.n26-go-bulb {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 560px;
+    height: 560px;
+    border-radius: 50%;
+    opacity: 0;
+    transform: scale(.34);
+    will-change: opacity, transform;
+    background: radial-gradient(circle,
+        rgba(255, 255, 255, .78) 0%,
+        rgba(246, 249, 253, .48) 18%,
+        rgba(226, 232, 240, .24) 40%,
+        rgba(210, 218, 230, .12) 62%,
+        rgba(210, 218, 230, 0) 80%);
+    /* 只演一条过渡：按下淡入、按住保持、松手淡出都是同一组属性 */
+    transition: opacity 260ms cubic-bezier(.2, .7, .2, 1),
+                transform 260ms cubic-bezier(.2, .7, .2, 1);
+}
+.n26-go-bulb.is-on { opacity: 1; transform: scale(1); }
+/* 点在真玻璃上：光从玻璃里发出来，比点在普通控件上更亮一点 */
+#n26GoLight.is-strong .n26-go-bulb.is-on { transform: scale(1.08); }
+
+/* ---------- ③ 玻璃展开 / 前后片错落 / 收尾回普通背景 ---------- */
+/* 三个子层都钉在玻璃内部，不参与主玻璃的 transform（主玻璃仍由 rAF 直写），
+   所以既不会和 paint() 打架，也不会新建 backdrop root。 */
+.n26-go-face {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    transform-origin: var(--n26-go-ox, 50%) var(--n26-go-oy, 50%);
+    background: linear-gradient(135deg,
+        rgba(255, 255, 255, .28) 0%,
+        rgba(232, 237, 244, .14) 42%,
+        rgba(255, 255, 255, 0) 78%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55);
+    will-change: opacity, transform;
+}
+.n26-go-face.trail {
+    background: linear-gradient(315deg,
+        rgba(255, 255, 255, .20) 0%,
+        rgba(220, 228, 238, .12) 44%,
+        rgba(255, 255, 255, 0) 80%);
+}
+
+/* 按下：从指针那一点涨出玻璃，一条合成关键帧（opacity + scale 同帧演完） */
+.n26-go-host.n26-go-expand > .n26-go-face {
+    animation: n26GoExpand .26s cubic-bezier(.2, .7, .2, 1) both;
+}
+.n26-go-host.n26-go-expand > .n26-go-face.trail {
+    /* 前片 0ms 起跑，后片晚 520ms —— 用户钦定的「前后片错落 ≥500ms」，
+       不是旧版 55~80ms 那种几乎看不出来的台阶。 */
+    animation-delay: 520ms;
+}
+@keyframes n26GoExpand {
+    from { opacity: 0; transform: scale(.52, .68) translate3d(0, 0, 0); }
+    to   { opacity: 1; transform: scale(1, 1) translate3d(0, 0, 0); }
+}
+
+/* 移动：前片直跟、后片慢半拍。位移由 JS 每帧写 CSS 变量（不读布局）。
+   前片 0 延迟，后片 520ms 台阶 —— 这就是「前面半片先到，后面慢点到」。
+   ★ 与展开态的 animation-delay 同一个数，全系统前后片错落统一 ≥500ms。 */
+.n26-go-host.n26-go-moving > .n26-go-face {
+    opacity: .85;
+    transform: translate3d(var(--n26-go-lead-x, 0px), var(--n26-go-lead-y, 0px), 0);
+    transition: transform 180ms cubic-bezier(.2, .7, .2, 1),
+                opacity 260ms cubic-bezier(.2, .7, .2, 1);
+}
+.n26-go-host.n26-go-moving > .n26-go-face.trail {
+    opacity: .55;
+    transform: translate3d(var(--n26-go-trail-x, 0px), var(--n26-go-trail-y, 0px), 0);
+    transition: transform 260ms cubic-bezier(.2, .7, .2, 1) 520ms,
+                opacity 260ms cubic-bezier(.2, .7, .2, 1);
+}
+
+/* 松手：玻璃收回成普通背景（灰胶囊由 :not() 规则回归），不瞬间消失 */
+.n26-go-host.n26-go-settle > .n26-go-face,
+.n26-go-host.n26-go-settle > .n26-go-iris {
+    animation: n26GoSettle .26s cubic-bezier(.2, .7, .2, 1) both;
+}
+@keyframes n26GoSettle {
+    from { opacity: var(--n26-go-from, 1); transform: scale(1); }
+    to   { opacity: 0; transform: scale(.92); }
+}
+/* 松手那一瞬，docknav 会把玻璃本体直接 opacity:0；本体已经不可能演收尾了。
+   所以在 body 上留一片同几何的「幽灵」，让它把「收回成普通背景」这 260ms 演完，
+   玻璃才不会啪一下消失。★ 不挂 backdrop-filter（glass-system 第 1 节会全关，
+   而且祖先一有 filter 折射就废），只靠渐变 + 高光 + 一条合成关键帧。 */
+.n26-go-ghost {
+    position: fixed;
+    z-index: 2147483000;
+    pointer-events: none;
+    background: linear-gradient(135deg,
+        rgba(255, 255, 255, .30) 0%,
+        rgba(228, 234, 242, .12) 46%,
+        rgba(255, 255, 255, 0) 82%);
+    border: 1px solid rgba(255, 255, 255, .28);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), 0 8px 22px rgba(15, 23, 42, .14);
+    animation: n26GoGhostOut .3s cubic-bezier(.2, .7, .2, 1) both;
+}
+@keyframes n26GoGhostOut {
+    from { opacity: .95; transform: scale(1); }
+    to   { opacity: 0;   transform: scale(.94); }
+}
+
+/* ---------- ④ 折射面放行 ----------
+   .n26ui-glass（音乐 / 地图侧栏）以前完全没进白名单，只是透明卡片加边框。 */
+html body :is(#n26a #n26b #n26c, .n26ui-glass.n26-liquid-on) {
+    -webkit-backdrop-filter: var(--n26-lg-filter, none) !important;
+    backdrop-filter: var(--n26-lg-filter, none) !important;
+}
+
+/* ---------- ⑤ 微动效：统一按下反馈 ---------- */
+.n26-go-host.n26-go-press > .n26-go-iris { --n26-go-iris-k: 1.55; }
+.n26-go-host.n26-go-press { filter: none; }
+
+@media (prefers-reduced-motion: reduce) {
+    #n26GoLight, .n26-go-bulb, .n26-go-iris, .n26-go-ghost { display: none !important; }
+    .n26-go-host.n26-go-expand > .n26-go-face,
+    .n26-go-host.n26-go-settle > .n26-go-face,
+    .n26-go-host.n26-go-settle > .n26-go-iris { animation-duration: .01ms !important; animation-delay: 0ms !important; }
+    .n26-go-host.n26-go-moving > .n26-go-face,
+    .n26-go-host.n26-go-moving > .n26-go-face.trail { transition-duration: .01ms !important; transition-delay: 0ms !important; }
+}

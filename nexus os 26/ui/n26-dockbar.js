@@ -347,7 +347,7 @@
         var d = ownerDoc();
         if (!m && !d) return;
         if (kind === 'button') {
-            if (id === 'toggle') { try { if (m.paused) m.play(); else m.pause(); } catch (e) { } return; }
+            if (id === 'toggle') { try { var pp = m.paused ? m.play() : null; if (!m.paused) m.pause(); if (pp && pp.catch) pp.catch(function (e) { console.warn('[N26DockBar] 播放被拒：', e && e.name); }); } catch (e) { } return; }
             if (id === 'back10') { try { m.currentTime = Math.max(0, m.currentTime - 10); } catch (e) { } return; }
             if (id === 'fwd10') { try { m.currentTime = Math.min(m.duration || 1e9, m.currentTime + 10); } catch (e) { } return; }
             if (id === 'mute') { try { m.muted = !m.muted; } catch (e) { } return; }

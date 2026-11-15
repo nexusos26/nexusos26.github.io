@@ -1,0 +1,154 @@
+/* ==========================================================================
+   ui/n26-widget-overflow.css · 戳 ovf1 · 2026-11-13
+   --------------------------------------------------------------------------
+   ★ 依据：docs/小组件设计规格-全量47款.md §2「不溢出总规范」。
+     用户原话：「最重要的保证不要溢出，然后再重新开始做」。
+     重做的第 1 步 = 先把通用护栏铺到全部 47 款 / 198 尺寸档，再逐族改外观。
+
+   ★ 职责边界（刻意收窄）：
+     只写 **盒模型 / 裁切 / 最小尺寸 / 控件锁高**。
+     不写颜色、不写材质、不写背景、不写阴影、不写动画 —— 那些归
+     wr7 / fam2 / beau2 / ml1，本层绝不参与打架。
+     加载顺序必须在 beau2 之后、ml1 之前：音乐族由 ml1 最后收口，
+     本层对 .widget-inner 的 overflow 规则不会误伤 .nx-mu-bg 的负 inset。
+
+   ★ 为什么需要独立一层：
+     wr7 §0 只给「内容层的文字标签」写了 min-width:0 / nowrap，
+     .widget-inner 自己、内容层根、图片、输入控件、列表容器都没有护栏。
+     长歌名 / 长城市名 / 长日程标题会从这些缺口把整行撑破，
+     或者让 flex 子项拒绝收缩（flex 默认 min-width:auto）。
+
+   ★ 层叠：5 写 [data-wtype]（(0,8,2)），压过 wr7 §0 的 (0,3,2)。
+     与 fam2/beau2 的颜色规则不冲突；ml1 用 10 写，天然压过本层。
+     零 filter / 零 backdrop-filter / 零伪元素 / 零动画 / 零 JS。
+   ========================================================================== */
+
+/* ---------- 1 · 三层盒模型 ---------- */
+/* 卡片是唯一裁切边界；box-sizing 必须 border-box，否则 100% + padding 必溢出 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype] {
+    box-sizing: border-box !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner {
+    box-sizing: border-box !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+}
+/* 内容层根：不许拒绝收缩、不许把内容顶出内边距。
+   音乐 .nx.nx-mu 刻意排除 —— 它的 .nx-mu-bg 靠负 inset 铺满卡片，
+   ml1 会给它单独写 overflow:visible 并由卡片收口。 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner
+    > :is(div:not(.nx-mu), section, ul, ol, table, form) {
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+
+/* ---------- 2 · 所有后代：min-width:0 是 flex 不撑破的前提 ----------
+   只补 min-width / max-width / overflow，不写 white-space ——
+   多行 line-clamp 需要 white-space:normal，交给已有的 clamp 规则，
+   本层一刀切 nowrap 会把 -webkit-box 的换行能力废掉。 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner :is(
+    span, b, strong, small, em, p, div, h1, h2, h3, h4, td, th, label, time, a, li,
+    button, input, textarea, select) {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+/* 图片 / 画布：不许以原始尺寸撑破容器。object-fit 由各渲染器自己定（cover/contain），
+   本层不干预，否则商城Logo 与相册图的语义会混。 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner :is(
+    img, svg, canvas, video) {
+    max-width: 100% !important;
+    max-height: 100% !important;
+}
+/* 可编辑区：textarea 是历史上最常把卡片撑破的一个 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner textarea {
+    min-height: 0 !important;
+    resize: none !important;
+    box-sizing: border-box !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner input {
+    box-sizing: border-box !important;
+}
+
+/* ---------- 3 · 列表 / 网格容器：裁在卡内，不许外溢 ---------- */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner :is(
+    .nx-list, .nx-li, .nx2-list, .nx2-row, .widget-list, .widget-todo-list,
+    .nx-ql-list, .nx-cal-grid, .nx-wx-kv, .nx2-panel, .nx2-well,
+    .nx-bili-list, .nx-bili-li, .nx-mu-qi, .nx-mu-rc, .nx-mu-rd) {
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+/* 网格等分的每一格都要能收缩 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner :is(
+    .nx-cal-cell, .nx2-cell, .nx-wp-i, .nx-dual-chip, .nx-mu-chip, .nx2-chip,
+    .nx-rc, .nx-chip, .nx2-week > div) {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+
+/* ---------- 4 · 控制条锁高：永远不与主读数抢空间 ---------- */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner :is(
+    .nx-mu-ctl, .nx-ctl, .widget-ctl, .nx2-ctl, .nx-mu-vol, .nx-vol,
+    .nx-mu-mini-row, .nx-hd, .nx2-hd, .nx-mu-hd) {
+    flex-wrap: nowrap !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner :is(
+    .nx-mu-btn, .nx-btn, .nx-icon-btn, .nx2-btn, .widget-calc-btn,
+    .nx-mu-go, .nx-mu-sbtn, .widget-todo-add, .widget-remove-btn) {
+    flex: none !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* ---------- 5 · 胶囊档（rows=1）：只留「图标 + 主值 + 一个动作」 ----------
+   双写属性选择器是为了压过四风格对圆角的覆盖；这里只裁内容，不改圆角。
+   隐藏名单逐条列，绝不用「隐藏所有第 N 个子元素」这种会误伤的写法。 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-rows="1"][data-rows="1"] .widget-inner :is(
+    .nx-mu-vol, .nx-vol, .nx-mu-fat, .nx-mu-tip, .nx-hd-sub,
+    .nx2-only-tall, .nx2-detail, .nx-mu-sbox, .nx-mu-empty > i,
+    .nx2-panel, .nx2-well, .nx-wx-kv, .widget-todo-list, .nx-cal-grid) {
+    display: none !important;
+}
+/* 面板预览卡没有 data-rows，只有 wrows-1 类 —— 同样要裁 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype].wrows-1 .widget-inner :is(
+    .nx-mu-vol, .nx-vol, .nx-mu-fat, .nx-mu-tip, .nx-hd-sub,
+    .nx2-only-tall, .nx2-detail, .nx-mu-sbox, .nx-mu-empty > i,
+    .nx2-panel, .nx2-well, .nx-wx-kv, .widget-todo-list, .nx-cal-grid) {
+    display: none !important;
+}
+
+/* ---------- 6 · 圆盘 / 表盘 / 封面：只缩不溢 ---------- */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner :is(
+    .nx-mu-cover, .nx-mu-thumb, .nx2-orb, .nx-orb, .nx-clock-face,
+    .nx-ring, .nx2-ring, .nx-ph, .w-ph) {
+    max-width: 100% !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+
+/* ---------- 7 · 长文本兜底：主数字不许换行、不许被裁成半个字 ---------- */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner :is(
+    .widget-clock-time, .nx2-sec-main, .nx-hero, .widget-weather-temp,
+    .widget-date-md, .nx2-big, .nx2-num, .nx2-value,
+    .widget-system-row-val, .nx-mu-time) {
+    white-space: nowrap !important;
+    font-variant-numeric: tabular-nums !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}

@@ -254,13 +254,21 @@ function relayMode(env) {
   return { on: true, base: RELAY_BASE };
 }
 
-function buildTargets(env, path, query, withRelayParams) {
+function buildTargets(env, path, query, withRelayParams, opt = {}) {
   const rm = relayMode(env);
   const extras = withRelayParams ? qs(RELAY_PARAMS) : '';
   const relayQuery = [query, extras].filter(Boolean).join('&');
   const out = [];
   if (rm.on) out.push({ url: rm.base + path + '?' + relayQuery, mode: 'relay' });
-  out.push({ url: API + path + (query ? '?' + query : ''), mode: 'direct' });
+  const apiUrl = API + path + (query ? '?' + query : '');
+  out.push({ url: apiUrl, mode: 'direct' });
+  /* ★ 2026-11-12 12:35 实测返工：中转（relay）对新鲜 bvid 其实是通的
+     （/api/bili/video 返回 X-Bili-Via: relay，约 1.4–2s），而 allorigins
+     本机实测 18s 超时。所以它只配当「最后兜底」，且必须短超时，
+     否则失效 bvid 会在 relay→direct→ao 上叠到 35s+ 才报错。 */
+  if (opt.ao !== false) {
+    out.push({ url: 'https://api.allorigins.win/raw?url=' + encodeURIComponent(apiUrl), mode: 'ao' });
+  }
   return out;
 }
 
@@ -292,13 +300,19 @@ async function biliGet(env, request, path, paramsIn, opt = {}) {
 
   let last = null;
   let relayErr = null;
+  let fatal = false;   /* 视频不存在 / 明确 404：不再换通道重试，立刻回前端 */
   for (const t of targets) {
-    const attempts = t.mode === 'relay' ? (opt.attempts || 5) : 1;
+    if (fatal) break;
+    /* 中转默认重试从 5 砍到 2：5×12s 的超时叠加曾把 video 接口拖到 25s+，
+       前端 15s 就超时了 —— 现在后面还有 allorigins 通道，不值得在中转上耗满。 */
+    const attempts = t.mode === 'relay' ? (opt.attempts || 2) : 1;
     for (let i = 0; i < attempts; i++) {
       let res;
       try {
-        const headers = t.mode === 'relay' ? { 'User-Agent': UA, Accept: 'application/json, */*' } : baseHeaders(cookie);
-        res = await fetchTimeout(t.url, { headers }, opt.timeout || API_TIMEOUT);
+        const headers = t.mode === 'direct' ? baseHeaders(cookie) : { 'User-Agent': UA, Accept: 'application/json, */*' };
+        /* ao 是第三方公共代理、实测常超时：只给 6s，绝不让它拖垮整条失败路径 */
+        const timeout = t.mode === 'ao' ? 6000 : (opt.timeout || API_TIMEOUT);
+        res = await fetchTimeout(t.url, { headers }, timeout);
       } catch (e) {
         last = { code: 'BILI_TIMEOUT', status: 504, error: '连接上游超时（' + t.mode + '）：' + (e && e.message) };
         if (t.mode === 'relay') relayErr = last;
@@ -308,7 +322,7 @@ async function biliGet(env, request, path, paramsIn, opt = {}) {
       const parsed = await readUpstream(res);
       if (!parsed.json) {
         last = {
-          code: parsed.status === 429 ? 'BILI_RELAY_LIMIT' : 'BILI_NON_JSON',
+          code: parsed.status === 429 ? 'BILI_RELAY_LIMIT' : t.mode === 'ao' ? 'BILI_AO_FAIL' : 'BILI_NON_JSON',
           status: 502,
           error: '上游返回非 JSON（' + t.mode + ' HTTP ' + parsed.status + '）',
         };
@@ -319,6 +333,8 @@ async function biliGet(env, request, path, paramsIn, opt = {}) {
       if (parsed.status !== 200 || (parsed.json.code !== 0 && parsed.json.code !== undefined)) {
         last = mapError(parsed.status, parsed.json, t.mode === 'relay' ? '' : '未配置 BILI_COOKIE 时较常见。');
         if (t.mode === 'relay') relayErr = last;
+        /* 视频被删 / bvid 失效（B站 -404）：任何出口都拿不到，别再换通道空转 30s */
+        if (last.status === 404 || last.code === 'BILI_-404') { fatal = true; break; }
         if (i < attempts - 1) await new Promise((r) => setTimeout(r, 900 + i * 1400));
         continue;
       }
@@ -396,15 +412,28 @@ function extractState(html) {
 
 async function fetchHtml(env, targetPath, params, hostBase) {
   const base = hostBase || relayBaseFor(env);
-  const url = base + targetPath + '?' + qs(Object.assign({}, params, RELAY_PARAMS));
-  for (let i = 0; i < 3; i++) {
-    try {
-      const res = await fetchTimeout(url, { headers: { 'User-Agent': UA, Accept: 'text/html' } }, 20000);
-      if (res.status === 200) return await res.text();
-    } catch (e) {
-      /* retry */
+  const target = base + targetPath + '?' + qs(Object.assign({}, params, RELAY_PARAMS));
+  const enc = encodeURIComponent('https://www.bilibili.com' + targetPath + (params && Object.keys(params).length ? '?' + qs(params) : ''));
+  /* ★ 2026-11-12：中转之外再挂 allorigins 独立出口（与搜索页兜底同一通道），
+     video 页 __INITIAL_STATE__ 兜底不再单点依赖 Google 中转。 */
+  const urls = [
+    { u: target, n: 2, ao: false },
+    { u: 'https://api.allorigins.win/raw?url=' + enc, n: 1, ao: true },
+  ];
+  for (const item of urls) {
+    for (let i = 0; i < item.n; i++) {
+      try {
+        const res = await fetchTimeout(item.u, { headers: { 'User-Agent': UA, Accept: 'text/html' } }, 20000);
+        if (res.status === 200) {
+          let html = await res.text();
+          if (item.ao && html && html.length > 500 && /__INITIAL_STATE__|<html/i.test(html)) return html;
+          if (!item.ao) return html;
+        }
+      } catch (e) {
+        /* retry / 换下一条出口 */
+      }
+      await new Promise((r) => setTimeout(r, 900 + i * 1200));
     }
-    await new Promise((r) => setTimeout(r, 900 + i * 1200));
   }
   return null;
 }

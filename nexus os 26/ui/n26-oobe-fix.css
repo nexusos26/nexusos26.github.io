@@ -1,0 +1,38 @@
+/* ==========================================================================
+   ui/n26-oobe-fix.css · OOBE 修复 · 戳 of1
+   --------------------------------------------------------------------------
+   实机截图（2026-11-15，step-api 接入 AI 小方）：这一步内容超高（免责声明 +
+   厂商芯片 + 三个输入 + 开关 + 按钮行），而 v2.9.61 起 .oobe-card 是固定
+   height:min(700px,84vh) 白卡 —— .oobe-card-form 基础规则写死
+   justify-content:center，flex 主轴居中 + 内容溢出在 Chromium 里
+   scrollHeight 失真：滚不动、底部「测试连接 / 先不接入」永远够不着。
+   修复：
+   ① 全部步骤表单 justify-content: safe center —— 放得下照旧居中，
+     放不下自动退化 flex-start，滚动区间完整（Chromium 115+ 支持 safe）；
+   ② step-api（已知的超高步）直接 flex-start + 顶距，不赌 safe 支持；
+   ③ 表单滚动条显形（白卡上默认细条看不见，用户不知道能滚）。
+   ========================================================================== */
+
+#install-screen .oobe-card-form {
+    justify-content: safe center !important;
+}
+
+#step-api .oobe-card-form {
+    justify-content: flex-start !important;
+    padding-top: 44px !important;
+}
+
+#install-screen .oobe-card-form::-webkit-scrollbar {
+    width: 9px;
+}
+
+#install-screen .oobe-card-form::-webkit-scrollbar-thumb {
+    background: rgba(28, 42, 64, .22);
+    border-radius: 99px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+#install-screen .oobe-card-form::-webkit-scrollbar-track {
+    background: transparent;
+}

@@ -1,0 +1,724 @@
+/* ==========================================================================
+   ui/n26-widget-redesign.css · v2「一套玻璃，各表身份」 / 戳 wr9
+   --------------------------------------------------------------------------
+   ★ 2026-11-12 集体重做（用户：「你真的觉得这好看吗？全都再改一遍」）
+     v1 的病根：每类卡一种实色底（时钟黑、天气深蓝、日历灰、B站紫、音乐黑），
+     贴在壁纸上像补丁；夜里档直接用纯黑，等于壁纸上一排洞。
+     v2 定案：
+       ① 全部卡同一张「半透磨砂玻璃」——白天浅玻璃吃壁纸、夜间半透深蓝玻璃，
+          **任何档位都不许纯黑**；
+       ② 类别身份不再整卡刷色，改到内容点缀（数字/图标/徽标吃 --w-accent）；
+       ③ 四风格只差阴影与边：Flat=液态=平的，Neu=玻璃拟物=凸起凹下；
+       ④ 音乐 has-art 封面铺满整卡（6.4 定案原样保留）；音乐非封面档
+          （队列/搜索/推荐/电台）跟随统一玻璃，控件改墨色系适配浅底；
+       ⑤ 昼夜令牌：昼墨字 / 夜白字，权重压过 widgets.css:1697 的墨字规则。
+   ★ 纪律不变：零 DOM 注入、零 SVG 滤镜、零 filter、零 transition:all、
+     零 JS 逐卡片写、卡面零 backdrop 合成层；特异度双写 [data-wtype] 起步。
+   ★ fb2 勘误（11-15，推翻 ws/beau3 轮「挂载点不存在」结论）：
+     html[data-ui] 其实由 fui-bridge.js boot 写入（读持久化），但运行中切换风格时
+     setFanguiStyle 只更新 data-ui/data-neu，data-ui 停在 boot 旧值 —— 挂它的规则
+     「刷新才对、切了不动」。本文件全部规则已迁到实时挂载点 html[data-ui]+html[data-neu]。
+   ========================================================================== */
+
+/* ============================ 0 · 集体基底 ============================ */
+html body .desktop-widget-card[data-type][data-wtype] {
+    --w-radius: 22px;
+    --w-inner-radius: 22px;
+    --w-mat-border: rgba(255, 255, 255, .55) !important;
+    border-radius: var(--w-radius) !important;
+    font-family: "SF Pro Display", -apple-system, "SF Pro Text",
+                 "Segoe UI Variable Display", "Segoe UI Variable",
+                 "Segoe UI", system-ui, sans-serif !important;
+    overflow: hidden !important;
+    isolation: isolate;
+    /* 半透玻璃底直接吃壁纸，不挂常驻磨砂合成面 */
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
+html body .desktop-widget-card[data-type][data-wtype] .widget-inner {
+    border-radius: var(--w-inner-radius) !important;
+    overflow: hidden !important;
+}
+/* ★ pc1 勘误（用户「每一个小组件都认认真真的做」）：
+   原全局 white-space:nowrap 把 line-clamp / 多行标题 / 列表项全压成单行，
+   是「文字挤成团 + 下方一大片空白」的全局病根。撤掉这一刀：
+   这里只保留盒模型护栏；该单行的由 overflow.css §7 + pc1 §0 白名单管，
+   该多行的由 pc1 §0 的 clamp2/clamp3 管，逐卡节奏由 pc1 §2 管。 */
+html body .desktop-widget-card[data-type][data-wtype] .widget-inner :is(
+    span, b, strong, small, em, p, h1, h2, h3, div) {
+    overflow: hidden;
+    min-width: 0;
+    max-width: 100%;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-rows="1"] {
+    border-radius: 999px !important;
+}
+
+/* ---------- 0.1 集体版式统一（旧的 .nx 内容层一起改，不是只改新组件） ---------- */
+html body .desktop-widget-card[data-type][data-wtype] .widget-inner :is(.nx, .nx2) {
+    gap: 8px; letter-spacing: -.15px; font-variant-numeric: tabular-nums;
+}
+html body .desktop-widget-card[data-type][data-wtype] .widget-inner :is(
+    .nx-icon-btn, .nx-btn, .nx-btn-accent, .nx-li, .nx-empty, .nx-bar,
+    .nx-wx-chip, .nx-dual-chip, .nx-wx-kv, .nx-cal-cell, .nx2-btn,
+    .nx2-chip, .nx2-panel, .nx2-well, .nx2-cell) {
+    border-radius: 12px !important;
+}
+html body .desktop-widget-card[data-type][data-wtype] .widget-inner :is(.nx-hd > span, .nx2-hd > span) {
+    font-weight: 700; letter-spacing: .25px;
+}
+html body .desktop-widget-card[data-type][data-wtype] .widget-inner :is(.nx-hd, .nx2-hd) {
+    opacity: .96;
+}
+
+/* ============================ 1 · 统一玻璃面（昼夜四态） ============================
+   一条底打到全部卡（四风格通用；风格差异只在 §2 的阴影与边）。
+   ★ 必须直写 background-image：palette.css 的逐类实色 tint 全是
+     background !important，只改变量是无效功；本层最后加载 + 双写属性压过它。 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype] {
+    /* 昼：浅玻璃 */
+    background-color: rgba(251, 252, 255, .60) !important;
+    background-image:
+        linear-gradient(180deg, rgba(255, 255, 255, .60) 0%, rgba(255, 255, 255, 0) 22%),
+        linear-gradient(158deg, rgba(255, 255, 255, .30) 0%, rgba(226, 237, 248, .16) 58%, rgba(255, 255, 255, .12) 100%) !important;
+    /* 昼令牌：墨字 */
+    --w-text: #1a2432 !important;
+    --w-text-strong: #0b1220 !important;
+    --w-text-soft: rgba(16, 24, 40, .64) !important;
+    --w-text-faint: rgba(16, 24, 40, .42) !important;
+    --w-hair: rgba(16, 24, 40, .10) !important;
+    --w-well: rgba(16, 24, 40, .06) !important;
+    --w-accent: #0284c7 !important;
+    color: #1a2432 !important;
+}
+html body.dark-mode .desktop-widget-card[data-type][data-wtype][data-wtype] {
+    /* 深色模式：半透深蓝玻璃（不是纯黑） */
+    background-color: rgba(15, 22, 40, .58) !important;
+    background-image:
+        linear-gradient(180deg, rgba(255, 255, 255, .09) 0%, rgba(255, 255, 255, 0) 20%),
+        linear-gradient(158deg, rgba(44, 62, 98, .52) 0%, rgba(12, 18, 34, .62) 100%) !important;
+    --w-text: #eef2fa !important;
+    --w-text-strong: #ffffff !important;
+    --w-text-soft: rgba(238, 242, 250, .70) !important;
+    --w-text-faint: rgba(238, 242, 250, .46) !important;
+    --w-hair: rgba(255, 255, 255, .14) !important;
+    --w-well: rgba(255, 255, 255, .08) !important;
+    --w-accent: #7cc4f8 !important;
+    color: #eef2fa !important;
+}
+html[data-n26-phase="night"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype] {
+    /* 夜间（亮色系统 + 入夜）：与深色模式同一张深蓝玻璃，全系统只有一种夜卡 */
+    background-color: rgba(13, 19, 35, .55) !important;
+    background-image:
+        linear-gradient(180deg, rgba(255, 255, 255, .10) 0%, rgba(255, 255, 255, 0) 20%),
+        linear-gradient(158deg, rgba(40, 57, 92, .55) 0%, rgba(10, 15, 29, .64) 100%) !important;
+    --w-text: #eef2fa !important;
+    --w-text-strong: #ffffff !important;
+    --w-text-soft: rgba(238, 242, 250, .70) !important;
+    --w-text-faint: rgba(238, 242, 250, .46) !important;
+    --w-hair: rgba(255, 255, 255, .14) !important;
+    --w-well: rgba(255, 255, 255, .08) !important;
+    --w-accent: #7cc4f8 !important;
+    color: #eef2fa !important;
+}
+html[data-n26-phase="night"] body.dark-mode .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype] {
+    background-color: rgba(10, 15, 28, .62) !important;
+    background-image:
+        linear-gradient(180deg, rgba(255, 255, 255, .08) 0%, rgba(255, 255, 255, 0) 20%),
+        linear-gradient(158deg, rgba(36, 51, 82, .55) 0%, rgba(8, 12, 24, .68) 100%) !important;
+}
+/* 晨昏：在玻璃上盖一层薄暖幕，底不动 */
+html[data-n26-phase="dawn"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype] {
+    background-image:
+        linear-gradient(170deg, rgba(255, 186, 120, .18) 0%, rgba(255, 186, 120, 0) 55%),
+        linear-gradient(180deg, rgba(255, 255, 255, .60) 0%, rgba(255, 255, 255, 0) 22%),
+        linear-gradient(158deg, rgba(255, 255, 255, .30) 0%, rgba(226, 237, 248, .16) 58%, rgba(255, 255, 255, .12) 100%) !important;
+}
+html[data-n26-phase="dusk"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype] {
+    background-image:
+        linear-gradient(170deg, rgba(255, 128, 96, .20) 0%, rgba(255, 128, 96, 0) 55%),
+        linear-gradient(180deg, rgba(255, 255, 255, .60) 0%, rgba(255, 255, 255, 0) 22%),
+        linear-gradient(158deg, rgba(255, 255, 255, .30) 0%, rgba(226, 237, 248, .16) 58%, rgba(255, 255, 255, .12) 100%) !important;
+}
+
+/* ============================ 2 · 四风格差异（只差阴影与边） ============================
+   ★ Flat 与 Liquid 完全同款（平的）；Neu 与 Neu-Glass 凸起凹下。
+   面已统一（§1），这里只发阴影与描边。 */
+html[data-ui="flat"] body .desktop-widget-card[data-type][data-wtype][data-wtype],
+html[data-ui="liquid"] body .desktop-widget-card[data-type][data-wtype][data-wtype] {
+    --w-mat-shadow: 0 10px 26px rgba(15, 23, 42, .13),
+                    0 2px 6px rgba(15, 23, 42, .06) !important;
+    --w-mat-border: rgba(255, 255, 255, .50) !important;
+    border-radius: 18px !important;
+}
+html[data-ui="flat"] body.dark-mode .desktop-widget-card[data-type][data-wtype][data-wtype],
+html[data-ui="liquid"] body.dark-mode .desktop-widget-card[data-type][data-wtype][data-wtype] {
+    --w-mat-shadow: 0 12px 30px rgba(0, 0, 0, .42),
+                    0 2px 8px rgba(0, 0, 0, .24) !important;
+    --w-mat-border: rgba(255, 255, 255, .12) !important;
+}
+html[data-ui="neu"][data-neu="solid"] body .desktop-widget-card[data-type][data-wtype][data-wtype],
+html[data-ui="neu"][data-neu="glass"] body .desktop-widget-card[data-type][data-wtype][data-wtype] {
+    --w-mat-shadow:
+        7px 7px 16px rgba(15, 23, 42, .18),
+        -6px -6px 14px rgba(255, 255, 255, .90),
+        inset 0 1px 0 rgba(255, 255, 255, .92),
+        inset 0 -1px 0 rgba(15, 23, 42, .08) !important;
+    --w-mat-border: rgba(255, 255, 255, .78) !important;
+}
+html[data-ui="neu"][data-neu="solid"] body.dark-mode .desktop-widget-card[data-type][data-wtype][data-wtype],
+html[data-ui="neu"][data-neu="glass"] body.dark-mode .desktop-widget-card[data-type][data-wtype][data-wtype] {
+    --w-mat-shadow:
+        7px 7px 18px rgba(0, 0, 0, .55),
+        -6px -6px 14px rgba(255, 255, 255, .10),
+        inset 0 1px 0 rgba(255, 255, 255, .15),
+        inset 0 -1px 0 rgba(0, 0, 0, .38) !important;
+    --w-mat-border: rgba(255, 255, 255, .14) !important;
+}
+/* Flat / Liquid：一切凹凸归零 */
+html[data-ui="flat"] body .desktop-widget-card[data-type][data-wtype] .widget-inner *,
+html[data-ui="liquid"] body .desktop-widget-card[data-type][data-wtype] .widget-inner * {
+    text-shadow: none !important;
+}
+html[data-ui="flat"] body .desktop-widget-card[data-type][data-wtype] .widget-inner :is(
+    button, [role="button"], input, textarea, .nx-bar, .nx-empty, .nx-list, .nx-li,
+    .nx-icon-btn, .nx-btn, .nx-wx-chip, .nx-dual-chip, .nx-wp-i, .nx2-well),
+html[data-ui="liquid"] body .desktop-widget-card[data-type][data-wtype] .widget-inner :is(
+    button, [role="button"], input, textarea, .nx-bar, .nx-empty, .nx-list, .nx-li,
+    .nx-icon-btn, .nx-btn, .nx-wx-chip, .nx-dual-chip, .nx-wp-i, .nx2-well) {
+    box-shadow: none !important;
+}
+
+/* ---------- 2.1 凸 / 凹 分配（只在 Neu / Neu-Glass 生效） ---------- */
+html[data-ui="neu"][data-neu="solid"] body .desktop-widget-card[data-type][data-wtype] .widget-inner :is(
+    button, [role="button"], .nx-icon-btn, .nx-btn, .nx-btn-accent, .nx-wx-chip,
+    .nx-dual-chip, .nx-wp-i, .nx-td-ck, .nx-ql-btn, .nx-cal-cell, .nx2-chip,
+    .nx2-btn, .nx2-knob),
+html[data-ui="neu"][data-neu="glass"] body .desktop-widget-card[data-type][data-wtype] .widget-inner :is(
+    button, [role="button"], .nx-icon-btn, .nx-btn, .nx-btn-accent, .nx-wx-chip,
+    .nx-dual-chip, .nx-wp-i, .nx-td-ck, .nx-ql-btn, .nx-cal-cell, .nx2-chip,
+    .nx2-btn, .nx2-knob) {
+    box-shadow: 4px 4px 9px rgba(15, 23, 42, .20),
+                -4px -4px 9px rgba(255, 255, 255, .90),
+                inset 0 1px 0 rgba(255, 255, 255, .85) !important;
+}
+html[data-ui="neu"][data-neu="solid"] body .desktop-widget-card[data-type][data-wtype] .widget-inner :is(
+    button, [role="button"], .nx-icon-btn, .nx-btn, .nx-wp-i, .nx2-btn):active,
+html[data-ui="neu"][data-neu="glass"] body .desktop-widget-card[data-type][data-wtype] .widget-inner :is(
+    button, [role="button"], .nx-icon-btn, .nx-btn, .nx-wp-i, .nx2-btn):active {
+    box-shadow: inset 4px 4px 9px rgba(15, 23, 42, .24),
+                inset -3px -3px 8px rgba(255, 255, 255, .78) !important;
+}
+html[data-ui="neu"][data-neu="solid"] body .desktop-widget-card[data-type][data-wtype] .widget-inner :is(
+    input, textarea, .nx-bar, .nx-empty, .nx-list, .nx-li, .nx-wx-kv, .nx-cal-grid,
+    .nx-clk-tl-track, .nx-vol-range, .nx2-well, .nx2-track, .nx2-input, .nx2-panel),
+html[data-ui="neu"][data-neu="glass"] body .desktop-widget-card[data-type][data-wtype] .widget-inner :is(
+    input, textarea, .nx-bar, .nx-empty, .nx-list, .nx-li, .nx-wx-kv, .nx-cal-grid,
+    .nx-clk-tl-track, .nx-vol-range, .nx2-well, .nx2-track, .nx2-input, .nx2-panel) {
+    box-shadow: inset 4px 4px 9px rgba(15, 23, 42, .22),
+                inset -4px -4px 9px rgba(255, 255, 255, .85),
+                inset 0 1px 0 rgba(15, 23, 42, .10) !important;
+}
+html[data-ui="neu"][data-neu="solid"] body .desktop-widget-card[data-type][data-wtype] .widget-inner .nx-fill,
+html[data-ui="neu"][data-neu="glass"] body .desktop-widget-card[data-type][data-wtype] .widget-inner .nx-fill,
+html[data-ui="neu"][data-neu="solid"] body .desktop-widget-card[data-type][data-wtype] .widget-inner .nx2-fill,
+html[data-ui="neu"][data-neu="glass"] body .desktop-widget-card[data-type][data-wtype] .widget-inner .nx2-fill {
+    box-shadow: 2px 2px 5px rgba(15, 23, 42, .18),
+                -2px -2px 5px rgba(255, 255, 255, .80) !important;
+}
+/* 主数字 / 主标题 → 文字凸；次要标签 → 文字凹 */
+html[data-ui="neu"][data-neu="solid"] body .desktop-widget-card[data-type][data-wtype] .widget-inner :is(
+    [class*="time"], [class*="value"], [class*="temp"], [class*="big"],
+    [class*="num"], [class*="count"], h1, h2, h3, strong, b),
+html[data-ui="neu"][data-neu="glass"] body .desktop-widget-card[data-type][data-wtype] .widget-inner :is(
+    [class*="time"], [class*="value"], [class*="temp"], [class*="big"],
+    [class*="num"], [class*="count"], h1, h2, h3, strong, b) {
+    text-shadow: 0 1px 0 rgba(255, 255, 255, .80), 0 -1px 1px rgba(15, 23, 42, .14) !important;
+}
+html[data-ui="neu"][data-neu="solid"] body .desktop-widget-card[data-type][data-wtype] .widget-inner :is(
+    [class*="label"], [class*="sub"], [class*="desc"], small, em),
+html[data-ui="neu"][data-neu="glass"] body .desktop-widget-card[data-type][data-wtype] .widget-inner :is(
+    [class*="label"], [class*="sub"], [class*="desc"], small, em) {
+    text-shadow: 0 -1px 0 rgba(15, 23, 42, .18), 0 1px 0 rgba(255, 255, 255, .70) !important;
+}
+html[data-ui="neu"][data-neu="solid"] body.dark-mode .desktop-widget-card[data-type][data-wtype] .widget-inner :is(
+    button, [role="button"], .nx-icon-btn, .nx-btn, .nx2-btn, .nx2-chip, .nx2-knob),
+html[data-ui="neu"][data-neu="glass"] body.dark-mode .desktop-widget-card[data-type][data-wtype] .widget-inner :is(
+    button, [role="button"], .nx-icon-btn, .nx-btn, .nx2-btn, .nx2-chip, .nx2-knob) {
+    box-shadow: 4px 4px 9px rgba(0, 0, 0, .52),
+                -4px -4px 9px rgba(255, 255, 255, .11),
+                inset 0 1px 0 rgba(255, 255, 255, .14) !important;
+}
+html[data-ui="neu"][data-neu="solid"] body.dark-mode .desktop-widget-card[data-type][data-wtype] .widget-inner :is(
+    input, textarea, .nx-bar, .nx2-well, .nx2-track, .nx2-input, .nx2-panel),
+html[data-ui="neu"][data-neu="glass"] body.dark-mode .desktop-widget-card[data-type][data-wtype] .widget-inner :is(
+    input, textarea, .nx-bar, .nx2-well, .nx2-track, .nx2-input, .nx2-panel) {
+    box-shadow: inset 4px 4px 9px rgba(0, 0, 0, .55),
+                inset -4px -4px 9px rgba(255, 255, 255, .09) !important;
+}
+/* 凸凹暗夜镜像（夜间统一深蓝玻璃后同样适用） */
+html[data-ui="neu"][data-neu="solid"][data-n26-phase="night"] body:not(.dark-mode) .desktop-widget-card[data-type][data-wtype] .widget-inner :is(
+    button, [role="button"], .nx-icon-btn, .nx-btn, .nx2-btn, .nx2-chip, .nx2-knob),
+html[data-ui="neu"][data-neu="glass"][data-n26-phase="night"] body:not(.dark-mode) .desktop-widget-card[data-type][data-wtype] .widget-inner :is(
+    button, [role="button"], .nx-icon-btn, .nx-btn, .nx2-btn, .nx2-chip, .nx2-knob) {
+    box-shadow: 4px 4px 9px rgba(0, 0, 0, .46),
+                -4px -4px 9px rgba(255, 255, 255, .09),
+                inset 0 1px 0 rgba(255, 255, 255, .12) !important;
+}
+
+/* ============================ 3 · 类别点缀（身份进内容，不上卡面） ============================ */
+/* 时间族：强调件（冒号/秒/表针色）吃 --w-accent（昼 #0284c7 / 夜 #7cc4f8） */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype]:is(
+    [data-wtype="clock"], [data-wtype="time"], [data-wtype="dualtime"],
+    [data-wtype="timeSeconds"], [data-wtype="clockAnalog"], [data-wtype="worldclock"],
+    [data-wtype="stopwatch"]) {
+    --w-accent: #0284c7 !important;
+}
+html[data-n26-phase="night"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="clock"], [data-wtype="time"], [data-wtype="dualtime"],
+    [data-wtype="timeSeconds"], [data-wtype="clockAnalog"], [data-wtype="worldclock"],
+    [data-wtype="stopwatch"]),
+html body.dark-mode .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="clock"], [data-wtype="time"], [data-wtype="dualtime"],
+    [data-wtype="timeSeconds"], [data-wtype="clockAnalog"], [data-wtype="worldclock"],
+    [data-wtype="stopwatch"]) {
+    --w-accent: #7cc4f8 !important;
+}
+/* 天气 / 空气 / 日出：同一支天蓝强调 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype]:is(
+    [data-wtype="weather"], [data-wtype="weatherHour"], [data-wtype="weatherWeek"],
+    [data-wtype="airQuality"], [data-wtype="sunrise"], [data-wtype="sunmoon"]) {
+    --w-accent: #0284c7 !important;
+}
+html[data-n26-phase="night"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="weather"], [data-wtype="weatherHour"], [data-wtype="weatherWeek"],
+    [data-wtype="airQuality"], [data-wtype="sunrise"], [data-wtype="sunmoon"]),
+html body.dark-mode .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="weather"], [data-wtype="weatherHour"], [data-wtype="weatherWeek"],
+    [data-wtype="airQuality"], [data-wtype="sunrise"], [data-wtype="sunmoon"]) {
+    --w-accent: #7cc4f8 !important;
+}
+/* 方哩方哩三件套：卡面跟统一玻璃，粉只留在图标与状态件上；昼墨夜白 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype]:is(
+    [data-wtype="biliNow"], [data-wtype="biliReco"], [data-wtype="biliSearch"]) {
+    --bili-pink: #d95c86 !important;
+    --w-accent: #d95c86 !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype]:is(
+    [data-wtype="biliNow"], [data-wtype="biliReco"], [data-wtype="biliSearch"]) .nx-bili :is(.nx-hd, .nx-bili-empty) {
+    color: rgba(16, 24, 40, .66) !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype]:is(
+    [data-wtype="biliNow"], [data-wtype="biliReco"], [data-wtype="biliSearch"]) .nx-bili :is(.nx-hd > span, .nx-bili-empty > b) {
+    color: #0b1220 !important;
+}
+html[data-n26-phase="night"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="biliNow"], [data-wtype="biliReco"], [data-wtype="biliSearch"]) .nx-bili :is(.nx-hd, .nx-bili-empty),
+html body.dark-mode .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="biliNow"], [data-wtype="biliReco"], [data-wtype="biliSearch"]) .nx-bili :is(.nx-hd, .nx-bili-empty) {
+    color: rgba(238, 242, 250, .66) !important;
+}
+html[data-n26-phase="night"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="biliNow"], [data-wtype="biliReco"], [data-wtype="biliSearch"]) .nx-bili :is(.nx-hd > span, .nx-bili-empty > b),
+html body.dark-mode .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="biliNow"], [data-wtype="biliReco"], [data-wtype="biliSearch"]) .nx-bili :is(.nx-hd > span, .nx-bili-empty > b) {
+    color: #ffffff !important;
+}
+/* 双城时钟的列头 / 列值：昼墨夜白（palette 直写白字在此压掉） */
+html body:not(.dark-mode) .desktop-widget-card[data-type][data-wtype="dualtime"][data-wtype][data-wtype] .nx-dual-chip,
+html body:not(.dark-mode) .desktop-widget-card[data-type][data-wtype="dualtime"][data-wtype][data-wtype] [data-dual] {
+    color: inherit;
+}
+
+/* ============================ 4 · 尺寸分档 ============================ */
+html body .desktop-widget-card[data-type][data-wtype="timeSeconds"][data-cols="3"][data-rows="2"] .nx2-sec-main,
+html body .desktop-widget-card[data-type][data-wtype="timeSeconds"].wcols-3.wrows-2 .nx2-sec-main {
+    font-size: clamp(30px, 5.2vw, 52px) !important;
+    letter-spacing: -2px !important;
+}
+html body .desktop-widget-card[data-type][data-wtype="timeSeconds"] .nx2-sec {
+    font-size: .52em !important;
+    color: var(--w-accent) !important;
+    font-variant-numeric: tabular-nums;
+}
+html body .desktop-widget-card[data-type][data-wtype].wsize-s .nx2-only-wide,
+html body .desktop-widget-card[data-type][data-wtype].wsize-s .nx2-only-tall { display: none !important; }
+html body .desktop-widget-card[data-type][data-wtype].wsize-m .nx2-only-tall { display: none !important; }
+html body .desktop-widget-card[data-type][data-wtype].wsize-l .nx2-only-wide,
+html body .desktop-widget-card[data-type][data-wtype].wsize-l .nx2-only-tall { display: flex !important; }
+html body .desktop-widget-card[data-type][data-wtype][data-rows="1"] .nx2-only-tall { display: none !important; }
+html body .desktop-widget-card[data-type][data-wtype] .nx2-clamp2 {
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+    overflow: hidden; white-space: normal !important;
+}
+html body .desktop-widget-card[data-type][data-wtype] .nx2-clamp3 {
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3;
+    overflow: hidden; white-space: normal !important;
+}
+
+/* ==================== 5 · FangUI 实时预览 4 控件 ==================== */
+html[data-ui="neu"][data-neu="solid"] .fui-demo :is(.fu-btn, .fu-btn--accent, .fu-switch::after),
+html[data-ui="neu"][data-neu="glass"] .fui-demo :is(.fu-btn, .fu-btn--accent, .fu-switch::after) {
+    box-shadow: 5px 5px 11px rgba(15, 23, 42, .26),
+                -5px -5px 11px rgba(255, 255, 255, .95),
+                inset 0 1px 0 rgba(255, 255, 255, .90) !important;
+}
+html[data-ui="neu"][data-neu="solid"] .fui-demo :is(.fu-input, .fu-progress, .fu-switch),
+html[data-ui="neu"][data-neu="glass"] .fui-demo :is(.fu-input, .fu-progress, .fu-switch) {
+    box-shadow: inset 5px 5px 10px rgba(15, 23, 42, .28),
+                inset -5px -5px 10px rgba(255, 255, 255, .92),
+                inset 0 1px 0 rgba(15, 23, 42, .12) !important;
+}
+html[data-ui="neu"][data-neu="solid"] .fui-demo .fu-btn:active,
+html[data-ui="neu"][data-neu="glass"] .fui-demo .fu-btn:active {
+    box-shadow: inset 5px 5px 10px rgba(15, 23, 42, .30),
+                inset -4px -4px 8px rgba(255, 255, 255, .84) !important;
+}
+html[data-ui="neu"][data-neu="glass"] .fui-demo {
+    background: linear-gradient(158deg, rgba(255, 255, 255, .38), rgba(255, 255, 255, .12)) !important;
+    border: 1px solid rgba(255, 255, 255, .62) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(1.3) !important;
+    backdrop-filter: blur(14px) saturate(1.3) !important;
+}
+html[data-ui="flat"] .fui-demo :is(.fu-btn, .fu-btn--accent, .fu-switch, .fu-switch::after, .fu-input, .fu-progress),
+html[data-ui="liquid"] .fui-demo :is(.fu-btn, .fu-btn--accent, .fu-switch, .fu-switch::after, .fu-input, .fu-progress) {
+    box-shadow: none !important;
+}
+
+/* ==================== 6 · 胶囊档（rows=1） ==================== */
+html body .desktop-widget-card[data-type][data-wtype][data-rows="1"][data-rows="1"] {
+    border-radius: 999px !important;
+}
+
+/* ==================== 6.4 · 音乐族 ====================
+   has-art：封面铺满整卡（6.4b 铺满 + 底行压封面），卡面被封面盖住，
+   统一玻璃看不见 —— 不需要任何音乐专用卡底。
+   非封面（无封面 / 队列 / 搜索 / 推荐 / 电台）：跟随统一玻璃，
+   控件从白系改墨系适配浅底；夜间镜像回白系。 */
+html body .desktop-widget-card[data-type][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .nx-mu-bg {
+    inset: -22px !important;
+}
+/* 非封面档：背景层让位给统一玻璃 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .nx-mu:not(.has-art) > .nx-mu-bg {
+    background-color: transparent !important;
+    background-image: none !important;
+}
+/* 非封面档：文字令牌改墨（压过 music.css §0 的白字与 .nx-mu 根上的白） */
+html body:not(.dark-mode) .desktop-widget-card[data-type][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .nx-mu:not(.has-art) {
+    --w-text: #1a2432;
+    --w-text-strong: #0b1220;
+    --w-text-soft: rgba(16, 24, 40, .64);
+    --w-text-faint: rgba(16, 24, 40, .42);
+    --nx-acc-text: #0b1220;
+    --nx-acc-tint: rgba(2, 132, 199, .12);
+    --nx-acc-line: rgba(16, 24, 40, .18);
+}
+html[data-n26-phase="night"] body:not(.dark-mode) .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .nx-mu:not(.has-art) {
+    --w-text: #eef2fa;
+    --w-text-strong: #ffffff;
+    --w-text-soft: rgba(238, 242, 250, .70);
+    --w-text-faint: rgba(238, 242, 250, .46);
+    --nx-acc-text: #ffffff;
+    --nx-acc-tint: rgba(124, 196, 248, .16);
+    --nx-acc-line: rgba(255, 255, 255, .20);
+}
+/* 非封面档：控件墨系（昼）/ 白系（夜） */
+html body:not(.dark-mode) .desktop-widget-card[data-type][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .nx-mu:not(.has-art) .nx-mu-btn {
+    background: rgba(16, 24, 40, .07);
+    border-color: rgba(16, 24, 40, .15);
+    color: #0b1220;
+}
+html body:not(.dark-mode) .desktop-widget-card[data-type][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .nx-mu:not(.has-art) .nx-mu-btn:hover {
+    background: rgba(16, 24, 40, .13);
+}
+html body:not(.dark-mode) .desktop-widget-card[data-type][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .nx-mu:not(.has-art) .nx-mu-btn.is-play {
+    background: #0b1220;
+    border-color: #0b1220;
+    color: #ffffff;
+}
+html body:not(.dark-mode) .desktop-widget-card[data-type][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .nx-mu:not(.has-art) :is(.nx-mu-prog, .nx-mu-input, .nx-mu-vol input[type="range"]) {
+    background: rgba(16, 24, 40, .16);
+}
+html body:not(.dark-mode) .desktop-widget-card[data-type][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .nx-mu:not(.has-art) .nx-mu-prog > i {
+    background: #0b1220;
+}
+html body:not(.dark-mode) .desktop-widget-card[data-type][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .nx-mu:not(.has-art) :is(.nx-mu-qi, .nx-mu-rc, .nx-mu-rd, .nx-mu-chip, .nx-mu-sbtn) {
+    background: rgba(16, 24, 40, .06);
+    border-color: rgba(16, 24, 40, .12);
+}
+html body:not(.dark-mode) .desktop-widget-card[data-type][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .nx-mu:not(.has-art) :is(.nx-mu-qi, .nx-mu-rc, .nx-mu-rd, .nx-mu-chip):hover {
+    background: rgba(16, 24, 40, .12);
+}
+html body:not(.dark-mode) .desktop-widget-card[data-type][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .nx-mu:not(.has-art) :is(.nx-mu-rc-art, .nx-mu-cover) {
+    background: rgba(16, 24, 40, .08);
+}
+/* 夜间镜像：回白系 */
+html[data-n26-phase="night"] body:not(.dark-mode) .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .nx-mu:not(.has-art) .nx-mu-btn {
+    background: rgba(255, 255, 255, .10);
+    border-color: rgba(255, 255, 255, .20);
+    color: #ffffff;
+}
+html[data-n26-phase="night"] body:not(.dark-mode) .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .nx-mu:not(.has-art) .nx-mu-btn:hover {
+    background: rgba(255, 255, 255, .20);
+}
+html[data-n26-phase="night"] body:not(.dark-mode) .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .nx-mu:not(.has-art) .nx-mu-btn.is-play {
+    background: #ffffff;
+    border-color: rgba(255, 255, 255, .9);
+    color: #10161f;
+}
+html[data-n26-phase="night"] body:not(.dark-mode) .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .nx-mu:not(.has-art) :is(.nx-mu-prog, .nx-mu-input, .nx-mu-vol input[type="range"]) {
+    background: rgba(255, 255, 255, .24);
+}
+html[data-n26-phase="night"] body:not(.dark-mode) .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .nx-mu:not(.has-art) .nx-mu-prog > i {
+    background: #ffffff;
+}
+html[data-n26-phase="night"] body:not(.dark-mode) .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) .nx-mu:not(.has-art) :is(.nx-mu-qi, .nx-mu-rc, .nx-mu-rd, .nx-mu-chip, .nx-mu-sbtn) {
+    background: rgba(255, 255, 255, .09);
+    border-color: rgba(255, 255, 255, .18);
+}
+
+/* ---- 6.4b · 封面铺满整卡（迷你/中档） ---- */
+html body .desktop-widget-card[data-type][data-wtype]:is([data-wtype="music"]) .nx-mu.has-art.is-mini {
+    gap: 0;
+}
+html body .desktop-widget-card[data-type][data-wtype]:is([data-wtype="music"]) .nx-mu.has-art.is-mini .nx-mu-cover.is-mini-cv {
+    margin: calc(var(--w-pad, 14px) * -1);
+    border-radius: 0;
+    box-shadow: none;
+}
+html body .desktop-widget-card[data-type][data-wtype]:is([data-wtype="music"]) .nx-mu.has-art.is-mini .nx-mu-mini-row {
+    position: absolute;
+    left: calc(var(--w-pad, 14px) * -1);
+    right: calc(var(--w-pad, 14px) * -1);
+    bottom: calc(var(--w-pad, 14px) * -1);
+    height: 40px;
+    padding: 0 12px 6px;
+    background: linear-gradient(180deg, rgba(8, 12, 20, 0) 0%, rgba(8, 12, 20, .74) 62%);
+    z-index: 2;
+}
+html body .desktop-widget-card[data-type][data-wtype]:is([data-wtype="music"]) .nx-mu.has-art.is-mini > .nx-mu-prog {
+    z-index: 3;
+}
+html body .desktop-widget-card[data-type][data-wtype]:is([data-wtype="music"]) .nx-mu.has-art.is-md .nx-mu-cover {
+    margin: calc(var(--w-pad, 14px) * -1) calc(var(--w-pad, 14px) * -1) 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+html body .desktop-widget-card[data-type][data-wtype]:is([data-wtype="music"]) .nx-mu.has-art.is-md .nx-mu-hd {
+    position: absolute;
+    top: calc(var(--w-pad, 14px) * -1 + 7px);
+    left: calc(var(--w-pad, 14px) * -1 + 10px);
+    right: calc(var(--w-pad, 14px) * -1 + 10px);
+    z-index: 2;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, .55);
+}
+
+/* ==================== 8 · 对比度收口（12:47 用户看图：「白底白字」） ====================
+   根因两层：
+   ① wr6 把卡面统一浅玻璃、卡片级令牌改昼墨夜白，但 palette.css §6 / widgets.css /
+      music.css §0 / plus.css 里有 60+ 处**直写 color:#fff**，它们不吃令牌 →
+      浅玻璃上整屏白底白字；
+   ② CSS 变量在「最近祖先」解析，内容层根自带白色令牌时，卡级 !important 够不着。
+   收口：在最高权重层把内容文字直接落到昼墨 / 夜白两套实色，
+   深色底上的白字（today / on / selected / 播放键 / 照片蒙层）一律不进名单。 */
+
+/* 8.1 就近令牌复位（昼） */
+html:not([data-n26-phase="night"]) body:not(.dark-mode) .desktop-widget-card[data-type][data-wtype][data-wtype] .widget-inner,
+html:not([data-n26-phase="night"]) body:not(.dark-mode) .desktop-widget-card[data-type][data-wtype][data-wtype] .widget-inner :is(.nx, .nx2, .nx-mu, .nx-bili) {
+    --w-text: #1a2432 !important;
+    --w-text-strong: #0b1220 !important;
+    --w-text-soft: rgba(16, 24, 40, .66) !important;
+    --w-text-faint: rgba(16, 24, 40, .46) !important;
+    --w-fg: #0b1220 !important;
+    --w-fg-soft: rgba(16, 24, 40, .66) !important;
+    --w-fg-faint: rgba(16, 24, 40, .46) !important;
+}
+
+/* 8.2 昼：旧 CSS 直写白字 → 墨（不含 i/svg，保留 --w-accent 彩色点缀） */
+html:not([data-n26-phase="night"]) body:not(.dark-mode) .desktop-widget-card[data-type][data-wtype][data-wtype] .widget-inner :is(
+    .widget-clock-time, .widget-clock-time .hh, .widget-clock-time .mm,
+    .widget-clock-time .nx-colon, .nx-hero, .widget-clock-date, .widget-clock-week,
+    .widget-date-md, .widget-date-lunar, .widget-date-wd,
+    .widget-cal-header, .widget-cal-header span, .widget-cal-header b,
+    .widget-cal-day:not(.today), .widget-cal-week, .widget-cal-foot,
+    .widget-cal-foot span, .widget-cal-foot b,
+    .widget-weather-temp, .widget-weather-city, .widget-weather-desc,
+    .widget-weather-extra, .widget-weather-extra span, .widget-weather-aqi,
+    .widget-system, .widget-system-row-val,
+    .nx-dual-2, .nx-dual-col, .nx-dual-col span, .nx-dual-col b, .nx-dual-col small,
+    .nx-dual-s-row, .nx-dual-s-row span, .nx-dual-s-row b,
+    .nx-dual-r, .nx-dual-r span, .nx-dual-r b, .nx-dual-r small,
+    .nx-dual-bar-city, .nx-dual-bar-t, .nx-dual-foot, .nx-dual-chip, [data-dual],
+    .nx-bili, .nx-bili .nx-hd, .nx-bili .nx-hd span,
+    .nx-bili-empty, .nx-bili-empty b, .nx-bili-empty span,
+    .nx-bili-meta b, .nx-bili-meta span, .nx-bili-foot span,
+    .nx-bili-li, .nx-bili-li span, .nx-bili-go, .nx-bili-tag, .nx-bili-input,
+    .nx2-cell:not(.today) b, .nx2-cell:not(.today) span,
+    .nx2-week > div:not(.on), .nx2-week > div:not(.on) b, .nx2-chip:not(.on),
+    .widget-todo-title, .widget-todo-text, .widget-music-title, .widget-music-song,
+    .widget-browser-title, .widget-browser-bookmark-name,
+    .widget-minigame-title, .widget-minigame-name, .widget-sleep-time,
+    .widget-focus-time, .widget-alarm-next, .widget-alarm-label) {
+    color: #0b1220 !important;
+    -webkit-text-fill-color: #0b1220 !important;
+}
+/* 8.2b 兜底：v2 / plus 的新类名（nx-wx-* / nx-cal-* / nx2-*）太多，逐条列会漏，
+   直接对内容层所有文字标签落墨；深色底上的白字由 8.2c 高权重恢复，避免 :not()
+   里塞复杂选择器导致整条规则被浏览器判废。 */
+html:not([data-n26-phase="night"]) body:not(.dark-mode) .desktop-widget-card[data-type][data-wtype][data-wtype] .widget-inner :is(
+    span, b, strong, small, em, p, div, h1, h2, h3, td, th, label, time, a, li
+) {
+    color: #0b1220 !important;
+    -webkit-text-fill-color: #0b1220 !important;
+}
+/* 8.2c 恢复：深色底 / 选中态 / 有封面音乐卡上的白字（四写压过兜底） */
+html:not([data-n26-phase="night"]) body:not(.dark-mode) .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype] .widget-inner :is(
+    .today, .today *, .on, .on *, .selected, .selected *,
+    .is-play, .is-play *, .nx-mu.has-art, .nx-mu.has-art *,
+    .nx-ph-cap, .nx-ph-cap *, .w-ph-mask, .w-ph-mask *,
+    .widget-remove-btn, .widget-todo-add, .nx-btn-accent, .nx-btn-accent *
+) {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+/* 8.2d 强调色文字恢复（类别身份点缀，昼 #0284c7 / bili 粉） */
+html:not([data-n26-phase="night"]) body:not(.dark-mode) .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype] .widget-inner :is(
+    .nx-accent, [class*="accent"], [class*="hlite"]
+) {
+    color: var(--w-accent) !important;
+    -webkit-text-fill-color: var(--w-accent) !important;
+}
+/* 8.3 夜 / 深色模式：同一批元素回白 */
+html[data-n26-phase="night"] body:not(.dark-mode) .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype] .widget-inner :is(
+    .widget-clock-time, .widget-clock-time .hh, .widget-clock-time .mm,
+    .widget-clock-time .nx-colon, .nx-hero, .widget-clock-date, .widget-clock-week,
+    .widget-date-md, .widget-date-lunar, .widget-date-wd,
+    .widget-cal-header, .widget-cal-header span, .widget-cal-header b,
+    .widget-cal-day:not(.today), .widget-cal-week, .widget-cal-foot,
+    .widget-cal-foot span, .widget-cal-foot b,
+    .widget-weather-temp, .widget-weather-city, .widget-weather-desc,
+    .widget-weather-extra, .widget-weather-extra span, .widget-weather-aqi,
+    .widget-system, .widget-system-row-val,
+    .nx-dual-2, .nx-dual-col, .nx-dual-col span, .nx-dual-col b, .nx-dual-col small,
+    .nx-dual-s-row, .nx-dual-s-row span, .nx-dual-s-row b,
+    .nx-dual-r, .nx-dual-r span, .nx-dual-r b, .nx-dual-r small,
+    .nx-dual-bar-city, .nx-dual-bar-t, .nx-dual-foot, .nx-dual-chip, [data-dual],
+    .nx-bili, .nx-bili .nx-hd, .nx-bili .nx-hd span,
+    .nx-bili-empty, .nx-bili-empty b, .nx-bili-empty span,
+    .nx-bili-meta b, .nx-bili-meta span, .nx-bili-foot span,
+    .nx-bili-li, .nx-bili-li span, .nx-bili-go, .nx-bili-tag, .nx-bili-input,
+    .nx2-cell:not(.today) b, .nx2-cell:not(.today) span,
+    .nx2-week > div:not(.on), .nx2-week > div:not(.on) b, .nx2-chip:not(.on),
+    .widget-todo-title, .widget-todo-text, .widget-music-title, .widget-music-song,
+    .widget-browser-title, .widget-browser-bookmark-name,
+    .widget-minigame-title, .widget-minigame-name, .widget-sleep-time,
+    .widget-focus-time, .widget-alarm-next, .widget-alarm-label),
+html body.dark-mode .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype] .widget-inner :is(
+    .widget-clock-time, .widget-clock-time .hh, .widget-clock-time .mm,
+    .widget-clock-time .nx-colon, .nx-hero, .widget-clock-date, .widget-clock-week,
+    .widget-cal-header, .widget-cal-header span, .widget-cal-header b,
+    .widget-cal-day:not(.today), .widget-cal-foot span, .widget-cal-foot b,
+    .widget-weather-temp, .widget-weather-city, .widget-weather-desc,
+    .widget-weather-extra span, .nx-dual-col span, .nx-dual-col b,
+    .nx-dual-s-row span, .nx-dual-s-row b, [data-dual],
+    .nx-bili .nx-hd span, .nx-bili-meta b, .nx-bili-foot span) {
+    color: #eef2fa !important;
+    -webkit-text-fill-color: #eef2fa !important;
+}
+
+/* ==================== 8.4 · 音乐卡：白框清零（wr6 全文重写时丢了这段） ====================
+   §0 的 --w-mat-border 白描边 + 浅玻璃卡底在封面没铺满处露出来 = 用户骂了 N 回的
+   那圈白色硬框。四写 [data-wtype] 压过 §0/§2 全部边框定义。 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) {
+    --w-mat-border: transparent !important;
+    border-color: transparent !important;
+}
+/* 封面铺满：不再只认 .has-art —— 封面盒只要出现（含无 art 但有 img 的情况）就铺到最外缘，
+   彻底断掉「浅玻璃卡底露出来当白框」这条链。不用 :has()，兼容性与性能都更稳。 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype]:is([data-wtype="music"]) .nx-mu.is-mini .nx-mu-cover.is-mini-cv {
+    margin: calc(var(--w-pad, 14px) * -1) !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    border: 0 !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype]:is([data-wtype="music"]) .nx-mu.is-md .nx-mu-cover {
+    margin: calc(var(--w-pad, 14px) * -1) calc(var(--w-pad, 14px) * -1) 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    border: 0 !important;
+}
+/* 底行压在封面上（不再留一条白横条），歌名白字靠渐变压暗保证可读 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype]:is([data-wtype="music"]) .nx-mu.is-mini .nx-mu-mini-row {
+    position: absolute !important;
+    left: calc(var(--w-pad, 14px) * -1) !important;
+    right: calc(var(--w-pad, 14px) * -1) !important;
+    bottom: calc(var(--w-pad, 14px) * -1) !important;
+    height: 40px !important;
+    padding: 0 12px 6px !important;
+    background: linear-gradient(180deg, rgba(8, 12, 20, 0) 0%, rgba(8, 12, 20, .74) 62%) !important;
+    z-index: 2;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype]:is([data-wtype="music"]) .nx-mu.is-mini .nx-mu-mini-row :is(b, span, button, i) {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype]:is([data-wtype="music"]) .nx-mu.is-mini > .nx-mu-prog {
+    z-index: 3;
+}
+
+/* ==================== 7 · 降级 / 过渡 ==================== */
+html.n26-fui-switching body .desktop-widget-card[data-type][data-wtype],
+html.n26-fui-switching body .desktop-widget-card[data-type][data-wtype] .widget-inner :is(
+    button, [role="button"], input, .nx-bar, .nx2-btn, .nx2-well, .nx2-chip) {
+    transition: background-color 260ms cubic-bezier(.2, .7, .2, 1),
+                background-image 260ms cubic-bezier(.2, .7, .2, 1),
+                border-color 260ms cubic-bezier(.2, .7, .2, 1),
+                box-shadow 260ms cubic-bezier(.2, .7, .2, 1),
+                text-shadow 260ms cubic-bezier(.2, .7, .2, 1),
+                color 260ms cubic-bezier(.2, .7, .2, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+    html.n26-fui-switching body .desktop-widget-card[data-type][data-wtype],
+    html.n26-fui-switching body .desktop-widget-card[data-type][data-wtype] * {
+        transition-duration: .01ms !important;
+        animation-duration: .01ms !important;
+    }
+}

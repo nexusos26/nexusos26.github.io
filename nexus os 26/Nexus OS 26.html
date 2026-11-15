@@ -1,13 +1,17 @@
 <!DOCTYPE html>
 <html lang="zh-CN" data-ui="liquid">
 <head>
+    <!-- frg1：AI 相关资源带戳 + 主文档不缓存。之前实机跑的可能就是缓存里的旧烧钱版 -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nexus OS 26</title>
     <!-- v2.9.95 丝滑引擎：必须在所有业务脚本之前，才能接管 setInterval 统一 1s 时基 -->
     <script src="ui/n26-smooth.js?v=sm2"></script>
     <!-- v2.9.96 控件点击零刷新感：尽早包装 innerHTML setter，首屏渲染也受保护 -->
-    <script src="ui/n26-dom-keep.js?v=dk1"></script>
+    <script src="ui/n26-dom-keep.js?v=dk2"></script>
     <!-- v2.9.97 统一位置服务：顶层文档只定位一次，广播给所有 iframe（iframe 内权限策略会挡掉自定位） -->
     <script src="ui/n26-geolocation.js?v=geo2"></script>
     <script id="n26NsIsolation">
@@ -196,9 +200,12 @@
     <link rel="stylesheet" href="fangui/core/neu.css">
     <link rel="stylesheet" href="fangui/core/liquid.css?v=20261108">
     <!-- AI 小方「长按 Space」Siri 风格光效（边缘光带/白爆/波纹/扭曲） -->
-    <link rel="stylesheet" href="ui/covi-glow.css?v=2964">
+    <link rel="stylesheet" href="ui/covi-glow.css?v=2967">
     <!-- AI 小方 HUD：底部悬浮输入条 + 悬空回复气泡 -->
-    <link rel="stylesheet" href="ui/covi-hud.css">
+    <link rel="stylesheet" href="ui/covi-hud.css?v=frg1">
+    <link rel="stylesheet" href="ui/covi-modal.css?v=cm1">
+    <link rel="stylesheet" href="ui/n26-topbar-guard.css?v=tg1">
+    <link rel="stylesheet" href="ui/n26-oobe-fix.css?v=of1">
     <!-- OOBE 卡牌式动效（点击切卡 + 3D 牌堆 + 进度条） -->
     <link rel="stylesheet" href="ui/oobe-cards.css?v=2960">
     <link rel="stylesheet" href="ui/fui-style.css">
@@ -511,7 +518,7 @@
 
         /* 共享背景：v2.9.60 低饱和弥散柔光（青蓝/暖杏/薄荷/天蓝，禁紫）——替换写实山水照片 */
         .install-bg {
-            background: url('../Wallpaper/抽象风格/1785840648804_edit_1238598309040738.png') center/cover no-repeat, #eef3f8;
+            background: url('../Wallpaper/抽象风格/1785840663752_edit_1238561738912939.png') center/cover no-repeat, #e6eef7;
             position: relative;
             overflow: hidden;
         }
@@ -17940,7 +17947,7 @@
     </style>
     <!-- 全局细节层：只补交互微反馈、读数稳定性、光标/禁用态，
          不参与布局、不改尺寸定位；任何一条都可单独移除 -->
-    <link rel="stylesheet" href="ui/n26-polish.css">
+    <link rel="stylesheet" href="ui/n26-polish.css?v=pz1">
     <!-- ★ v3.0 首屏早期恢复：在首次绘制前把上次的玻璃参数写进 :root，
          避免「先按默认值画一帧，再跳成用户值」。只读 localStorage 备份，
          不依赖任何模块，也不需要等账户/IndexedDB 初始化。 -->
@@ -17987,16 +17994,16 @@
         } catch (e) {}
     })();
     </script>
-    <link rel="stylesheet" href="ui/n26-perf.css?v=20261107">
-    <link rel="stylesheet" href="ui/n26-material.css?v=231">
-    <link rel="stylesheet" href="ui/n26-startmenu.css?v=234">
-    <link rel="stylesheet" href="ui/n26-shell.css?v=256">
-    <link rel="stylesheet" href="ui/n26-docknav.css?v=2979">
-    <link rel="stylesheet" href="ui/n26-widgets.css?v=20261108mat4">
+    <link rel="stylesheet" href="ui/n26-perf.css?v=gg3">
+    <link rel="stylesheet" href="ui/n26-material.css?v=233">
+    <link rel="stylesheet" href="ui/n26-startmenu.css?v=235">
+    <link rel="stylesheet" href="ui/n26-shell.css?v=257">
+    <link rel="stylesheet" href="ui/n26-docknav.css?v=2980">
+    <link rel="stylesheet" href="ui/n26-widgets.css?v=20261108mat5">
     <link rel="stylesheet" href="ui/n26-widgets-v2.css?v=w2m">
     <script src="ui/n26-widgets-v2.js?v=w2m"></script>
     <link rel="stylesheet" href="ui/n26-a11y.css?v=20261108">
-    <link rel="stylesheet" href="ui/n26-files.css?v=20261108f">
+    <link rel="stylesheet" href="ui/n26-files.css?v=20261108f1">
     <link rel="stylesheet" href="ui/n26-browser.css?v=20261108d">
     <link rel="stylesheet" href="ui/n26-album.css?v=20261107e">
     <style id="n26LockFlowCSS">
@@ -18298,6 +18305,12 @@
     #lock-screen .lock-statusbar .lsb-time { transition: opacity .18s ease; }
     #lock-screen.password-open .lock-statusbar .lsb-time { opacity: 0; }
     </style>
+    <link rel="stylesheet" href="ui/n26-launchpad-modal.css?v=lp1">
+    <link rel="stylesheet" href="ui/n26-lockflow.css?v=lk1">
+    <link rel="stylesheet" href="ui/n26-fui-bridge.css?v=fb4">
+    <link rel="stylesheet" href="ui/n26-settings-flow.css?v=sf1">
+    <link rel="stylesheet" href="ui/n26-glass-optics.css?v=go11">
+    <link rel="stylesheet" href="ui/n26-widget-style.css?v=ws7">
 </head>
 <script>
 /* ==================================================================
@@ -26290,11 +26303,11 @@
         document.addEventListener('keydown', function (e) {
             if (e.code !== 'Space' && e.key !== ' ') return;
             if (e.ctrlKey || e.metaKey || e.altKey) return;
+            if (e.repeat) { if (consumed) e.preventDefault(); return; }   // cm1：repeat 先拦——唤起后焦点已进输入框，别把空格灌进去
             if (isTypingTarget(e.target)) return;                  // 打字时空格归输入框
             if (systemBusy()) return;                              // 系统全屏态不抢
             var ov = document.getElementById('n26AiChatOverlay');
             if (ov && ov.style.display === 'flex') return;         // 对话窗已开：不重复唤起
-            if (e.repeat) { if (consumed) e.preventDefault(); return; }
             consumed = false;
             if (holdTimer) clearTimeout(holdTimer);
             holdTimer = setTimeout(function () {
@@ -26810,15 +26823,29 @@
             sysPrompt += '\n\n【深度思考模式】回答前先在内部完整推理：拆解问题 → 列出关键点 → 逐条验证 → 再给结论。'
                 + '不要输出推理过程本身，但结论必须经得起推敲，必要时说明依据与前提。';
         }
+        /* ★ frg1：system 恒在第一位、字节不变（提示词里不能塞动态日期），
+           这是 prompt cache 能命中的唯一前提——前缀抖一个字，整段按全价重算。 */
         var messages = [{ role: 'system', content: sysPrompt }];
         // 历史条目先过净化再进上下文：别让某次长回复/文件内容反复计费
-        var hist = Array.isArray(_n26AiHistory) ? _n26AiHistory.slice(-8) : [];
+        // ★ frg1：历史 8 条 → 4 条。两个调用点（对话页 / HUD）都是 await 之后才 push，
+        //   历史里一定不含当前问题；不显式补进去，模型根本看不到用户在问什么，
+        //   用户只能反复追问——这才是「问两个问题烧 20 块」的放大器。
+        var hist = Array.isArray(_n26AiHistory) ? _n26AiHistory.slice(-4) : [];
         for (var h = 0; h < hist.length; h++) {
             var hi = hist[h] || {};
+            if (hi.role !== 'user' && hi.role !== 'assistant') continue;
             messages.push({
                 role: hi.role,
-                content: (typeof hi.content === 'string') ? n26AiSafeResult(hi.content) : hi.content
+                content: (typeof hi.content === 'string') ? hi.content : String(hi.content == null ? '' : hi.content)
             });
+        }
+        /* 本轮问题显式入列；历史尾部已是同文时去重，同一句话不付两遍 */
+        var _q = String(text == null ? '' : text).trim();
+        if (_q) {
+            var _lastMsg = messages[messages.length - 1];
+            if (!(_lastMsg && _lastMsg.role === 'user' && String(_lastMsg.content || '').trim() === _q)) {
+                messages.push({ role: 'user', content: _q });
+            }
         }
         var traces = [];
         /* v2.10.1 · 工具只在「像指令」的时候才挂。
@@ -26831,6 +26858,12 @@
         for (var round = 0; round < 2; round++) {
             // 每次发请求前都过一遍体积守卫（6000 字符 ≈ 3700 token 输入上限）
             n26AiShrinkMessages(messages, 6000, 6);
+            /* ★ frg1 出站闸门：逐条白名单 + 剥 dataURL / 源码 + 总预算 5600 字符。
+               n26AiShrinkMessages 只管「长度」，不认识「里面装的是什么」——
+               历史里混进整页 HTML 或整棵设置对象时它看不出来，钱照烧。 */
+            if (window.N26Frugal) {
+                try { messages = N26Frugal.guardMessages(messages, { total: 5600, turns: 6 }); } catch (e) { }
+            }
             var base = {
                 model: cfg.model, messages: messages,
                 // 输出预算也收：600 足够一段回答；深度模式 1200
@@ -26838,7 +26871,12 @@
                 temperature: _deep ? 0.3 : 0.6
             };
             // AI 小方只挂轻量工具（无文件读写）；重活归 FangClaw
-            if (useTools) { base.tools = COVI_LIGHT_TOOLS; base.tool_choice = 'auto'; }
+            /* ★ frg1：工具定义按名字排序后再序列化。prompt cache 按前缀字节命中，
+               函数顺序抖一次就整段 miss（顺序来自数组字面量，本身稳定，这里只是锁死） */
+            if (useTools) {
+                base.tools = (window.N26Frugal && N26Frugal.stableTools(COVI_LIGHT_TOOLS)) || COVI_LIGHT_TOOLS;
+                base.tool_choice = 'auto';
+            }
             if (ep.mode === 'worker') base.provider = coviInferProvider(cfg);
             /* 用量闸门：先记账，再决定发不发 */
             var _tk = n26AiApproxTokens(base.messages) + (useTools ? 1800 : 0);
@@ -26847,6 +26885,20 @@
             if (_spend.tokens > N26_AI_STOP_TOKENS) {
                 throw new Error('今日 AI 估算用量已达上限（' + Math.round(_spend.tokens / 1000) + 'k token）。'
                     + '请在 AI 设置里换更便宜的模型，或点「清零用量」后再试。');
+            }
+            /* ★ frg1 本地响应缓存：同一份「模型 + 消息」30 分钟内重问，一次请求都不发。
+               只在无工具的纯聊天轮启用（带工具的轮次结果依赖系统状态，回放会骗人）。 */
+            var _ck = null, _cached = null;
+            if (window.N26Frugal && !useTools) {
+                try {
+                    _ck = N26Frugal.cacheKey(cfg.model, base.messages, _deep ? 'deep' : '');
+                    _cached = N26Frugal.cacheGet(_ck);
+                } catch (e) { _cached = null; _ck = null; }
+            }
+            if (_cached) {
+                try { N26Frugal.recordUsage(null, true); } catch (e) { }
+                try { console.info('[AI 小方] 本地缓存命中，未发请求 ' + _ck); } catch (e) { }
+                return { content: _cached, traces: traces, cached: true };
             }
             var res = null;
             for (var attempt = 0; attempt < 2; attempt++) {
@@ -26871,6 +26923,8 @@
                 throw new Error('HTTP ' + res.status + ' ' + String(errText).substring(0, 160));
             }
             var data = await res.json();
+            /* ★ frg1：只认 API 自己吐的 usage，不再靠字符数猜 */
+            if (window.N26Frugal) { try { N26Frugal.recordUsage(data, false); } catch (e) { } }
             var msg = (ep.mode === 'worker')
                 ? { content: data.content || '', tool_calls: data.tool_calls || null }
                 : ((data.choices && data.choices[0] && data.choices[0].message) || {});
@@ -26889,6 +26943,9 @@
                     messages.push({ role: 'tool', tool_call_id: tc.id, content: n26AiSafeResult(result) });
                 }
                 continue;
+            }
+            if (_ck && round === 0 && msg.content && window.N26Frugal) {
+                try { N26Frugal.cacheSet(_ck, String(msg.content)); } catch (e) { }
             }
             return { content: msg.content || '(空回复)', traces: traces };
         }
@@ -26953,6 +27010,8 @@
         _coviHudOpen = true;
         _coviOpen = true;
         hud.classList.add('show');
+        /* cm1：模态护盾 + 立即聚焦（波动画期间用户还按着空格，键要马上归输入框） */
+        try { if (window.N26CoviModal) window.N26CoviModal.sync(true); } catch (e) { }
         if (expand !== false) {
             hud.classList.remove('covi-hud-pill');
             hud.dataset.phase = 'listening';
@@ -26989,6 +27048,8 @@
         if (reply) reply.classList.remove('show');
         if (_coviHudTypeTimer) { clearInterval(_coviHudTypeTimer); _coviHudTypeTimer = 0; }
         _coviHudOpen = false;
+        /* cm1：撤模态护盾 + 焦点守卫 */
+        try { if (window.N26CoviModal) window.N26CoviModal.sync(false); } catch (e) { }
         if (typeof stopN26AiVoice === 'function') stopN26AiVoice();
         if (typeof coviDismiss === 'function') coviDismiss();
     }
@@ -31075,7 +31136,24 @@
                 if (!cfg.url || !cfg.key || !cfg.model) {
                     return Promise.reject(new Error('尚未配置 AI API：请在「设置 → AI 模块」中添加并切换'));
                 }
+                /* ★ frg1：第三方应用走宿主代理也走同一道闸门。
+                   原来这里把 messages 原样 JSON 化就发出去，调用方塞整页 innerHTML 也没人拦。 */
+                var F = window.N26Frugal;
+                if (F) {
+                    try { messages = F.guardMessages(messages, { total: 5600, turns: 6 }); } catch (e) { }
+                }
                 var base = String(cfg.url).replace(/\/+$/, '');
+                var ck = null;
+                if (F && opts.cache !== false) {
+                    try {
+                        ck = F.cacheKey(cfg.model, messages, 'osapi');
+                        var hitTxt = F.cacheGet(ck);
+                        if (hitTxt) {
+                            try { F.recordUsage(null, true); } catch (e) { }
+                            return Promise.resolve({ text: hitTxt, raw: null, cached: true });
+                        }
+                    } catch (e) { ck = null; }
+                }
                 return fetch(base + '/chat/completions', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cfg.key },
@@ -31087,11 +31165,39 @@
                 }).then(function (r) {
                     return r.json().catch(function () { return null; }).then(function (j) {
                         if (!r.ok) throw new Error(((j && j.error && j.error.message) || ('AI 请求失败：HTTP ' + r.status)));
+                        if (F) { try { F.recordUsage(j, false); } catch (e) { } }
                         var c = j && j.choices && j.choices[0];
                         var txt = c && (c.message ? c.message.content : c.text);
+                        if (ck && txt) { try { F.cacheSet(ck, String(txt)); } catch (e) { } }
                         return { text: txt || '', raw: j };
                     });
                 });
+            },
+
+            /* ★ frg1：页面理解的本地侧。FangClaw 只拿这份结构化摘要，
+               永远不拿网页源码——源码在本进程里解析完就丢，一个字节都不出机器。 */
+            getPageDigest: function () {
+                var F = window.N26Frugal;
+                if (!F) return { ok: false, error: '省钱层未加载（ui/n26-ai-frugal.js）' };
+                var d = {};
+                try { d = F.pageDigest(); } catch (e) { d = { title: '', app: '', headings: [], text: '' }; }
+                try {
+                    var st = getLS('settings') || {};
+                    d.theme = document.documentElement.getAttribute('data-theme') || st.theme || 'light';
+                    d.lang = st.language || 'zh-CN';
+                    d.uiStyle = document.documentElement.getAttribute('data-ui') || 'liquid';
+                    d.wallpaper = coviWallpaperLabel();
+                } catch (e) { }
+                return { ok: true, digest: d };
+            },
+            findPageText: function (a) {
+                var F = window.N26Frugal;
+                if (!F) return { ok: false, error: '省钱层未加载（ui/n26-ai-frugal.js）' };
+                var q = String((a && a[0]) == null ? '' : (a && a[0]));
+                if (!q) return { ok: false, error: '缺少检索词' };
+                var hits = [];
+                try { hits = F.pageFind(q, 5) || []; } catch (e) { hits = []; }
+                return { ok: true, query: q, hits: hits, count: hits.length };
             },
 
             // 发送系统消息（通知 / 状态条）
@@ -35041,6 +35147,7 @@
             ['系统版本', NEXUS_OS_VERSION + '（' + NEXUS_OS_BUILD_DATE + ' 构建）'],
             ['开发方', '小方工作室'],
             ['UI 框架', 'fangUI · 液态玻璃'],
+            ['光学引擎', 'FangLux 方曜 · 局部光传输'],
             ['主题模式', themeName],
             ['Dock 位置', _dockMap[dockName] || dockName],
             ['屏幕分辨率', window.screen.width + ' × ' + window.screen.height],
@@ -39326,6 +39433,28 @@
             .catch(function (e) { if (st) { st.textContent = '连接异常：' + e.message + '（跨域可改用中转地址）'; st.style.color = '#fca5a5'; } });
     }
 
+    /* ===== frg1：省钱层在设置页的自证读数 =====
+       缓存到底有没有生效不看日志，看这里：本地命中数 + 上游前缀缓存命中率。
+       两个口径分开报——本地命中是我们自己省下来的，上游命中是模型厂商那头认的前缀。 */
+    function n26FrugalReportHtml() {
+        var F = window.N26Frugal;
+        if (!F) return '<span style="color:#fca5a5">省钱层未加载：ui/n26-ai-frugal.js 没挂上</span>';
+        var st = F.stats();
+        var rate = Math.round((st.promptHitRate || 0) * 100);
+        return '调用 <b>' + st.calls + '</b> 次，其中 <b>' + st.localHits + '</b> 次本地命中（未发请求）<br>' +
+            '输入 <b>' + st.prompt + '</b> tok ／ 输出 <b>' + st.completion + '</b> tok<br>' +
+            '上游前缀缓存：命中 <b>' + st.cacheHit + '</b> ／ 未命中 <b>' + st.cacheMiss + '</b>（<b>' + rate + '%</b>）';
+    }
+    function n26FrugalClearCache() {
+        try { if (window.N26Frugal) N26Frugal.cacheClear(); } catch (e) { }
+        if (typeof showNotification === 'function') showNotification('AI 缓存', '本地响应缓存已清空', 'info');
+    }
+    function n26FrugalResetStats() {
+        try { if (window.N26Frugal) N26Frugal.resetStats(); } catch (e) { }
+        try { if (typeof n26AiSpendReset === 'function') n26AiSpendReset(); } catch (e) { }
+        if (typeof renderSettingsPanel === 'function') renderSettingsPanel();
+    }
+
     function n26ApiToggleVoice() {
         var cfg = getLS('ai_config') || {};
         cfg.voice = !(cfg.voice !== false);
@@ -39588,7 +39717,7 @@
                             <div class="n26-hero-brand">
                                 <span class="n26-hero-name">Nexus<span class="n26-hero-os">OS</span> 26</span>
                             </div>
-                            <span class="n26-hero-tag">想象为光</span>
+                            <span class="n26-hero-tag">再创辉煌</span>
                         </div>
                         <div class="n26-hero-version" id="systemVersionText" style="cursor:pointer;" onclick="onVersionClick()">${typeof NEXUS_OS_VERSION !== 'undefined' ? NEXUS_OS_VERSION : ''}</div>
                         <div class="n26-hero-state" id="n26HeroState">已是最新版本</div>
@@ -39598,6 +39727,110 @@
                     <div class="settings-section">
                         <h4>更新日志</h4>
                         <div class="changelog">
+                                                                                                                                            <div class="changelog-item">
+                                <div class="changelog-version">v2.11.10</div>
+                                <div class="changelog-date">2026-11-15 发布</div>
+                                <ul class="changelog-list">
+                                    <li><span class="tag-sm fix">OOBE</span><b>接入 AI 小方页滚不动 / 底部按钮够不着（of1）</b>：实机确诊 <code>.oobe-card-form</code> 写死 <code>justify-content:center</code>，v2.9.61 起卡片固定 700px 高、这一步内容超高——flex 主轴居中 + 溢出在 Chromium 里 scrollHeight 失真，「测试连接 / 先不接入」永远滚不出来。新层 <code>ui/n26-oobe-fix.css?v=of1</code>：全步骤表单改 <code>safe center</code>（放得下照旧居中、放不下退化 flex-start），step-api 直接 flex-start，滚动条在白卡上显形</li>
+                                    <li><span class="tag-sm fix">OOBE</span><b>开机设置背景去灰</b>：原背景图上半段灰白，整页看着发闷；换成同套抽象风格里浅蓝底玻璃圆盘那张（<code>1785840663752</code>），贴液态玻璃品牌、文字对比度不变</li>
+                                </ul>
+                            </div>
+<div class="changelog-item">
+                                <div class="changelog-version">v2.11.9</div>
+                                <div class="changelog-date">2026-11-15 发布</div>
+                                <ul class="changelog-list">
+                                    <li><span class="tag-sm fix">OOBE</span><b>OOBE 期间顶栏不再悬顶（tg1）</b>：实机截图确诊 <code>#install-screen</code> z-index 1000 压不过顶栏 <code>#finder-bar</code> 9200，开机设置全程顶栏 / Dock 悬在顶端。新层 <code>ui/n26-topbar-guard.css?v=tg1</code> 用 <code>body:has(#install-screen[style*="flex"])</code> 零 JS 跟随内联显隐：OOBE 可见时顶栏 / Dock / dockBar / 左右胶囊一律 <code>display:none</code>，收尾自动回来；零 MO / 零定时器 / 零业务接线</li>
+                                </ul>
+                            </div>
+<div class="changelog-item">
+                                <div class="changelog-version">v2.11.8</div>
+                                <div class="changelog-date">2026-11-15 发布</div>
+                                <ul class="changelog-list">
+                                    <li><span class="tag-sm fix">小组件</span><b>昼模式玻璃卡字色反转（ink1）</b>：时钟 / 日历 / 世界时钟 / 天气 / 哔哩等昼模式半透磨砂卡上的深墨字一律翻白 + 轻投影（夜模式本就白）。同类型全量生效：桌面卡、抽屉预览卡（复用同一渲染器）、右侧胶囊推荐位；变量层 + 叶子层双保险，不碰材质与版式。新层 <code>ui/n26-widget-ink.css?v=ink1</code> 挂 CSS 尾链最末</li>
+                                </ul>
+                            </div>
+<div class="changelog-item">
+                                <div class="changelog-version">v2.11.7</div>
+                                <div class="changelog-date">2026-11-15 发布</div>
+                                <ul class="changelog-list">
+                                    <li><span class="tag-sm fix">AI</span><b>长按 Space 唤起小方改为真模态（cm1）</b>：实机确诊唤起后 Dock 照样能点（光效舞台 <code>pointer-events:none</code>、Dock 9000 无人拦）、焦点被点走就永远回不到输入框——键盘从此失灵。新增 <code>ui/covi-modal.css|js?v=cm1</code>：<code>#covi-shield</code>（z 9650，HUD 9700 之下 / Dock 9000 之上）挡住 Dock、启动台、顶栏与全部窗口点击，<strong>点护盾 = 收起小方</strong>（Siri 行为）；另有 <code>:has()</code> 兜底，护盾没挂上也压得住 Dock</li>
+                                    <li><span class="tag-sm fix">AI</span><b>焦点守卫 + 空格防灌</b>：HUD 展开态下焦点离开输入框（focusout）下一帧拉回，思考 / 播报胶囊态不抢；唤起瞬间同步聚焦一次（不等波动画走完）。长按空格的 <code>repeat</code> 拦截前置到「打字目标判定」之前——唤起后焦点已进输入框，按住的空格不再灌一串空格进输入框。主壳只动 <code>coviHudShow / coviHudClose</code> 两处接线与 keydown 一行，业务零改动</li>
+                                </ul>
+                            </div>
+<div class="changelog-item">
+                                <div class="changelog-version">v2.11.6</div>
+                                <div class="changelog-date">2026-11-15 发布</div>
+                                <ul class="changelog-list">
+                                    <li><span class="tag-sm fix">AI</span><b>AI 小方只喂用户输入（frg1）</b>：<code>coviAgentChat</code> 此前<strong>根本没把本轮问题放进 messages</strong>——两个调用点都是 <code>await</code> 之后才 push 历史，模型看不到用户在问什么，只能反复追问，这才是「两个问题烧 20 块」的放大器。现在本轮输入显式入列（尾部同文去重，同一句不付两遍），历史 8 条收到 4 条</li>
+                                    <li><span class="tag-sm fix">AI</span><b>出站闸门 + 本地响应缓存</b>：新建 <code>ui/n26-ai-frugal.js?v=frg1</code>，所有出站消息逐条过白名单（只放行 <code>role / content / tool_calls / tool_call_id</code>），剥 <code>dataURL</code> / base64 / <code>script</code> / <code>style</code> / 整页源码，整包压到 5600 字符。同一份「模型 + 消息」30 分钟内重问直接本地回放，一次请求都不发。宿主代理 <code>osControl.aiChat</code> 走同一道闸门</li>
+                                    <li><span class="tag-sm fix">AI</span><b>prompt cache 真命中</b>：system 提示词恒在第一位、字节不变（FangClaw 的「今天是 X 月 X 日」已从提示词里摘掉），工具定义按名字排序后序列化——前缀抖一个字，整段就按全价重算。响应里的 <code>usage.prompt_cache_hit_tokens</code>（兼容 OpenAI 的 <code>prompt_tokens_details.cached_tokens</code>）现在会被读出来记账，设置页「省钱与缓存」可当场看命中率</li>
+                                    <li><span class="tag-sm fix">AI</span><b>网页源码交给 FangClaw 本地解析</b>：新增 <code>getPageDigest</code> / <code>findPageText</code> 两个宿主侧本地动作，只回标题、应用名、小标题、600 字可见正文与命中小段，<strong>源码一个字节都不出机器</strong>。FangClaw 侧新增 <code>pageDigest</code> / <code>pageFind</code> 两个动作接上；轮数 6→3、历史 8→4、体积预算 22000→6000</li>
+                                    <li><span class="tag-sm fix">兼容性</span>AI 相关资源补戳（<code>frg1</code>），主文档加 <code>no-cache</code>——之前实机很可能一直跑的是缓存里的旧烧钱版。主壳 <code>v2.11.10</code>，零自动化浏览器，纯静态验收</li>
+                                </ul>
+                            </div>
+
+                            <div class="changelog-item">
+                                <div class="changelog-version">v2.11.5</div>
+                                <div class="changelog-date">2026-11-15 发布</div>
+                                <ul class="changelog-list">
+                                    <li><span class="tag-sm fix">动画</span><b>小组件抽屉进 / 出都有动画（dm1）</b>：<code>ui/n26-widgets.css</code> 的 v4 段用 <code>transition: opacity 160ms !important</code> 把 <code>n26-perf.css</code> 的 <code>visibility</code> 延迟整条覆盖，关闭瞬间就 hidden，退场一帧都画不出来；面板位移又被三份 <code>transform: ... !important</code> 锁死，keyframes 根本压不过。现在位移改用独立属性 <code>translate</code>、全程 <code>animation + fill-mode:both</code>，不依赖上一帧样式，首次 reparent 到 body 后照样从底部滑入；退场期补回 <code>backdrop-filter</code>，玻璃不会突然变透明。减少动态效果只缩短到 140ms，不砍成 0</li>
+                                    <li><span class="tag-sm fix">观感</span><b>选择页溢出与空当收口（drw6）</b>：顶部「尺寸」尺寸滑轨在按软件分组的抽屉里是冗余整行，已收掉；8 个组头从占满一整行的大横条改成行内紧凑标签，卡片流用 <code>display:contents</code> 与组头同一行排布；同组卡片按真实行高 / 列宽排序（grp4），相近尺寸的卡排在一起，flex 行不再被一张大卡撑出大片空白。预览框的 3D 悬停 <code>perspective / preserve-3d / will-change</code> 全部撤掉 —— 它会让卡片内容脱离 <code>contain:paint</code> 画到框外，正是「溢出」的另一条真因</li>
+                                    <li><span class="tag-sm fix">观感</span><b>FangUI 四风格全页面真适配（fc2 / fb4 / fs1）</b>：审计 38 个非备份应用页，36 页靠 <code>_app.js</code> 注入、2 页完全没挂桥（<code>apps/_ui-demo.html</code> 与自包含 36164 行的 <code>apps/vm-os1/Nexus OS.html</code>）。现在 36 页统一升 <code>3.9.108</code> 并把 3 个原本没戳的页补上戳、3 页主题适配层统一 <code>ta11</code>；两个独立页挂 <code>fs1</code> 轻量同步器（只补属性与四套核心 CSS，不注入整套宿主运行时，避免破坏自包含 VM OS）。桥层新增 <code>N26Fui.coverage()</code> 可当场核对当前文档挂了哪些层</li>
+                                    <li><span class="tag-sm fix">控件</span><b>共享控件层补齐宿主专有类名</b>：<code>fc1</code> 只覆盖约 20 个类名，<code>form-group / form-label / form-input / oobe-card / oobe-card-form / install-step / context-menu-item / glass-card-clear / n26tier-chip / style-option / office-tbtn / fm-toolbar-btn / window-btn / power-item / toggle-switch</code> 等全都没进四风格规则。<code>fc2</code> 按同一套语义补齐：Flat 纯平、Neu 两档凹凸 / 磨砂内缘、液态零规则，昼墨夜白不变</li>
+                                    <li><span class="tag-sm fix">兼容性</span>引用戳同步（<code>dm1 / drw6 / grp4 / fc2 / fb4 / fs1 / 3.9.108 / ta11</code>），主壳 <code>v2.11.5</code>。零自动化浏览器，纯静态验收</li>
+                                </ul>
+                            </div>
+
+                            <div class="changelog-item">
+                                <div class="changelog-version">v2.11.4</div>
+                                <div class="changelog-date">2026-11-15 发布</div>
+                                <ul class="changelog-list">
+                                    <li><span class="tag-sm fix">小组件</span><b>47 款逐卡精修（pc1）</b>：按《小组件设计规格-全量47款.md》§3 的 01~47 号，逐款给主读数缩放、内容间距、列表 / 网格 / 圆盘 / 控件节奏与专属裁切，另铺 16 档网格密度矩阵（行数按档写死，不靠压缩行高硬塞）。不是按 8 族糊一层，每一款都单独落规则</li>
+                                    <li><span class="tag-sm fix">观感</span><b>「大片空白 + 文字挤成团」根治</b>：<code>wr8</code> 对卡内所有文本一刀 <code>white-space:nowrap</code>，把 line-clamp 与多行标题全废掉；<code>wr9</code> 撤掉这一刀，单行白名单与多行 clamp 交回逐卡层。内容层根按卡高铺满并居中，不再挤在角上留一大片空</li>
+                                    <li><span class="tag-sm fix">全等</span><b>预览与桌面实物真正 1:1</b>：抽屉此前用 80px 格 / 14px 间距，主壳 <code>N26_GRID</code> 是 cell 76 / gap 16，2×2 一个 174px 一个 168px —— 差 6px/格。<code>drw5</code> 改走 <code>cols × (76+16) − 16</code> 同一公式，纯计算零布局读</li>
+                                    <li><span class="tag-sm fix">修复</span><b>选择页裁切与透出</b>：同一条规则里先写 <code>overflow:hidden</code> 又写 <code>overflow:visible</code>，后写者生效，drw4 的「唯一裁切边界」其实没生效（左上露半张卡）；已删掉多余那行并给预览框加 <code>contain:paint</code>。遮罩暗纱与抽屉本体中性磨砂同步加厚，壁纸 / Dock / 桌面卡不再整片透出来；主壳另加内联 guard，外部 CSS 失效时层级、磨砂、裁切三条仍成立</li>
+                                    <li><span class="tag-sm fix">音乐</span><b>2×3 竖长条与封面割裂收口</b>：<code>ml5</code> 把音乐族 <code>.widget-inner</code> / <code>.nx.nx-mu</code> 的 <code>overflow:visible</code> 收回卡内（MD §2.6 旧「全卡铺图例外」随 ml3 已作废），封面固定方形格、信息区弹性占位、控制条锁高，不再被卡高拉成长条</li>
+                                </ul>
+                            </div>
+                            <div class="changelog-item">
+                                <div class="changelog-version">v2.11.3</div>
+                                <div class="changelog-date">2026-11-15 发布</div>
+                                <ul class="changelog-list">
+                                    <li><span class="tag-sm fix">修复</span><b>47 款全可见 + 2×2 音乐回归</b>：<code>music / browser / calculator</code> 的 <code>requiresInstall</code> 硬门槛会让存档里没装对应应用的机器直接把整张卡挡在选择面板外（用户最满意的 2×2 音乐播放就是这么「没」的），现改走系统内置应用回退；分组默认从「只展开时钟」改为 <b>8 组全展开</b>，40 款不再被折叠藏起来；<code>music</code> 默认档从 2×3 改回 <b>2×2</b>（老版 GitHub 定案的封面 + 一行曲名 + 播放键）。抽屉滚动链与预览框裁切同时收口，卡片保持 1:1 全等、不再撑破格子</li>
+                                    <li><span class="tag-sm fix">观感</span><b>四风格全局适配补齐（宿主 + 31 个 iframe 应用）</b>：应用文档此前只有 3 页引了 <code>fangui/core/*.css</code>，且 <code>_app.js / _theme-adapter.js</code> 还注入 <code>fb1</code> 旧戳 —— 侧栏按钮、开关等控件根本没挂四风格规则。现在桥层统一注入四风格原生层 + 新增 <code>fc1</code> 共享控件层（按 <code>data-ui/data-neu</code> 给侧栏项 / <code>.fu-switch</code> / 通用按钮落 Flat 平、Neu 凹凸、玻璃拟物磨砂，液态零改动）。Dock 维持 dk4：除液态外三风格整条磨砂</li>
+                                    <li><span class="tag-sm new">小组件</span><b>选择页改成底部抽屉</b>：从屏幕底部升起、贴边只盖住 Dock，上半屏仍看得见桌面与壁纸；不再是居中占满全屏的大弹窗。抽屉本体是透壁纸的中性磨砂玻璃，遵循 FangUI 四风格（Flat / 液态平整，Neu 两档轻凹凸）</li>
+                                    <li><span class="tag-sm fix">修复</span><b>Dock 压住小组件抽屉的层级根治（实机截图「dock 在它上面并且溢出了」）</b>：<code>#widgetPanel</code> 此前嵌在 <code>#desktop</code>（position:fixed）里，Chrome 中 fixed 祖先必创建 stacking context，面板的 <code>z-index 10050</code> 被锁在桌面容器内部、对外只按 auto(0) 参与比较，<code>#dock</code> 的 9000 永远压住整个面板（Dock 压到 90 也 &gt; 0），#desktop 的 overflow 还会裁剪面板。现在打开面板时把它搬到 <code>body</code> 直接子级，10050 &gt; 9000/90 真正成立：抽屉盖住 Dock、不再溢出；引用戳升 <code>wpf4 / drw3</code> 强制拉新，防止旧缓存吃掉抽屉样式</li>
+                                    <li><span class="tag-sm fix">小组件</span><b>预览卡与桌面实物全等（1:1）</b>：在网格里占几格、预览就是几格多大，拖出来就是多大 —— 不是缩小版的「相似」。桌面网格 80px 格 / 14px 间距原样呈现；旧版把 47 张卡全塞进 146×196 的固定格子、预览占位又写的是自然尺寸，互相压叠成一团；尺寸条回到正常文档流，不再压在预览上</li>
+                                    <li><span class="tag-sm fix">观感</span><b>四风格挂载点勘误（第二轮，推翻上一轮「data-fui 不存在」结论）</b>：<code>html[data-fui]</code> 其实由 fui-bridge.js 启动时写入，但运行中切换风格只更新 <code>data-ui/data-neu</code>、<code>data-fui</code> 停在启动旧值 —— 挂它的规则「刷新才对、切了不动」，这就是四风格怎么看都不对劲的真正死因。redesign / style / beauty / tiers / music-legacy / fui-bridge 六文件共 <b>145 处</b>规则全量迁到实时挂载点 <code>html[data-ui]</code> + <code>html[data-neu]</code>，切换即生效。拟物的凹凸（时间、按钮按下）与 Flat/液态的形态差异随挂载点修复一并激活</li>
+                                    <li><span class="tag-sm fix">观感</span><b>浅色身份色回归</b>：卡面材质层叠上族身份色 <code>var(--wf-wash)</code>（昼 12% / 夜 16%，8 族各自的颜色），浅色模式下小组件不再是「纯白磨砂玻璃」—— 两 种模式都有各自的色彩身份，时间族保持青蓝不刷黄，天空实景卡不受影响</li>
+                                    <li><span class="tag-sm fix">观感</span><b>Dock 四风格材质收口</b>：flat / neu-solid / neu-glass 三种风格下整条 Dock 落中性磨砂玻璃（dk4 新层，压过老体系实色分支）：扁平纯平细边、轻拟物磨砂加双向柔影、玻璃拟物磨砂加内缘亮线；液态玻璃保持现状零改动</li>
+                                    <li><span class="tag-sm fix">观感</span><b>「一片惨白」根治</b>：昼间卡面从 <code>rgba(251,252,255,.42)</code> 白漆改成真正透壁纸的中性磨砂（冷灰 .20 + 极淡墨 + 8% 内的中性白上沿高光 + 细边与落影），并把小组件卡从 FangLux 发光体白名单摘掉、只做受光件 —— 47 张卡各叠四边白渐变正是二次泛白的主因。不纯黑、不刷黄、不带彩，昼墨夜白对比度不变。<b>磨砂失真根因修复</b>：面板遮罩层自己吃了 <code>backdrop-filter</code>，成为新的 backdrop root 后把面板与卡片的磨砂采样整条锁死（「是不是忘记加磨砂了」的真因——磨砂写了，是被弄死的）；遮罩只留暗纱，面板与卡片磨砂恢复。<b>四风格挂载点勘误</b>：真实挂载是 <code>html[data-ui]</code> + <code>html[data-neu]</code>，此前误写的 <code>data-fui</code> 规则全数无效，抽屉与分组头已按真实挂载点重写</li>
+                                    <li><span class="tag-sm fix">音乐</span><b>MV 提速并和底部播放条同轴</b>：MV 进度条改显示歌曲的 <code>currentTime / duration</code>，进 MV 那一刻就对齐，不再显示换算后的视频时间导致 0:00；BV + 画质的直链缓存 5 分钟、首开 <code>/video</code> 与 <code>/play</code> 并行发出、<code>preload</code> 降为 metadata、超时收敛，二次进入几乎瞬时。音频仍是唯一时钟源，MV 永远静音</li>
+                                    <li><span class="tag-sm fix">兼容性</span>引用戳同步（<code>fam4 / grp3css / flx2 / drw2</code>），主壳 <code>v2.11.3</code>；预览渲染改为纯计算等比、零布局读，47 张卡同批渲染不强制回流</li>
+                                </ul>
+                            </div>
+                            <div class="changelog-item">
+                                <div class="changelog-version">v2.11.1</div>
+                                <div class="changelog-date">2026-11-15 发布</div>
+                                <ul class="changelog-list">
+                                    <li><span class="tag-sm fix">光学</span><b>光源归属反转</b>：玻璃 / Dock / 侧栏本身就是导光板式发光体，光从玻璃自己的边缘出来，不是壁纸在发光、也不是颜色透过玻璃。11-14 白天那版「暖金与蓝只能来自壁纸透射」的定案作废</li>
+                                    <li><span class="tag-sm new">引擎</span><b>FangLux 方曜 · 局部光传输引擎</b>（<code>flx1</code>）：正式命名并在「材质与玻璃 / 关于本机」可见。光会溢出照到邻近的软件与控件，只点亮朝向光源的那一侧、靠近光源的那一小段边缘，不是整圈描边；亮段长度与位置跟着光源投影走</li>
+                                    <li><span class="tag-sm fix">物理</span>强度按<b>边缘间距平方衰减 × 迎光重叠 × 昼夜系数</b>计算，多光源只取最强一处，受光件不二次发光（无自激回路）；几何一次性批量读完再批量写，零观察器、零逐帧、零 <code>filter</code>，只跑宿主文档不进 31 个 iframe</li>
+                                    <li><span class="tag-sm fix">小组件</span>厘清颜色边界：玻璃出光永远中性白，<b>白天蓝 / 黄昏金 / 夜间深蓝属于天空内容层</b>（<code>sky4</code> 的 9 档时段 × 16 天气），不刷到玻璃上；夜里拍的黑卡不是固定样式</li>
+                                    <li><span class="tag-sm fix">兼容性</span>全部引用戳同步（<code>go11 / 2967 / 233 / flx1 / rg2</code>），31 个子应用页 <code>3.9.106</code> 与主题适配层 <code>ta9</code> 一起升戳；光传输引擎纳入发布兜底异常隔离</li>
+                                </ul>
+                            </div>
+                            <div class="changelog-item">
+                                <div class="changelog-version">v2.11.0</div>
+                                <div class="changelog-date">2026-11-15 发布</div>
+                                <ul class="changelog-list">
+                                    <li><span class="tag-sm fix">高光</span><b>「石油高光」整套作废</b>：对照华为 / 苹果液态玻璃样张，玻璃自身只出中性白、冷白与银灰细线；青绿 / 薄荷 / 暖黄 / 蓝的绸带、彩虹 conic、色相漂移全部清掉（光源归属在 v2.11.1 反转：玻璃是发光体，不是壁纸透射）</li>
+                                    <li><span class="tag-sm fix">小组件</span><b>音乐 5 款按苹果小组件库重做</b>：推翻深蓝唱片面，回到与全家族一致的中性半透磨砂玻璃；专辑图只待在封面格里，不再铺满整卡压字；正在播放 / 播放队列 / 音乐搜索 / 每日推荐 / 电台各有各的观感，同功能不同尺寸的信息密度也不同</li>
+                                    <li><span class="tag-sm fix">小组件</span><b>选择页预览卡恢复真实比例</b>：旧样式用 <code>width/height/transform !important</code> 把渲染器写好的等比缩放整个吃掉，2×2 被拉成方框、5×5 溢出裁切。现在按所选尺寸档等比呈现，与桌面实物同形</li>
+                                    <li><span class="tag-sm fix">鲁棒性</span><b>发布前收口</b>：脏存档（对象 / 字符串 / 含空项）自愈、尺寸白名单空档兜底、分组面板整块重建后自动重排、天空层观察器与定时器单点异常隔离、<code>file://</code> 与关键节点完整性体检；可选模块连续失败自动降级，绝不拖垮桌面主流程</li>
+                                    <li><span class="tag-sm fix">兼容性</span>全部 CSS / JS 引用戳同步（<code>go10 / 2966 / 232 / pz1 / wpf3 / ml3 / grp2 / sky5 / rg1</code>），31 个子应用页与主题适配层一起升戳</li>
+                                </ul>
+                            </div>
                             <div class="changelog-item">
                                 <div class="changelog-version">v2.10.15</div>
                                 <div class="changelog-date">2026-11-08</div>
@@ -42181,6 +42414,14 @@
                         <div id="apiSetStatus" style="font-size:11.5px;color:rgba(255,255,255,0.6);margin-top:10px;min-height:16px;"></div>
                     </div>
                     <div class="settings-section">
+                        <h4>省钱与缓存 <small style="opacity:.6;">今日真实用量，取自 API 自报 usage</small></h4>
+                        <div style="font-size:12px;line-height:1.8;color:rgba(255,255,255,0.72);">${n26FrugalReportHtml()}</div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+                            <button class="glass-btn" onclick="n26FrugalClearCache()">清空本地缓存</button>
+                            <button class="glass-btn" onclick="n26FrugalResetStats()">重置用量统计</button>
+                        </div>
+                    </div>
+                    <div class="settings-section">
                         <h4>已保存的 API <small style="opacity:.6;">可添加多个，随时切换</small></h4>
                         <div id="apiSetList">
                             <div class="settings-row" style="gap:8px;">
@@ -43121,6 +43362,9 @@
             +   '<span class="n26-pz-demo-badge">实时演示 · 不承载真实窗口</span>'
             + '</div>'
             + '<div class="n26-pz-demo-tip">同一份 CSS 变量驱动：演示区与真实窗口读的是同一个值</div>'
+            + '<div class="n26-flx-brand"><span class="n26-flx-tag">光学引擎</span>'
+            +   '<b>FangLux 方曜</b><span>局部光传输引擎</span>'
+            +   '<span class="n26-flx-sub">玻璃自身导光 · 迎光侧局部照明</span></div>'
             + '<div class="settings-section n26-pz-sec"><h4><i class="fas fa-layer-group" style="margin-right:6px;"></i>材质 <small>四种，点一下全系统切换</small></h4>'
             + '<div class="mat-row">'
             + cards.map(function (c) {
@@ -47062,7 +47306,7 @@
         focus:    { title: '专注时刻', icon: 'fa-bullseye', cols: 2, rows: 2, color: '#38bdf8', app: 'focus' },
         todo:     { title: '待办事项', icon: 'fa-list-check', cols: 2, rows: 3, color: '#3b82f6', app: 'todo' },
         // 应用商店扩展小组件：必须先安装对应应用才能添加
-        music:      { title: '正在播放', icon: 'fa-compact-disc', cols: 2, rows: 3, color: '#1d4ed8', app: 'music' },
+        music:      { title: '正在播放', icon: 'fa-compact-disc', cols: 2, rows: 2, color: '#1d4ed8', app: 'music' },
         // ===== v2026.11.08：音乐拆成 5 个组件（每个只管一件事，尺寸即内容） =====
         musicQueue: { title: '播放队列', icon: 'fa-list-ol', cols: 3, rows: 4, color: '#1d4ed8', app: 'music' },
         musicSearch: { title: '音乐搜索', icon: 'fa-magnifying-glass', cols: 3, rows: 2, color: '#1d4ed8', app: 'music' },
@@ -47109,15 +47353,16 @@
         sleep:    { name: '睡眠模式', icon: 'fa-moon', builtin: false, app: 'sleep', size: '2x2', color: '#0ea5e9', desc: '助眠倒计时·睡眠音乐' },
         focus:    { name: '专注时刻', icon: 'fa-bullseye', builtin: false, app: 'focus', size: '2x2', color: '#38bdf8', desc: '25 分钟番茄钟专注' },
         todo:     { name: '待办事项', icon: 'fa-list-check', builtin: false, app: 'todo', size: '2x3', color: '#3b82f6', desc: '勾选动画·本地保存' },
-        // 应用商店扩展：requiresInstall 表示必须真实安装对应应用才可用
-        music:      { name: '正在播放', icon: 'fa-compact-disc', builtin: false, app: 'music', requiresInstall: true, size: '2x3', color: '#1d4ed8', desc: '专辑封面·进度·上一首/播放/下一首·音量' },
+        // drw4：应用关联组件一律走系统内置应用回退。此前 music / browser / calculator
+        // 带 requiresInstall，存档里没有 installedApps 记录时整张卡直接不进面板。
+        music:      { name: '正在播放', icon: 'fa-compact-disc', builtin: false, app: 'music', size: '2x2', color: '#1d4ed8', desc: '专辑封面·进度·上一首/播放/下一首·音量' },
         // ===== v2026.11.08：音乐族 4 个（不加 requiresInstall，面板里始终看得到）=====
         musicQueue: { name: '播放队列', icon: 'fa-list-ol', builtin: false, app: 'music', size: '3x4', color: '#1d4ed8', desc: '第 N / 共 M 首·接下来几首·点一首切歌' },
         musicSearch: { name: '音乐搜索', icon: 'fa-magnifying-glass', builtin: false, app: 'music', size: '3x2', color: '#1d4ed8', desc: '桌面直接搜歌·最近搜索词' },
         musicReco:  { name: '每日推荐', icon: 'fa-compact-disc', builtin: false, app: 'music', size: '4x3', color: '#1d4ed8', desc: '歌单 / 专辑 / 风格卡片·点开就播' },
         musicRadio: { name: '电台', icon: 'fa-tower-broadcast', builtin: false, app: 'music', size: '2x2', color: '#1d4ed8', desc: '华语 / 电子 / 爵士 / 白噪音风格电台' },
-        browser:    { name: '快捷书签', icon: 'fa-globe', builtin: false, app: 'browser', requiresInstall: true, size: '2x3', color: '#60a5fa', desc: '一键访问常用网站' },
-        calculator: { name: '迷你计算器', icon: 'fa-calculator', builtin: false, app: 'calculator', requiresInstall: true, size: '2x3', color: '#f59e0b', desc: '基础四则运算·即点即算' },
+        browser:    { name: '快捷书签', icon: 'fa-globe', builtin: false, app: 'browser', size: '2x3', color: '#60a5fa', desc: '一键访问常用网站' },
+        calculator: { name: '迷你计算器', icon: 'fa-calculator', builtin: false, app: 'calculator', size: '2x3', color: '#f59e0b', desc: '基础四则运算·即点即算' },
         // ===== 本轮新增（用户钦定） =====
         dualtime:      { name: '双区时间', icon: 'fa-earth-asia', builtin: true, size: '4x2', color: '#06b6d4', desc: '北京时间 + 自选时区·可切换' },
         quicklaunch:   { name: '快捷启动', icon: 'fa-bolt', builtin: true, size: '3x2', color: '#3b82f6', desc: '常用应用一键直达·可自定义' },
@@ -47174,6 +47419,16 @@
     function openWidgetPanel() {
         const panel = document.getElementById('widgetPanel');
         if (!panel) return;
+        /* drw3 层级根治（11-15 实机截图「dock 在它上面并且溢出了」）：
+           #widgetPanel 此前嵌在 #desktop 里，而 #desktop 是 position:fixed ——
+           Chrome 中 fixed 祖先必创建 stacking context，面板的 z-index 10050
+           被锁在 #desktop 内部、对外只按 auto(0) 参与 body 层比较，
+           #dock 的 9000 永远压住整个面板（wpf4 把 Dock 压到 90 也 > 0）。
+           搬到 body 直接子级后 10050 > 9000/90 才真正成立，抽屉才能盖住 Dock；
+           同时 #desktop 的 overflow 不再裁剪面板，「溢出」一并消失。 */
+        if (panel.parentElement !== document.body) {
+            try { document.body.appendChild(panel); } catch (e) { }
+        }
         /* v2.9.99：先把面板本体亮出来，再填内容。
            原来是 renderWidgetPanelGrid() 先跑 —— 40 多张卡每张都要真渲染一遍预览组件，
            几百毫秒里主线程被按住，面板迟迟不出现，用户看到的就是「先闪一阵桌面」。
@@ -47234,7 +47489,7 @@
         system:       { sizes: [[2, 2], [4, 2], [4, 3], [4, 4], [6, 1]] },
         todo:         { sizes: [[2, 2], [4, 2], [4, 3], [4, 4], [6, 1]] },
         note:         { sizes: [[2, 2], [4, 2], [4, 3], [4, 4], [6, 1]] },
-        music:        { sizes: [[2, 3], [2, 2], [3, 3], [4, 3], [4, 4], [6, 1]] },
+        music:        { sizes: [[2, 2], [2, 3], [3, 3], [4, 3], [4, 4], [6, 1]] },   /* 2×2 首档：用户钦定 */
         // 音乐族：每档尺寸给的内容不同，档位按「信息量」排，首项=面板默认
         musicQueue:   { sizes: [[3, 4], [2, 3], [3, 3], [4, 4]] },
         musicSearch:  { sizes: [[3, 2], [2, 2], [4, 2], [6, 1]] },
@@ -47443,14 +47698,17 @@
         const ids = n26PanelCardIdList();
         const frag = document.createDocumentFragment();
         ids.forEach(id => {
-            const w = widgetRegistry[id];
+            const w = widgetRegistry[id] || { name: id, color: '#38bdf8', desc: '' };
             const available = isWidgetAvailable(id);
             const isInstalled = installedTypes.has(id);
             const sizes = n26WidgetSizes(id);
-            const defSize = sizes[0];
+            /* 尺寸白名单万一为空（新类型漏登记 / 存档残留）不能让 defSize.fixed 抛错，
+               给一个可渲染的兜底档，面板宁可显示小卡也不能整页白屏。 */
+            const defSize = (sizes && sizes.length) ? sizes[0] :
+                { cols: 2, rows: 2, label: '小', fixed: false };
             const card = document.createElement('div');
             card.className = 'widget-panel-card' + (isInstalled ? ' installed' : '') + (available ? '' : ' disabled');
-            card.style.setProperty('--card-color', w.color);
+            card.style.setProperty('--card-color', w.color || '#38bdf8');
             card.dataset.widgetId = id;
             card.dataset.available = available ? '1' : '0';
             card.tabIndex = available ? 0 : -1;
@@ -47665,22 +47923,20 @@
         if (!info) return;
         const sz = n26SnapWidgetSize(id, size && size.cols, size && size.rows);
         const cols = sz.cols, rows = sz.rows;
-        // 与桌面一致的网格：80px 格、14px 间距
+        // pc1：与桌面一致的网格 = N26_GRID cell 76 / gap 16（80/14 是 drw2 的历史误记）。
         const dim = n26WidgetPixelSize(cols, rows);
         const naturalW = dim.w, naturalH = dim.h;
-        // 预览容器目标尺寸：按实际容器尺寸等比缩放，保证与桌面实物同形
-        // perf v7：同一批 19 张卡片的预览框尺寸完全相同，原本每张都读 clientWidth/clientHeight
-        // 各强制回流一次（38 次/开）；改为按视口缓存，一次读取即可。
+        // drw3 · 11-14：抽屉里每张卡的预览框按 cols×rows 全等比例各不相同，
+        // 旧的「按视口缓存一次 clientWidth/clientHeight」会把所有卡压成同一个 scale，
+        // 且 inner 占位仍写自然尺寸 → 卡片互相压叠（用户截图里挤成一团）。
+        // 改成纯计算：预览框 = 桌面自然尺寸 × 1（drw5 全等 cell 76 / gap 16），
+        // 零布局读、零强制回流，47 张卡同批渲染也不掉帧。
         const host = inner.parentElement;
-        const boxKey = window.innerWidth + 'x' + window.innerHeight;
-        if (!_n26PreviewBox || _n26PreviewBoxKey !== boxKey || _n26PreviewBox.w < 40) {
-            const w = (host && host.clientWidth) || 0, h = (host && host.clientHeight) || 0;
-            if (w > 40) { _n26PreviewBox = { w: w, h: h || 136 }; _n26PreviewBoxKey = boxKey; }
+        let scale = 1;   /* drw5 全等：预览与桌面实物 1:1，不是相似 */
+        if (host && host.dataset && host.dataset.wpScale) {
+            const k = parseFloat(host.dataset.wpScale);
+            if (isFinite(k) && k > 0) scale = Math.min(k, 1);
         }
-        const box = _n26PreviewBox || { w: 150, h: 136 };
-        const targetW = Math.max(60, box.w);
-        const targetH = Math.max(56, box.h);
-        const scale = Math.min(targetW / naturalW, targetH / naturalH, 1);
         let content;
         try {
             content = renderWidgetContent(id, { cols: cols, rows: rows, settings: { __preview: true } });
@@ -47712,10 +47968,16 @@
         cardEl.style.width = naturalW + 'px';
         cardEl.style.height = naturalH + 'px';
         cardEl.style.transform = 'scale(' + scale + ')';
-        cardEl.style.transformOrigin = 'center center';
+        /* drw3：卡片脱离文档流 + 左上原点缩放，视觉尺寸 = 自然尺寸 × scale，
+           与 inner 占位完全一致，不再撑破格子、也不再和邻居重叠。 */
+        cardEl.style.position = 'absolute';
+        cardEl.style.left = '0';
+        cardEl.style.top = '0';
+        cardEl.style.transformOrigin = 'top left';
         cardEl.innerHTML = '<div class="widget-inner">' + content + '</div>';
-        inner.style.width = naturalW + 'px';
-        inner.style.height = naturalH + 'px';
+        inner.style.width = (naturalW * scale) + 'px';
+        inner.style.height = (naturalH * scale) + 'px';
+        inner.style.position = 'relative';
     }
     function addWidgetFromPanel(type, size) {
         const info = WIDGET_TYPES[type];
@@ -49204,8 +49466,15 @@
         const container = document.getElementById('desktopWidgets');
         if (!container) return;
         container.innerHTML = '';
-        if (document.getElementById('desktop').style.display !== 'block') return;
-        const widgets = (getUserLS('desktopWidgets') || []).filter(w => N26_RETIRED_WIDGETS.indexOf(w.type) < 0);
+        const _desk = document.getElementById('desktop');
+        if (!_desk || _desk.style.display !== 'block') return;
+        /* 11-14 发布前鲁棒性：旧存档 / 手工改坏的 LS 值可能是对象、字符串，
+           或数组里夹着 null、缺 type 的脏项。原实现一句 .filter(w => w.type)
+           会直接抛错，整块桌面小组件消失且无提示。这里先收敛成合法数组。 */
+        const _rawW = getUserLS('desktopWidgets');
+        const widgets = (Array.isArray(_rawW) ? _rawW : []).filter(w =>
+            w && typeof w === 'object' && typeof w.type === 'string' && w.type &&
+            N26_RETIRED_WIDGETS.indexOf(w.type) < 0);
         let _szChanged = false;
         // 加载即重排：补齐 col/row、夹进网格、按 FluentOS 矩形碰撞消除历史重叠（旧存档也会自愈）
         if (n26NormalizeLayout(widgets)) _szChanged = true;
@@ -50565,7 +50834,7 @@
             try { this.el.currentTime = bg.pos || 0; } catch (_) {}
             this.meta = bg;
             this.el.volume = 0.75;
-            if (bg.playing) { var p = this.el.play(); if (p && p.catch) p.catch(function () {}); }
+            if (bg.playing) { var p = this.el.play(); if (p && p.catch) p.catch(function (e) { console.warn('[N26BgAudio] 后台接管续播被拒：', e && e.name); }); }
             else this.el.pause();
             var self = this;
             this.el.onended = function () {
@@ -50581,7 +50850,7 @@
         stop: function () { if (this.el) this.el.pause(); this.meta = null; try { localStorage.removeItem('n26MusicBg'); } catch (_) {} window.n26WidgetMusicSync(); },
         toggle: function () {
             if (!this.el || !this.meta) return false;
-            if (this.el.paused) { var p = this.el.play(); if (p && p.catch) p.catch(function () {}); }
+            if (this.el.paused) { var p = this.el.play(); if (p && p.catch) p.catch(function (e) { console.warn('[N26Media] 播放被拒：', e && e.name); }); }
             else this.el.pause();
             if (this.meta) { this.meta.playing = !this.el.paused; try { localStorage.setItem('n26MusicBg', JSON.stringify(this.meta)); } catch (_) {} }
             window.n26WidgetMusicSync();
@@ -50620,7 +50889,7 @@
         stop: function () { if (this.el) this.el.pause(); this.meta = null; try { localStorage.removeItem('n26VideoBg'); } catch (_) {} window.n26WidgetMusicSync(); },
         toggle: function () {
             if (!this.el || !this.meta) return false;
-            if (this.el.paused) { var p = this.el.play(); if (p && p.catch) p.catch(function () {}); }
+            if (this.el.paused) { var p = this.el.play(); if (p && p.catch) p.catch(function (e) { console.warn('[N26Media] 播放被拒：', e && e.name); }); }
             else this.el.pause();
             if (this.meta) { this.meta.playing = !this.el.paused; try { localStorage.setItem('n26VideoBg', JSON.stringify(this.meta)); } catch (_) {} }
             window.n26WidgetMusicSync();
@@ -56614,7 +56883,7 @@
 
     // ==================== 账户管理弹窗 ====================
     /* 版本号唯一来源：更新日志里最新那条必须和这里一致，关于本机 / 控制中心 / 本机账户设置都读它 */
-    const NEXUS_OS_VERSION = 'v2.10.15';
+    const NEXUS_OS_VERSION = 'v2.11.10';
     /* 构建日期不手写：直接取页面自身的 Last-Modified（document.lastModified），
        与磁盘上实际构建产物的日期一致；系统信息 / 关于本机 / 账户弹窗都读它 */
     const NEXUS_OS_BUILD_DATE = (() => {
@@ -63040,8 +63309,9 @@
     </div>
 </div>
 <!-- AI 小方本地引擎（离线可用，纯前端） -->
-<script src="xiaofang_data.js"></script>
-<script src="xiaofang_engine.js"></script>
+<script src="ui/n26-ai-frugal.js?v=frg1"></script>
+    <script src="xiaofang_data.js?v=frg1"></script>
+<script src="xiaofang_engine.js?v=frg1"></script>
 
 <!-- ============ N26 左下角「AI 小方」玻璃球：官网同款 WebGPU 流体玻璃球（Canvas2D 自动降级） ============
      与 AI小方官网 FlphaLit 完全同源：同一份 WGSL 着色器与 idle/思考双态参数。
@@ -64235,8 +64505,8 @@
 <!-- v2.9.93：控件点击防整窗刷新（必须先于 n26-switch.js 注册捕获监听） -->
 <script src="ui/n26-no-reload.js?v=nr3"></script>
 <!-- v2.9.93：四段液态玻璃开关（白胶囊 → 150% 折射玻璃 → 前沿先到/后沿晚 100ms → 缩回白色） -->
-<script src="ui/n26-switch.js?v=sw12"></script>
-<script src="ui/n26-docknav.js?v=dn12"></script>
+<script src="ui/n26-switch.js?v=sw15"></script>
+<script src="ui/n26-docknav.js?v=dn15"></script>
 <script src="ui/n26-a11y.js?v=20261107"></script>
 <script src="ui/n26-files.js?v=20261107d"></script>
 <script src="ui/n26-browser.js?v=20261107c"></script>
@@ -64249,10 +64519,10 @@
      body.n26fb-armed #dock{opacity:0!important} 单独生效 → Dock「能点到却不渲染」反复复现。
      模块文件（ui/n26-fb-core.js、n26-firstboot.js/.css、assets/n26-firstboot-bgm.mp3）全部保留，
      随时可挂回；启动链现在不加载任何 firstboot 资源，也不再产生任何预隐藏类。 -->
-<!-- 小组件「天空」层：首次/空列表铺默认四张 + 天气×6 时段底图 + 时钟放大日出日落详情（独立模块，主壳只挂 3 行） -->
-<link rel="stylesheet" href="ui/n26-widget-sky.css?v=sky3">
-<script src="ui/n26-widget-sky-bg.js?v=sky3"></script>
-<script src="ui/n26-widget-sky.js?v=sky3"></script>
+<!-- 小组件「天空」层：首次/空列表铺默认四张 + 天气 × 9 时段实景底图（日出/早晨/中午/下午/黄昏时分/蓝调时分/傍晚/夜晚/凌晨） -->
+<link rel="stylesheet" href="ui/n26-widget-sky.css?v=sky4">
+<script src="ui/n26-widget-sky-bg.js?v=sky4"></script>
+<script src="ui/n26-widget-sky.js?v=sky5"></script>
 <!-- v3.2 玻璃总账：唯一裁决层（见 ui/n26-glass-system.css） -->
 <link rel="stylesheet" href="ui/n26-glass-system.css?v=g4">
 <!-- v2.9.93 开关玻璃层：必须在玻璃总账之后加载，才压得过第 1 节的 backdrop-filter:none !important -->
@@ -64262,9 +64532,9 @@
 <link rel="stylesheet" href="ui/n26-smooth.css?v=sm7">
 <link rel="stylesheet" href="ui/n26-widget-polish.css?v=wp2">
 <!-- v2.9.96 图标超椭圆总账：最后加载，压过 shell.css 的 url(#n26Squircle) 与历史 border-radius -->
-<link rel="stylesheet" href="ui/n26-icon-squircle.css?v=sq1">
+<link rel="stylesheet" href="ui/n26-icon-squircle.css?v=sq2">
 <!-- v2.9.97 小组件面板平铺层：最后加载，压过 widgets.css 的高特异性画廊规则 -->
-<link rel="stylesheet" href="ui/n26-widget-panel-fix.css?v=wpf2">
+<link rel="stylesheet" href="ui/n26-widget-panel-fix.css?v=wpf4">
 <!-- v2.9.97 点空白回桌面统一分发（捕获阶段，不会吃掉「点按钮打开」那一帧） -->
 <script src="ui/n26-overlay-dismiss.js?v=od1"></script>
 <!-- v2.9.97 应用字幕复用系统旁白字幕条 -->
@@ -64272,7 +64542,7 @@
 <!-- v2.9.98 Dock Bar 运行时：聚焦已适配应用即出条，读真实播放状态，点击回传 API -->
 <script src="ui/n26-dockbar.js?v=db1"></script>
 <!-- v2.9.98 小组件配色总账：每类一张身份色，时钟随时段、天气随天气动态 -->
-<link rel="stylesheet" href="ui/n26-widget-palette.css?v=wpal3">
+<link rel="stylesheet" href="ui/n26-widget-palette.css?v=wpal5">
 <script src="ui/n26-widget-palette.js?v=wpal3"></script>
 <!-- v2.9.98 排版呼吸层：设置面板的标题/分组/行高三档节奏（只加节奏，不改配色） -->
 <link rel="stylesheet" href="ui/n26-rhythm.css?v=rhy1">
@@ -64289,8 +64559,127 @@
 <link rel="stylesheet" href="ui/n26-motion2.css?v=mo2">
 <script src="ui/n26-motion2.js?v=mo2"></script>
 <!-- v2.10.14 八方向缩放兜底：热区被 iframe/覆盖层吃掉时，按指针坐标自己起手 -->
-<script src="ui/n26-resize.js?v=rz1"></script>
+<script src="ui/n26-resize.js?v=rz2"></script>
 <!-- v2.10.1 Dock Bar 位置层：整合进顶部导航栏（右半部分）/ 左 / 右，不含底 -->
 <link rel="stylesheet" href="ui/n26-dockbar-pos.css?v=dbp2">
+    <script src="ui/n26-lockflow.js?v=lk1"></script>
+    <script src="ui/n26-fui-bridge.js?v=fb4"></script>
+    <script src="ui/n26-settings-flow.js?v=sf1"></script>
+    <script src="ui/n26-glass-optics.js?v=go8"></script>
+    <script src="ui/n26-diag.js?v=dg8"></script>
+<!-- ★ 小组件集体重做（wr1）：材质层最后加载，压过 palette / style 旧 !important；
+     内容层靠 window.N26W2 扩展钩子注册，主壳业务逻辑零改动。 -->
+<link rel="stylesheet" href="ui/n26-widget-plus.css?v=wplus1">
+<link rel="stylesheet" href="ui/n26-widget-redesign.css?v=wr9">
+<!-- fam3：软件家族 × 功能 × 尺寸 + 不扭曲玻璃 + 中性半透磨砂（去黄）；必须排在 redesign 之后，令牌要压到内容层根 -->
+<link rel="stylesheet" href="ui/n26-widget-family.css?v=fam5">
+<!-- beau4（fb2 轮由 beau3 迁挂载点而来；11-13 收口版，替换 beau1/beau2）：8 族 tint 全归零，只管 FangUI 四风格皮 / 昼夜镜像 /
+     家族色扩色令牌 / 卡片入场·落位两条动画；颜色与版式交回 fam2 + 6 个族层，
+     不再给表头套实色胶囊、不再给分隔线与次级数字刷色、不再演 6 条动画、不再给整卡刷黄色。 -->
+<link rel="stylesheet" href="ui/n26-widget-beauty.css?v=beau4">
+<!-- ovf1：全量 47 款不溢出护栏（docs/小组件设计规格-全量47款.md §2）。
+     只管盒模型/裁切/控件锁高，不碰颜色材质；排在 beau4 之后、ml2 之前。 -->
+<link rel="stylesheet" href="ui/n26-widget-overflow.css?v=ovf1">
+<!-- wt1：按 §3 时间族（7 款）重做的第 1 族样板；只写版式/尺寸节奏/身份色点缀 -->
+<link rel="stylesheet" href="ui/n26-widget-time.css?v=wt2">
+<!-- 逐族重做（docs/小组件设计规格-全量47款.md §4 第 2 步）：
+     6 个族层沿用 wt1 骨架，只写版式/尺寸节奏/行数上限/身份色点缀，
+     身份色统一消费 fam3 的 --wf，不叠新材质层；顺序按 MD §4 不许乱插。 -->
+<link rel="stylesheet" href="ui/n26-widget-weather.css?v=wx1">
+<link rel="stylesheet" href="ui/n26-widget-calendar.css?v=cal1">
+<link rel="stylesheet" href="ui/n26-widget-todo.css?v=td1">
+<link rel="stylesheet" href="ui/n26-widget-system.css?v=sys1">
+<link rel="stylesheet" href="ui/n26-widget-bili.css?v=bl1">
+<link rel="stylesheet" href="ui/n26-widget-tools.css?v=tool1">
+<!-- tier2：§4 第 3/4 步（fb2 轮由 tier1 迁挂载点而来），16 种真实网格（12 显式 + 4 个方站派生 5 列档）
+     × 8 态（四风格 × 昼/夜/深色）+ 面板预览卡 wcols/wrows 双写兜底。 -->
+<link rel="stylesheet" href="ui/n26-widget-tiers.css?v=tier2">
+<!-- ml4：音乐族唯一权威层（fb2 轮由 ml3 迁挂载点而来）（11-14 按苹果小组件库重做：中性磨砂玻璃 +
+     中性白高光 + 昼墨夜白 + 五款功能观感分开 + 尺寸密度分级）。老版 2×2 播放卡
+     （GitHub main d71b821 / 50846-50854）仍是独立渲染器，必须排最后，
+     压过 wr8 §6.4b / §8.4 的铺满改法。CSS / JS 戳均 ml4。 -->
+<link rel="stylesheet" href="ui/n26-widget-music-legacy.css?v=ml5">
+<script src="ui/n26-widget-music-legacy.js?v=ml5"></script>
+<!-- grp1：小组件选择面板按「软件名」分组折叠（8 组 / 47 款）。
+     左侧栏＝全部 + 软件名，主区＝软件名横条 + 展开后该软件的全部小组件。
+     纯包装层：主壳 renderWidgetPanelGrid 业务逻辑零改动。 -->
+<link rel="stylesheet" href="ui/n26-widget-groups.css?v=grp4css">
+<!-- FangLux 方曜 · 局部光传输引擎（flx1）：玻璃＝发光体，光溢出照到邻近
+     软件迎光侧的一小段边缘。独立 ui 层，主壳只挂 link/script；不进 iframe。
+     CSS 排在 groups.css 之后（最后一层），JS 排在 rg2 兜底之前。 -->
+<link rel="stylesheet" href="ui/n26-fanglux.css?v=flx2">
+<!-- drw3：小组件选择页「底部抽屉 + 全等尺寸」。
+     从底部升起、贴边盖住 Dock，上半屏仍见桌面；卡片与桌面网格 1:1 全等（drw3）。
+     CSS 必须是最后一层（压过 wpf4 / grp2css / flx2），JS 排在 groups.js 之后。 -->
+<link rel="stylesheet" href="ui/n26-dock-style.css?v=dk4">
+<!-- dk4（11-15）：Dock 四风格材质收口 —— flat/neu-solid/neu-glass 整条磨砂，液态保持。 -->
+<link rel="stylesheet" href="ui/n26-fui-controls.css?v=fc2">
+<!-- fc1（11-14）：四风格共享控件层 —— 侧栏按钮 / 开关 / 通用按钮，宿主与 iframe 同规则。 -->
+<link rel="stylesheet" href="ui/n26-widget-drawer.css?v=drw6">
+<!-- pc1（11-15 最后一轮）：47 款逐卡精修层。CSS 尾链最后一层，
+     必须排在 drawer.css 之后；只写版式 / 密度 / 裁切，不碰材质与身份色。
+     内联 guard 是同一层的兜底：外部 CSS 被缓存 / file:// 漏挂时，
+     层级、磨砂、裁切这三条仍然成立，不会回到「全透 + Dock 压上来 + 溢出」。 -->
+<style id="n26-pc1-guard">
+    html body #widgetPanel.widget-panel-overlay {
+        z-index: 10050 !important;
+        align-items: flex-end !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+        background: rgba(8, 12, 24, .42) !important;
+    }
+    html body #widgetPanel .widget-panel {
+        height: min(68vh, 620px) !important;
+        border-radius: 26px 26px 0 0 !important;
+        background: rgba(226, 234, 244, .62) !important;
+        -webkit-backdrop-filter: blur(32px) saturate(155%) !important;
+        backdrop-filter: blur(32px) saturate(155%) !important;
+        overflow: hidden !important;
+    }
+    html body.dark-mode #widgetPanel .widget-panel {
+        background: rgba(13, 19, 35, .78) !important;
+    }
+    html body.widget-panel-open #dock,
+    html body.widget-panel-open #finder-bar { z-index: 90 !important; }
+    html body #widgetPanel .widget-panel-card-preview,
+    html body #widgetPanel .widget-panel-card-preview-inner {
+        overflow: hidden !important;
+        contain: paint !important;
+    }
+    html body .desktop-widget-card[data-type][data-wtype] {
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+        max-width: 100% !important;
+    }
+    html body .desktop-widget-card[data-type][data-wtype] .widget-inner {
+        box-sizing: border-box !important;
+        height: 100% !important;
+        max-height: 100% !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+    }
+</style>
+<link rel="stylesheet" href="ui/n26-widget-per-card.css?v=pc1">
+    <link rel="stylesheet" href="ui/n26-widget-ink.css?v=ink1">
+<!-- dm1（11-15 最后一轮）：小组件抽屉进 / 出动画权威层。CSS 必须排在 pc1 之后，
+     压过 widgets.css / perf.css 的 transition 与 transform !important 历史冲突。 -->
+<link rel="stylesheet" href="ui/n26-widget-drawer-motion.css?v=dm1">
+<script src="ui/n26-widget-dayphase.js?v=wdp1"></script>
+<script src="ui/n26-widget-plus.js?v=wplus1"></script>
+<!-- tierjs1：MD §5.3 渲染器内容切片。运行时包装 renderWidgetContent，
+     用离屏 DOMParser 按 cols×rows 真正删掉多余条目（日历 2×2 只留今天所在那一周）。
+     主壳业务逻辑零改动；零 MO / 零 rAF / 零布局读；异常原样返回。
+     必须排在 plus.js 之后（renderWidgetContent 已定义且 18 款 plus 渲染器已注册）。 -->
+<script src="ui/n26-widget-tiers.js?v=tierjs1"></script>
+<script src="ui/n26-widget-groups.js?v=grp4"></script>
+<script src="ui/n26-widget-drawer.js?v=drw6"></script>
+<!-- dm1：包装 openWidgetPanel / closeWidgetPanel 的状态机，主壳业务零改动。 -->
+<script src="ui/n26-widget-drawer-motion.js?v=dm1"></script>
+<script src="ui/covi-modal.js?v=cm1"></script>
+<!-- rg2：发布前兜底模块（最后加载）。可选小组件模块异常隔离、
+     脏存档自愈、file:// 与关键节点完整性检查；任何一步失败都只记一次日志，
+     绝不拖垮桌面主流程。 -->
+<script src="ui/n26-fanglux.js?v=flx2"></script>
+<script src="ui/n26-release-guard.js?v=rg2"></script>
 </body>
 </html>

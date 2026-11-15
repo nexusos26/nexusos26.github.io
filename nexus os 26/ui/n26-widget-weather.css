@@ -1,0 +1,210 @@
+/* ==========================================================================
+   ui/n26-widget-weather.css · 戳 wx1 · 2026-11-13
+   --------------------------------------------------------------------------
+   ★ 按 docs/小组件设计规格-全量47款.md §3「天气族（7）」重做的第 2 族。
+     沿用 wt1 骨架：只写 **版式 / 尺寸节奏 / 主数字缩放 / 身份色点缀**，
+     不写卡面材质、不写文字主色、不写阴影、不写圆角、不写动画。
+
+   覆盖：weather / weatherHour / weatherWeek / airQuality /
+         sunrise / sunmoon / moonphase
+
+   ★ 身份色不再自造令牌：fam2 §1 已经按 MD §0 给本族定了
+     昼 `#0369a1` / 夜 `#7dd3fc` 的 `--wf`，并自动随昼夜 / 深色切换。
+     本层一律 `var(--wf, #0369a1)`，避免「两套家族色各说各话」。
+     （wt1 里的 --wt-accent 是第 1 族样板的历史写法，后续族统一走 --wf。）
+
+   ★ 真实类名来自主壳 renderWeatherWidget 与 ui/n26-widget-plus.js 的 R.*，
+     没凭猜写选择器。逐条对应 MD §3 的 08~14 号卡。
+
+   ★ 层叠：6 写 [data-wtype] + :is()，排在 wt1 之后、ml1 之前；
+     压过主壳内联 `<style>` 的 `.widget-weather-temp{52px!important}`。
+     零 filter / backdrop-filter / 伪元素 / 动画 / radial / 逐卡片 JS。
+   ========================================================================== */
+
+/* ---------- 1 · 主读数：全族一套缩放节奏 ---------- */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="weather"], [data-wtype="weatherHour"], [data-wtype="weatherWeek"],
+    [data-wtype="airQuality"], [data-wtype="sunrise"], [data-wtype="sunmoon"],
+    [data-wtype="moonphase"]) .widget-inner :is(
+    .widget-weather-temp, .nx2-hero, .nx2-num, .nx2-wx-hour b, .nx2-cell b) {
+    font-variant-numeric: tabular-nums !important;
+    font-feature-settings: "tnum" 1 !important;
+    white-space: nowrap !important;
+    line-height: 1.05 !important;
+    letter-spacing: -.04em !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-size: clamp(24px, 3.2vw, 50px) !important;
+    font-weight: 600 !important;
+}
+/* 2×2 小方档：收一档，给城市 / 描述留一行 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-cols="2"][data-rows="2"], .wcols-2.wrows-2):is(
+    [data-wtype="weather"], [data-wtype="weatherHour"], [data-wtype="weatherWeek"],
+    [data-wtype="airQuality"], [data-wtype="sunrise"], [data-wtype="sunmoon"],
+    [data-wtype="moonphase"]) .widget-inner :is(
+    .widget-weather-temp, .nx2-hero, .nx2-num, .nx2-wx-hour b, .nx2-cell b) {
+    font-size: clamp(20px, 2.5vw, 34px) !important;
+}
+/* 胶囊档：只留一个主值，永不换行 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-rows="1"][data-rows="1"], .wrows-1.wrows-1):is(
+    [data-wtype="weather"], [data-wtype="weatherHour"], [data-wtype="weatherWeek"],
+    [data-wtype="airQuality"], [data-wtype="sunrise"], [data-wtype="sunmoon"],
+    [data-wtype="moonphase"]) .widget-inner :is(
+    .widget-weather-temp, .nx2-hero, .nx2-num, .nx2-wx-hour b, .nx2-cell b) {
+    font-size: clamp(17px, 1.9vw, 25px) !important;
+}
+
+/* ---------- 2 · 身份色：只落图标与信息件，不刷整卡 ---------- */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="weather"], [data-wtype="weatherHour"], [data-wtype="weatherWeek"],
+    [data-wtype="airQuality"], [data-wtype="sunrise"], [data-wtype="sunmoon"],
+    [data-wtype="moonphase"]) .widget-inner :is(
+    .widget-weather-icon, .nx2-wx-hour i, .nx2-wx-day i,
+    .nx2-cell i, .nx2-accent, .nx2-hd i) {
+    color: var(--wf, #0369a1) !important;
+    -webkit-text-fill-color: var(--wf, #0369a1) !important;
+}
+/* 分段色条 / 进度填充 / 太阳位置点：fam2 已给 --wf，这里只锁高度不重绘 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="weather"], [data-wtype="airQuality"])
+    .widget-inner :is(.nx2-track, .widget-weather-bar-meta) {
+    flex: none !important;
+    height: 6px !important;
+    min-height: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+
+/* ---------- 3 · 单行标签：城市 / 描述 / 状态 / 图例 ---------- */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="weather"], [data-wtype="weatherHour"], [data-wtype="weatherWeek"],
+    [data-wtype="airQuality"], [data-wtype="sunrise"], [data-wtype="sunmoon"],
+    [data-wtype="moonphase"]) .widget-inner :is(
+    .widget-weather-city, .widget-weather-status, .widget-weather-meta,
+    .widget-weather-extra, .widget-weather-bar-meta,
+    .nx2-sub, .nx2-faint, .nx2-title, .nx2-kv, .nx2-hd-sub) {
+    font-size: clamp(9px, .82vw, 11px) !important;
+    line-height: 1.32 !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    flex: none !important;
+}
+/* 多行标题（weekStrip / 推荐卡复用）：写死行数，不许「能放几行放几行」 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="weather"], [data-wtype="weatherHour"], [data-wtype="weatherWeek"],
+    [data-wtype="airQuality"], [data-wtype="sunrise"], [data-wtype="sunmoon"],
+    [data-wtype="moonphase"]) .widget-inner :is(.nx2-clamp2, .nx2-clamp3) {
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow: hidden !important;
+    min-width: 0 !important;
+}
+
+/* ---------- 4 · 逐时柱 / 七日行 / 双格：等分且能收缩 ---------- */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="weatherHour"], [data-wtype="sunrise"], [data-wtype="sunmoon"])
+    .widget-inner .nx2-grid {
+    grid-auto-columns: minmax(0, 1fr) !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="weatherHour"], [data-wtype="sunrise"])
+    .widget-inner :is(.nx2-wx-hour, .nx2-cell) {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="weatherWeek"]) .widget-inner :is(.nx2-list, .nx2-wx-day) {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+/* 轨迹带：是小档最先挤爆的一层，锁死不参与压缩 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="sunmoon"]) .widget-inner .nx2-arc {
+    flex: none !important;
+    height: 34px !important;
+    min-height: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+
+/* ---------- 5 · 月相盘：MD §3 #14「明暗用纯色遮罩、不用星空黑底」 ----------
+   plus.css 给 .nx2-moon 的是 radial-gradient 高光球，属于「卡上油斑」观感，
+   这里压成平整线性渐变；遮罩 .nx2-moon-shade 保持纯色，不动。 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="moonphase"]) .widget-inner .nx2-moon {
+    width: auto !important;
+    height: auto !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    aspect-ratio: 1 / 1 !important;
+    flex: 0 1 auto !important;
+    background-image: linear-gradient(158deg, #fff8dc 0%, #e9d9a8 68%) !important;
+    background-color: #e9d9a8 !important;
+}
+
+/* ---------- 6 · 胶囊档：只留「图标 + 主值 + 一个状态」 ----------
+   ★ 不能一刀切隐藏 .nx2-grid：逐时 / 七日 / 日出的**主值就在格子里**，
+     整块藏掉会变空卡。改法 = 只留第 1 格 / 第 1 行，其余不渲染；
+     这才是 MD §2.5「尺寸即内容」而不是「等比缩小」。 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-rows="1"][data-rows="1"], .wrows-1.wrows-1):is(
+    [data-wtype="weather"], [data-wtype="weatherHour"], [data-wtype="weatherWeek"],
+    [data-wtype="airQuality"], [data-wtype="sunrise"], [data-wtype="sunmoon"],
+    [data-wtype="moonphase"]) .widget-inner :is(
+    .widget-weather-header, .widget-weather-extra, .widget-weather-meta,
+    .nx2-hd, .nx2-only-wide, .nx2-only-tall, .nx2-line,
+    .nx2-arc, .nx2-moon, .nx2-kv, .nx2-faint) {
+    display: none !important;
+}
+/* 逐时：胶囊只留「现在」这一柱 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-rows="1"][data-rows="1"], .wrows-1.wrows-1):is([data-wtype="weatherHour"])
+    .widget-inner .nx2-wx-hour:not(:first-child) {
+    display: none !important;
+}
+/* 七日：胶囊只留「今天」这一行 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-rows="1"][data-rows="1"], .wrows-1.wrows-1):is([data-wtype="weatherWeek"])
+    .widget-inner .nx2-wx-day:not(:first-child) {
+    display: none !important;
+}
+/* 这两个在胶囊里是横排的一行，保持等分不换行 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-rows="1"][data-rows="1"], .wrows-1.wrows-1):is(
+    [data-wtype="weatherHour"], [data-wtype="weatherWeek"], [data-wtype="sunrise"])
+    .widget-inner .nx2-grid {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+/* 空数据态：胶囊里「暂无实况」也要单行，不许把卡片撑高 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-rows="1"][data-rows="1"], .wrows-1.wrows-1):is([data-wtype="weather"])
+    .widget-inner .widget-weather-empty {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}

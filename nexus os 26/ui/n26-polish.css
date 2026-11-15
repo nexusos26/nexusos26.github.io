@@ -497,9 +497,9 @@ body.dark-mode .n26-pz-h3 { color: rgba(255,255,255,.94); }
 .n26-pz-demo-bg::before {
     content: ''; position: absolute; inset: 0;
     background:
-        radial-gradient(110px 82px at 16% 26%, rgba(59,130,246,.55), transparent 72%),
-        radial-gradient(96px 78px at 80% 20%, rgba(244,164,96,.52), transparent 74%),
-        radial-gradient(130px 96px at 62% 86%, rgba(45,196,182,.50), transparent 72%),
+        radial-gradient(110px 82px at 16% 26%, rgba(241,245,250,.55), transparent 72%),
+        radial-gradient(96px 78px at 80% 20%, rgba(214,224,236,.52), transparent 74%),
+        radial-gradient(130px 96px at 62% 86%, rgba(178,193,210,.50), transparent 72%),
         repeating-linear-gradient(115deg, rgba(255,255,255,.09) 0 7px, rgba(255,255,255,0) 7px 20px);
 }
 .n26-pz-demo-bg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.06), rgba(0,0,0,.22)); }

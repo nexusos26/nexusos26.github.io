@@ -56,7 +56,10 @@
     var SNAP_MS = 110;          // 松手吸附
     var DEF_MAX = 0.13, DEF_VMAX = 520;
     var GLASS_SEQ = 0;
-    var LG_OPTS = { hw: 0.30, hh: 0.20, thresh: -0.10 };
+    /* v2.10.26 P0：plain: true —— 侧栏玻璃改吃原生磨砂链，绝不做 SVG 位移折射。
+       玻璃只在点击滑动时可见，而滑动期间 SVG 位移滤镜每帧全区域重采样，
+       Windows GPU 合成器直接崩（用户实测「严重卡死直接退出网页」）。 */
+    var LG_OPTS = { hw: 0.30, hh: 0.20, thresh: -0.10, plain: true };
 
     function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
     /* cubic-bezier(.22,.61,.36,1) 的 JS 实现：CSS 与 JS 用同一条曲线，
@@ -258,7 +261,8 @@
             if (b.w !== lastW) { glass.style.width = b.w + 'px'; lastW = b.w; }
             if (b.h !== lastH) { glass.style.height = b.h + 'px'; lastH = b.h; }
             paint(0, 0);
-            lgSchedule();
+            /* v2.10.19：静止态玻璃隐藏时绝不重建折射贴图 —— 对齐/hover 不再抖 */
+            if (busy || glass.classList.contains('n26-dng-on')) lgSchedule();
         }
 
         function qSize(w, h) {
@@ -334,13 +338,15 @@
             cur = item;
             markOn(item);
             place(boxOf(item));
-            glass.style.opacity = '1';
+            /* v2.10.19：静止 = 灰底，玻璃收起 */
+            glass.style.opacity = '0';
+            glass.classList.remove('n26-dng-on');
             glass.classList.remove('travel', 'glow');
             setLive(false);
             hideCaps(false);
         }
         function rest(item) {
-            if (!item) { glass.style.opacity = '0'; setLive(false); return; }
+            if (!item) { glass.style.opacity = '0'; glass.classList.remove('n26-dng-on'); setLive(false); return; }
             measure();
             applyRest(item);
         }
@@ -422,6 +428,7 @@
             var a = boxOf(prev), b = boxOf(item);
             place({ x: a.x, y: a.y, w: b.w, h: b.h });
             glass.style.opacity = '1';
+            glass.classList.add('n26-dng-on');
             glass.classList.add('travel');
             glass.classList.remove('glow');
             setLive(true);
@@ -460,6 +467,7 @@
                 shown = true; dragging = true; busy = true;
                 place(b);
                 glass.style.opacity = '1';
+                glass.classList.add('n26-dng-on');
                 glass.classList.add('travel', 'glow');
                 setLive(true);
                 cont.classList.add('n26-docknav-drag');
@@ -570,9 +578,13 @@
             }
         } catch (e) { }
 
-        /* 首帧：先把 CSS 落定（防止样式后到导致第一帧是无样式的方块），
-           再用固定尺寸探针预热折射贴图 —— 真实玻璃挂上时直接命中缓存。 */
-        void glass.offsetWidth;
+        /* ★ v2.10.35 P0：删掉首帧 void glass.offsetWidth 强制同步布局。
+           它原本是为了「先把 CSS 落定」，但 CSS 是同步加载的 <link>，样式
+           早已在 DOM 插入前就位；而下面 rest(cur) 本来就排在 rAF 里，
+           浏览器会在那一帧统一结算一次样式与布局，根本不需要这里再读一次。
+           这一读恰好落在「设置面板整块 innerHTML 重建」之后的 auto() 批次里，
+           每个新容器各来一次，是点击链路上又一处无谓的强制布局。
+           玻璃常驻、折射预热、滑行回弹全部保留，视觉零变化。 */
         cur = findActive();
         markOn(cur);
         if (cur && cont.offsetWidth > 0) {
@@ -598,8 +610,25 @@
         auto();
         try {
             var t = 0;
-            new MutationObserver(function () {
-                if (t) return;
+            new MutationObserver(function (recs) {
+                /* ★ v2.10.36 P0：只在「新增的节点里真的有 [data-n26dock] 侧栏」
+                   时才 auto()。旧写法任何 childList（设置面板整块 innerHTML
+                   重建、通知弹出、小组件刷新）都会触发 15 次全文档
+                   querySelectorAll + enhance，是「什么操作都变慢」的又一条
+                   全文档总线。侧栏的 DOM / CSS / 动画一行没动，只是不再被
+                   无关 DOM 变化反复唤醒。 */
+                var hit = false;
+                for (var i = 0; i < recs.length && !hit; i++) {
+                    var a = recs[i].addedNodes;
+                    if (!a) continue;
+                    for (var j = 0; j < a.length; j++) {
+                        var n = a[j];
+                        if (!n || n.nodeType !== 1) continue;
+                        if ((n.getAttribute && n.getAttribute('data-n26dock')) ||
+                            (n.querySelector && n.querySelector('[data-n26dock]'))) { hit = true; break; }
+                    }
+                }
+                if (!hit || t) return;
                 t = setTimeout(function () { t = 0; auto(); }, 140);
             }).observe(document.body, { childList: true, subtree: true });
         } catch (e) { }
@@ -626,7 +655,15 @@
     [200, 600, 1500, 3000].forEach(function (t) { setTimeout(applyDockSquircle, t); });
     try {
         var sqMO = new MutationObserver(function () { applyDockSquircle(); });
-        sqMO.observe(document.documentElement, { childList: true, subtree: true });
+        /* ★ v2.10.36：超椭圆只作用于 #dock 内部的图标，没必要观察整个
+           documentElement 子树。范围收到 #dock，设置页 / 通知 / 小组件重建
+           不再唤醒它；图标超椭圆效果本身完全不变。 */
+        var dockHost = document.getElementById('dock');
+        if (dockHost) sqMO.observe(dockHost, { childList: true, subtree: true });
+        else document.addEventListener('DOMContentLoaded', function () {
+            var d = document.getElementById('dock');
+            if (d) sqMO.observe(d, { childList: true, subtree: true });
+        }, { once: true });
     } catch (e) { }
 
     /* 玻璃按钮 / 开关的按压形变（v3.5 遗留，作用于 .n26-lg-ctrl，

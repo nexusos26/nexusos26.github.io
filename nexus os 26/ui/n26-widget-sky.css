@@ -1,11 +1,14 @@
 /* ============================================================================
- * Nexus OS 26 · 小组件「天空」层样式
+ * Nexus OS 26 · 小组件「天空」层样式（戳 sky4 · 2026-11-13 · 9 时段）
  * ----------------------------------------------------------------------------
  * 只用真实子 div 做底图，绝不碰 .desktop-widget-card 的 ::before / ::after：
  *   ::before  → clock 的底部白线、date/todo/system 的结构线
  *   ::after   → v2.9.59 身份实色卡那块斜向柔光（z-index:-1）
- * 天空层同为 z-index:-1，但排在 ::after 之前，所以柔光仍然压在天空之上，
- * 既保留自研玻璃受光特色，又让天气/时段底图透出来。
+ * 天空层同为 z-index:-1，但排在 ::after 之前，所以柔光仍然压在天空之上。
+ *
+ * ★ 本层必须排在 fam3 / beau2 / tier1 / ml2 之后加载：
+ *   有实景底图的卡文字要收口成高对比白字，否则会被 wr7/fam3 的「昼墨」压回去。
+ * ★ 日历族只走 --sky-tint-soft（fam3 消费），不铺图、不改文字色。
  *
  * 全面禁紫：只用蓝 / 青 / 琥珀 / 橙 / 中性墨。
  * ==========================================================================*/
@@ -53,26 +56,31 @@
     font-weight: 600;
     letter-spacing: .6px;
     line-height: 1.5;
-    color: rgba(255, 255, 255, .92);
+    color: rgba(255, 255, 255, .94);
     background: rgba(10, 24, 44, .34);
     border: 1px solid rgba(255, 255, 255, .18);
-    text-shadow: 0 1px 2px rgba(0, 0, 0, .28);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, .30);
     white-space: nowrap;
     pointer-events: none;
 }
 /* 天气卡本身已有城市名 / 大图标 / 温度 / 四行 meta，顶栏再加字就太挤 —— 只保留背景随时段变 */
-.desktop-widget-card[data-sky="1"][data-wtype="weather"] > .n26-sky-layer > .n26-sky-tag {
+.desktop-widget-card[data-sky="1"][data-wtype="weather"] > .n26-sky-layer > .n26-sky-tag,
+.desktop-widget-card[data-sky="1"][data-wtype="weatherHour"] > .n26-sky-layer > .n26-sky-tag,
+.desktop-widget-card[data-sky="1"][data-wtype="sunrise"] > .n26-sky-layer > .n26-sky-tag {
     display: none;
 }
-/* 夜晚更沉、正午更轻，让角标自己也有时段感 */
-.desktop-widget-card[data-sky-phase="night"] > .n26-sky-layer > .n26-sky-tag {
-    background: rgba(6, 18, 40, .52);
-}
-.desktop-widget-card[data-sky-phase="noon"] > .n26-sky-layer > .n26-sky-tag {
-    background: rgba(18, 62, 104, .26);
-}
+/* 9 档角标各自的底色：白天通透、蓝调转深蓝、夜里最沉 */
+.desktop-widget-card[data-sky-phase="sunrise"]   > .n26-sky-layer > .n26-sky-tag { background: rgba(152, 82, 48, .42); }
+.desktop-widget-card[data-sky-phase="morning"]   > .n26-sky-layer > .n26-sky-tag { background: rgba(24, 88, 138, .34); }
+.desktop-widget-card[data-sky-phase="noon"]      > .n26-sky-layer > .n26-sky-tag { background: rgba(18, 62, 104, .26); }
+.desktop-widget-card[data-sky-phase="afternoon"] > .n26-sky-layer > .n26-sky-tag { background: rgba(28, 76, 126, .32); }
+.desktop-widget-card[data-sky-phase="golden"]    > .n26-sky-layer > .n26-sky-tag { background: rgba(150, 78, 40, .40); }
+.desktop-widget-card[data-sky-phase="bluehour"]  > .n26-sky-layer > .n26-sky-tag { background: rgba(20, 54, 112, .52); }
+.desktop-widget-card[data-sky-phase="evening"]   > .n26-sky-layer > .n26-sky-tag { background: rgba(14, 38, 82, .50); }
+.desktop-widget-card[data-sky-phase="night"]     > .n26-sky-layer > .n26-sky-tag { background: rgba(6, 18, 40, .52); }
+.desktop-widget-card[data-sky-phase="latenight"] > .n26-sky-layer > .n26-sky-tag { background: rgba(4, 12, 30, .58); }
 
-/* ---------- 时钟放大后的日出 / 日落 / 黄金时分详情 ---------- */
+/* ---------- 时钟放大后的日出 / 日落 / 黄昏详情 ---------- */
 /* 小卡（2×2）不显示；拉到 4×2 / 4×4 才出现，正是用户要的「时间变大就显示更详细」 */
 .desktop-widget-card[data-sky="1"] > .n26-sky-sun { display: none; }
 .desktop-widget-card[data-sky="1"][data-wtype="clock"].wsize-m > .n26-sky-sun,
@@ -114,23 +122,25 @@
     display: none;
 }
 
-/* ---------- 有天空底图的卡，文字统一收口为高对比白字 ---------- */
-.desktop-widget-card[data-sky="1"] .widget-clock-time,
-.desktop-widget-card[data-sky="1"] .widget-clock-date,
-.desktop-widget-card[data-sky="1"] .widget-clock-week,
-.desktop-widget-card[data-sky="1"] .widget-weather-temp,
-.desktop-widget-card[data-sky="1"] .widget-weather-status,
-.desktop-widget-card[data-sky="1"] .widget-weather-meta,
-.desktop-widget-card[data-sky="1"] .widget-weather-city {
-    color: #fff !important;
-    text-shadow: 0 1px 4px rgba(0, 0, 0, .42);
+/* ---------- 有天空实景图的卡：文字统一收口为高对比白字 ----------
+   照片卡压暗层之后是深底，wr7 的「昼墨」会看不清。
+   ★ 兜底只打文字标签，不碰 input/textarea/button（它们自己有背景），
+     也不碰 --wf-ink 语义件（下面单独恢复）。 */
+html body .desktop-widget-card[data-sky="1"][data-type][data-wtype] .widget-inner
+    :is(span, b, strong, small, em, p, h1, h2, h3, h4, div, label, li, time, td, th, a) {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, .46) !important;
 }
-/* 拟物化皮肤的琥珀时钟字是特例，保留它原本的身份 */
-body.style-skeuomorphic .desktop-widget-card[data-sky="1"] .widget-clock-time,
-body.style-skeuomorphic .desktop-widget-card[data-sky="1"] .widget-clock-date,
-body.style-skeuomorphic .desktop-widget-card[data-sky="1"] .widget-clock-week {
-    color: #fbbf24 !important;
+/* 实色身份底上的反色字：跟着 fam2 的 --wf-ink 昼夜翻，不许被兜底刷白 */
+html body .desktop-widget-card[data-sky="1"] .widget-inner
+    :is(.widget-cal-day.today, .nx2-week div.on, .widget-todo-add,
+        .widget-remove-btn, .nx2-chip, .nx2-tag, .nx2-wx-hour.on, .nx2-wx-day.on) {
+    color: var(--wf-ink, #ffffff) !important;
+    -webkit-text-fill-color: var(--wf-ink, #ffffff) !important;
+    text-shadow: none !important;
 }
+/* 11-13 去黄：旧拟物档的琥珀时钟字特例作废，实景图上一律高对比白字。 */
 
 /* ---------- 降级：用户系统开了「减少动态效果」 ---------- */
 @media (prefers-reduced-motion: reduce) {

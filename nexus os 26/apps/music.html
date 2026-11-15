@@ -9,9 +9,9 @@
 <link rel="stylesheet" href="../ui/glass.css">
 <link rel="stylesheet" href="../ui/n26-ui.css?v=2976">
 <script src="_bridge.js"></script>
-<script src="_app.js?v=2.9.97"></script>
+<script src="_app.js?v=3.9.108"></script>
 <!-- v2.9.96：同步挂载 DOM 保持层，音乐搜索/切页零刷新感（_app.js 会自动跳过重复注入） -->
-<script src="../ui/n26-dom-keep.js?v=dk1"></script>
+<script src="../ui/n26-dom-keep.js?v=dk2"></script>
 <script src="../ui/n26-ui.js?v=2978"></script>
 <style>
 /* ============================================================
@@ -963,7 +963,7 @@ body.dark-mode #dropMask{ background: rgba(14,16,21,.8); }
        改成走 /api/bili/play 拿真实 MP4 直放；进度条与歌曲同一条时间轴 -->
   <div class="pl-mv" id="plMvStage" aria-hidden="true">
     <!-- v2.10.13：muted 写死在标签上 —— MV 只出画面，声音永远是歌曲那一路 -->
-    <video id="plMvVideo" playsinline preload="auto" muted></video>
+    <video id="plMvVideo" playsinline preload="metadata" muted></video>
     <!-- v2.10.11：右上角 MV 设置（画质选择）。高清要账号 Cookie，所以必须先登录 -->
     <button class="pl-mv-gear" id="plMvGear" type="button" aria-label="MV settings" title="MV 设置"><i class="fa-solid fa-gear"></i></button>
     <div class="pl-mv-set" id="plMvSet" aria-hidden="true">
@@ -1242,6 +1242,8 @@ window.addEventListener('storage', function (e) {
    主壳在“开新窗口 / 最小化 / 切后台”时会直接 pause iframe 里的 audio，
    那不是用户意图，必须在 pause 事件里立刻续播。 */
 var PAUSE_INTENT = 0;
+/* 续播被拒后的提示节流（30s 内只 toast 一次，避免反复打扰） */
+var N26_RESUME_WARN_AT = 0;
 /* pause 落账：UI 与媒体权同步到“已暂停” */
 function markPaused() {
   S.playing = false;
@@ -2820,6 +2822,11 @@ function mvIsOn() {
    现在走 /api/bili/video（拿 cid + 时长）→ /api/bili/play（拿真 MP4 的代理地址），
    用原生 <video> 直放：没有弹幕、没有站内 UI、进度完全由我们掌控。 */
 var MV = { bv: '', cid: 0, dur: 0, ready: false, title: '', err: '' };
+/* 11-14 提速：BV + 画质 → 直链缓存。B 站直链有时效，5 分钟后重新取；
+   命中时跳过 /video 与 /play 两次网络往返，再进 MV 只剩视频缓冲。 */
+var MV_CACHE = {};
+var MV_CACHE_TTL = 5 * 60 * 1000;
+function mvCacheKey(bv, q) { return bv + '|' + q; }
 
 function mvAudioDur() {
   return (isFinite(A.duration) && A.duration > 0) ? A.duration : ((S.cur && S.cur.dur) || 0);
@@ -2846,13 +2853,14 @@ function mvState(kind, text) {
   if (rt) rt.hidden = (kind === 'go');
 }
 function mvPaintBar() {
-  var v = $('plMvVideo');
-  if (!v) return;
-  /* 拖动中交给 paintDrag 画，否则手指底下那格会被视频进度抢回去 */
-  if (S.dragSeek != null) return;
-  var dur = (isFinite(v.duration) && v.duration > 0) ? v.duration : (MV.dur || 0);
-  /* 进度以歌曲为准（画面缓冲时进度条也不能卡住） */
-  var cur = mvIsOn() ? Math.min((A.currentTime || 0) * (mvRatio() || 1), dur || Infinity) : (v.currentTime || 0);
+  /* ★ 11-14：MV 条和底部播放条是**同一条时间轴**——都显示歌曲的
+     A.currentTime / A.duration。旧版这里显示的是换算后的视频时间
+     (A.currentTime × mvRatio) 和视频总长，进 MV 时视频还没加载完就是
+     0:00 / 0:00，用户看到「MV 条跟底下那条不同步」。画面仍按 mvRatio
+     对齐，但 UI 上的时间、百分比、总长一律以音频为准。 */
+  if (S.dragSeek != null) return;   /* 拖动中交给 paintDrag，别抢手指底下那格 */
+  var dur = mvAudioDur();
+  var cur = Math.min((A.currentTime || 0), dur || Infinity);
   var p = dur > 0 ? Math.min(100, cur / dur * 100) : 0;
   var f = $('plMvFill'); if (f) f.style.width = p + '%';
   try { setKnob('plMvSeek', p); } catch (e) { }
@@ -3044,7 +3052,21 @@ function mvShow(on) {
   }
   mvSyncBtn();
 }
-/* v2.10.10：拿 BV → 取 cid / 时长 → 取真实 MP4 → 从当前歌曲位置开始播 */
+/* 11-14：把直链挂上视频，并且**不等 loadedmetadata 就先把进度条对齐歌曲**，
+   这样「进去的那一刻」MV 条与底部播放条已经是同一个时间。 */
+function mvApplyStream(src) {
+  var v = $('plMvVideo');
+  if (!v || !src) throw biz('bili', mvT('拿不到可播放的视频流', 'No playable stream'));
+  MV.ready = false;
+  MV.err = '';
+  v.src = src;
+  try { v.load(); } catch (e) { }
+  mvPaintBar();
+  mvPaintPlay();
+}
+/* 拿 BV → 取 cid / 时长 / 直链 → 从当前歌曲位置开始播。
+   11-14 提速：① 缓存命中零网络往返；② 首开 /video 与 /play 并行发出，
+   /video 只负责标题与时长，不再挡着直链；③ 超时收敛到 14s / 18s。 */
 function mvOpen(bv) {
   bv = mvNorm(bv) || String(bv || '');
   var v = $('plMvVideo');
@@ -3052,17 +3074,48 @@ function mvOpen(bv) {
   try { v.muted = true; v.volume = 0; } catch (e) { }   /* 永远不出声 */
   MV.bv = bv; MV.cid = 0; MV.dur = 0; MV.ready = false; MV.err = ''; MV.title = '';
   mvShow(true);
-  mvState('load', mvT('正在获取视频…', 'Fetching video…'));
   var nm = $('plMvName'); if (nm) nm.textContent = bv;
-  mvPaintBar();
-  biliApi('/video?bvid=' + encodeURIComponent(bv), { timeout: 20000 }).then(function (d) {
-    var pg = d && d.pages && d.pages[0];
-    MV.cid = (pg && pg.cid) || (d && d.cid) || 0;
-    MV.dur = (d && d.duration) || (pg && pg.duration) || 0;
-    MV.title = (d && d.title) || '';
+  mvPaintBar();                                   /* ★ 进 MV 瞬间就与底部同軸 */
+
+  var q = mvQ(), token = mvToken(), key = mvCacheKey(bv, q);
+  var hit = MV_CACHE[key];
+  if (hit && hit.src && Date.now() - hit.at < MV_CACHE_TTL) {
+    MV.cid = hit.cid; MV.dur = hit.dur; MV.title = hit.title;
     if (nm) nm.textContent = MV.title || bv;
-    return biliApi('/play?bvid=' + encodeURIComponent(bv) + (MV.cid ? ('&cid=' + MV.cid) : '') +
-      '&q=' + mvQ() + '&token=' + encodeURIComponent(mvToken()), { timeout: 26000 });
+    mvState('load', mvT('正在缓冲…', 'Buffering…'));
+    try { mvApplyStream(hit.src); }
+    catch (e) { MV_CACHE[key] = null; mvOpenFresh(bv, q, token, key, nm); }
+    return;
+  }
+  mvOpenFresh(bv, q, token, key, nm);
+}
+function mvOpenFresh(bv, q, token, key, nm) {
+  mvState('load', mvT('正在获取视频…', 'Fetching video…'));
+  var playUrl = function (cid) {
+    return '/play?bvid=' + encodeURIComponent(bv) +
+      (cid ? ('&cid=' + cid) : '') + '&q=' + q + '&token=' + encodeURIComponent(token);
+  };
+  var pInfo = biliApi('/video?bvid=' + encodeURIComponent(bv), { timeout: 14000 })
+    .then(function (d) {
+      var pg = d && d.pages && d.pages[0];
+      MV.cid = (pg && pg.cid) || (d && d.cid) || 0;
+      MV.dur = (d && d.duration) || (pg && pg.duration) || 0;
+      MV.title = (d && d.title) || '';
+      if (nm) nm.textContent = MV.title || bv;
+      return d;
+    })
+    .catch(function () { return null; });       /* 标题/时长拿不到不挡播放 */
+  var pPlay = biliApi(playUrl(0), { timeout: 18000 })
+    .catch(function () { return null; });       /* 不带 cid 失败就等 cid 兜底重试 */
+
+  Promise.all([pInfo, pPlay]).then(function (r) {
+    var p = r[1];
+    if (!p || !(p.durl && p.durl[0])) {
+      return biliApi(playUrl(MV.cid), { timeout: 18000 })
+        .then(function (p2) { return (p2 && p2.durl && p2.durl[0]) ? p2 : p; })
+        .catch(function () { return p; });
+    }
+    return p;
   }).then(function (p) {
     if (p && typeof p.loggedIn === 'boolean' && p.loggedIn !== MV_WHO.ok) {
       MV_WHO = { at: Date.now(), ok: p.loggedIn, name: MV_WHO.name, checked: true };
@@ -3070,8 +3123,11 @@ function mvOpen(bv) {
     var u = (p && p.durl && p.durl[0]) || null;
     var src = u && (u.proxy || u.url);
     if (!src) throw biz('bili', (p && p.note) || mvT('拿不到可播放的视频流', 'No playable stream'));
-    v.src = src;
-    try { v.load(); } catch (e) { }
+    var vd = Number(u && (u.length || u.timelength)) || 0;
+    if (vd > 0 && !(MV.dur > 0)) MV.dur = vd > 1000 ? Math.round(vd / 1000) : vd;
+    MV_CACHE[key] = { at: Date.now(), src: src, cid: MV.cid, dur: MV.dur, title: MV.title };
+    mvState('load', mvT('正在缓冲…', 'Buffering…'));
+    mvApplyStream(src);
   }).catch(function (e) {
     MV.err = (e && e.detail) || mvT('视频取不到', 'Cannot load video');
     mvState('err', mvT('视频取不到：', 'Cannot load: ') + MV.err);
@@ -3726,11 +3782,26 @@ function bindAudio() {
     // 宿主（主壳）在失焦 / 切窗 / 最小化 / 开别的应用 / 切后台 / 被别的全屏应用盖住时，
     // 会直接 pause 本 iframe 里的 audio。那不是用户意图，必须立刻续播、进度原地不动。
     // 只有「我们自己主动暂停（sysPause 记账）」或「宿主窗口真的被关掉（windows 条目已移除）」才允许停。
+    // ★ 2026-11-12：续播被浏览器拒绝（NotAllowedError）时不再静默落「已暂停」——
+    //   300ms 后带一次重试，仍失败就 toast 如实告知，用户至少知道为什么没声音。
     if (PAUSE_INTENT > 0) { PAUSE_INTENT--; }
     else if (S.playing && hostWindowAlive() && !hostWindowClosing()) {
       claimMedia();
       var p = A.play();
-      if (p && p.catch) p.catch(function () { markPaused(); });
+      if (p && p.catch) p.catch(function () {
+        setTimeout(function () {
+          var q = A.play();
+          if (q && q.catch) q.catch(function () {
+            if (!N26_RESUME_WARN_AT || Date.now() - N26_RESUME_WARN_AT > 30000) {
+              N26_RESUME_WARN_AT = Date.now();
+              markPaused();
+              toast('播放被浏览器拦截了：点一下界面任意处再按播放就能继续');
+            } else {
+              markPaused();
+            }
+          });
+        }, 300);
+      });
       return;
     }
     markPaused();

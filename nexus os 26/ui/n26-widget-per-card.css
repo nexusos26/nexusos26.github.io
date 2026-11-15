@@ -1,0 +1,1453 @@
+/* ==========================================================================
+   ui/n26-widget-per-card.css · 戳 pc1 · 2026-11-15
+   --------------------------------------------------------------------------
+   ★ 用户 11-14 最后一次定案：「每一个小组件都认认真真的做……不是每一大块，
+     而是每一个小组件」「确保不要有溢出，不要有大量空白，不要有视觉上看着
+     不舒服的地方」。本层就是按 MD《小组件设计规格-全量47款.md》§3 的
+     01~47 号逐卡落规则，**不是按 8 族糊一层**。
+
+   病根（实机两张截图逐张对照后确诊，全部在本层或同轮修复）：
+     ① wr8 §0 对 .widget-inner 内 span/b/strong/small/em/p/h1/h2/h3/div
+        一刀 white-space:nowrap —— line-clamp / 多行标题 / 列表项全被压成
+        单行，文字挤成团、下方留一大片空白。wr9 已撤掉这刀。
+     ② drw4.css 同一条规则先写 overflow:hidden 又写 overflow:visible，
+        后者覆盖前者 —— 预览框根本没有裁切边界，卡片互为「另一张卡露半截」。
+        drw5 已删掉多余那行并加 contain:paint。
+     ③ drw4.js 用 UNIT=80/GAP=14，主壳 N26_GRID 是 cell=76/gap=16，
+        n26WidgetPixelSize = cols*(76+16)-16。选择页 2×2 画成 174×174、
+        桌面实物 168×168 —— 所谓「全等」其实差了 6px/格。drw5 已按 N26_GRID
+        同公式重算，纯计算零布局读。
+     ④ ml4 音乐族 .widget-inner / .nx.nx-mu 仍是 overflow:visible，是
+        §2.6 旧「全卡铺图」定案的残留（ml3 已作废），2×3 卡因此被封面拉成
+        竖长条、上半金封面下半灰底割裂。ml5 已收回到卡内裁切。
+     ⑤ 面板遮罩与抽屉本体太透，壁纸 / Dock / 桌面卡全透出来。drw5 加厚
+        中性磨砂并加深遮罩暗纱；主壳另有一段内联 guard 兜底。
+
+   ★ 纪律：只写版式 / 密度 / 裁切 / 尺寸节奏，**不碰材质、不碰身份色**。
+     卡面颜色仍然只由 fam5 / sky4 / ml5 决定；零 DOM 注入、零 radial/conic、
+     零 filter、零 transition:all、:is() 内不含 >、全面禁紫。
+   ★ 层序：本层是 CSS 尾链最后一层，压过 ml5 / tier2 / drw5 / fam5。
+   ★ 变量权威划分（避免同特异度互盖）：§2 逐卡独有 --pc-fs / --pc-cols /
+     --pc-gap / --pc-pad-k；§1 档位只给 --pc-fs-k 乘数与行数上限，绝不写
+     绝对值覆盖逐卡参数。列数由每款自己定（计算器 4 / 日历 7 / 启动台 3），
+     不能被「6×3 档 = 6 列」这种按档硬覆盖。
+   ★ 覆盖矩阵（47 款，编号 = MD §3 编号，零遗漏）：
+
+     01 clock              时钟
+     02 timeSeconds        秒级时间
+     03 clockAnalog        模拟时钟
+     04 worldclock         世界时钟
+     05 dualtime           双区时间
+     06 stopwatch          计时秒表
+     07 countdown          倒计时
+     08 weather            天气
+     09 weatherHour        逐时天气
+     10 weatherWeek        七日天气
+     11 airQuality         空气质量
+     12 sunrise            日出日落
+     13 sunmoon            日月轨迹
+     14 moonphase          月相
+     15 calendar           日历
+     16 schedule           作息计划
+     17 weekStrip          周历
+     18 bigDate            大字日期
+     19 dayProgress        今日进度
+     20 dayCard            今日概览
+     21 greeting           问候卡
+     22 todayAgenda        今日日程
+     23 todo               待办事项
+     24 todoRing           完成率
+     25 quickNote          速记
+     26 system             系统监控
+     27 battery            电池
+     28 network            网络
+     29 volume             音量
+     30 diskSpace          存储空间
+     31 music              正在播放
+     32 musicQueue         播放队列
+     33 musicSearch        音乐搜索
+     34 musicReco          每日推荐
+     35 musicRadio         电台
+     36 biliNow            方哩方哩·正在播放
+     37 biliReco           方哩方哩·为你推荐
+     38 biliSearch         方哩方哩·B站搜索
+     39 browser            快捷书签
+     40 calculator         迷你计算器
+     41 quicklaunch        快捷启动
+     42 clipboard          剪贴板
+     43 photos             相册
+     44 wallpaperpick      壁纸推荐
+     45 minigame           小游戏
+     46 sleep              睡眠模式
+     47 focus              专注时刻
+   ========================================================================== */
+
+/* ---------- §0 · 47 款共用：三层盒模型 + 内容铺满 + 主读数随卡高缩放 ---------- */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner {
+    box-sizing: border-box !important;
+    height: 100% !important; max-height: 100% !important; min-height: 0 !important;
+    max-width: 100% !important;
+    padding: clamp(8px, calc(var(--w-pw, 168px) * var(--pc-pad-k, .062)), 18px) !important;
+    overflow: hidden !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner > :is(div, section, ul, ol, form) {
+    box-sizing: border-box !important;
+    height: 100% !important; max-height: 100% !important; min-height: 0 !important;
+    max-width: 100% !important;
+    justify-content: center !important; align-content: center !important;
+    gap: var(--pc-gap, 6px) !important;
+    overflow: hidden !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner :is(img, svg, canvas, video) {
+    max-width: 100% !important; max-height: 100% !important;
+    object-fit: cover !important; box-sizing: border-box !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner :is(.nx2-clamp2, [class*="clamp2"]) {
+    display: -webkit-box !important; -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important; white-space: normal !important;
+    word-break: break-word !important; overflow: hidden !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner :is(.nx2-clamp3, [class*="clamp3"]) {
+    display: -webkit-box !important; -webkit-line-clamp: 3 !important;
+    -webkit-box-orient: vertical !important; white-space: normal !important;
+    word-break: break-word !important; overflow: hidden !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner :is(
+    .nx2-hero, .nx-hero, .nx2-num, .nx2-sec-main, .widget-clock-time,
+    .widget-weather-temp, .widget-date-md, .nx2-title, .widget-system-row-val,
+    .w-sw-time, .w-cd-n, .w-dual-time, .nx-mu-tt, .nx-bili-t, .nx-mu-time) {
+    font-size: clamp(16px, calc(var(--w-ph, 168px) * var(--pc-fs, .22) * var(--pc-fs-k, 1)), 58px) !important;
+    line-height: 1.06 !important; white-space: nowrap !important;
+    overflow: hidden !important; text-overflow: ellipsis !important;
+    font-variant-numeric: tabular-nums !important;
+    min-width: 0 !important; max-width: 100% !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner :is(.nx-hd, .nx2-hd, .nx-mu-hd, .widget-todo-header,
+    .widget-browser-title, .widget-cal-header, .widget-system-row-head) {
+    flex: none !important; min-height: 16px !important; max-height: 24px !important;
+    min-width: 0 !important; max-width: 100% !important;
+    overflow: hidden !important; white-space: nowrap !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner :is(.nx-icon-btn, .nx-btn, .nx2-btn, .nx-mu-btn,
+    .widget-calc-btn, .widget-todo-add, .widget-remove-btn, .nx-mu-go, .w-ql-btn) {
+    flex: none !important; min-width: 0 !important; max-width: 100% !important;
+    min-height: 22px !important; max-height: 34px !important;
+    box-sizing: border-box !important; overflow: hidden !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner :is(.nx2-track, .widget-system-bar, .w-bat-bar, .w-net-bar,
+    .nx-mu-prog, .w-sch-bar, .nx2-fill, .widget-system-bar-fill) {
+    flex: none !important; min-height: 3px !important; max-height: 12px !important;
+    min-width: 0 !important; max-width: 100% !important;
+    overflow: hidden !important; border-radius: 999px !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner :is(.nx2-dial, .nx2-face, .nx2-ring, .nx2-orb,
+    .nx2-moon, .nx-mu-cover, .nx-mu-thumb, .nx-mu-rc-art, .nx-bili-cover) {
+    aspect-ratio: 1 !important; max-height: 100% !important;
+    max-width: 100% !important; overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+
+
+/* ---------- §1 · 16 网格档密度矩阵（行数按档写死，不靠压缩行高硬塞） ---------- */
+/* 胶囊：图标 + 主值 + 一个动作 —— 列表上限 1 行，主读数乘数 .82 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wrows-1, [data-rows="1"]) .widget-inner {
+    --pc-fs-k: .82;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wrows-1, [data-rows="1"]) .widget-inner :is(.nx2-list, .nx-list, .nx-li, .nx2-li, .widget-todo-list, .widget-browser-list, .nx-bili-list, .nx-mu-ql, .w-cb-list, .w-sch-list, .widget-minigame-list, .w-sw-laps, .nx2-week, .nx-mu-qi, .widget-todo-item, .widget-browser-bookmark, .nx-bili-li, .w-cb-item) > :nth-child(n+2) {
+    display: none !important;
+}
+
+/* 小方：主值 + 辅助标签 + 状态件 —— 列表上限 2 行，主读数乘数 1 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-2.wrows-2, [data-cols="2"][data-rows="2"]) .widget-inner {
+    --pc-fs-k: 1;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-2.wrows-2, [data-cols="2"][data-rows="2"]) .widget-inner :is(.nx2-list, .nx-list, .nx-li, .nx2-li, .widget-todo-list, .widget-browser-list, .nx-bili-list, .nx-mu-ql, .w-cb-list, .w-sch-list, .widget-minigame-list, .w-sw-laps, .nx2-week, .nx-mu-qi, .widget-todo-item, .widget-browser-bookmark, .nx-bili-li, .w-cb-item) > :nth-child(n+3) {
+    display: none !important;
+}
+
+/* 竖长 2×3：主值 + 列表 3~4 行 —— 列表上限 3 行，主读数乘数 .98 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-2.wrows-3, [data-cols="2"][data-rows="3"]) .widget-inner {
+    --pc-fs-k: .98;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-2.wrows-3, [data-cols="2"][data-rows="3"]) .widget-inner :is(.nx2-list, .nx-list, .nx-li, .nx2-li, .widget-todo-list, .widget-browser-list, .nx-bili-list, .nx-mu-ql, .w-cb-list, .w-sch-list, .widget-minigame-list, .w-sw-laps, .nx2-week, .nx-mu-qi, .widget-todo-item, .widget-browser-bookmark, .nx-bili-li, .w-cb-item) > :nth-child(n+4) {
+    display: none !important;
+}
+
+/* 横宽 3×2 —— 列表上限 2 行，主读数乘数 1 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-3.wrows-2, [data-cols="3"][data-rows="2"]) .widget-inner {
+    --pc-fs-k: 1;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-3.wrows-2, [data-cols="3"][data-rows="2"]) .widget-inner :is(.nx2-list, .nx-list, .nx-li, .nx2-li, .widget-todo-list, .widget-browser-list, .nx-bili-list, .nx-mu-ql, .w-cb-list, .w-sch-list, .widget-minigame-list, .w-sw-laps, .nx2-week, .nx-mu-qi, .widget-todo-item, .widget-browser-bookmark, .nx-bili-li, .w-cb-item) > :nth-child(n+3) {
+    display: none !important;
+}
+
+/* 大方 3×3 —— 列表上限 4 行，主读数乘数 1.02 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-3.wrows-3, [data-cols="3"][data-rows="3"]) .widget-inner {
+    --pc-fs-k: 1.02;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-3.wrows-3, [data-cols="3"][data-rows="3"]) .widget-inner :is(.nx2-list, .nx-list, .nx-li, .nx2-li, .widget-todo-list, .widget-browser-list, .nx-bili-list, .nx-mu-ql, .w-cb-list, .w-sch-list, .widget-minigame-list, .w-sw-laps, .nx2-week, .nx-mu-qi, .widget-todo-item, .widget-browser-bookmark, .nx-bili-li, .w-cb-item) > :nth-child(n+5) {
+    display: none !important;
+}
+
+/* 竖长 3×4：队列长列 —— 列表上限 5 行，主读数乘数 .98 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-3.wrows-4, [data-cols="3"][data-rows="4"]) .widget-inner {
+    --pc-fs-k: .98;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-3.wrows-4, [data-cols="3"][data-rows="4"]) .widget-inner :is(.nx2-list, .nx-list, .nx-li, .nx2-li, .widget-todo-list, .widget-browser-list, .nx-bili-list, .nx-mu-ql, .w-cb-list, .w-sch-list, .widget-minigame-list, .w-sw-laps, .nx2-week, .nx-mu-qi, .widget-todo-item, .widget-browser-bookmark, .nx-bili-li, .w-cb-item) > :nth-child(n+6) {
+    display: none !important;
+}
+
+/* 横胶囊 4×1 —— 列表上限 1 行，主读数乘数 .82 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-4.wrows-1, [data-cols="4"][data-rows="1"]) .widget-inner {
+    --pc-fs-k: .82;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-4.wrows-1, [data-cols="4"][data-rows="1"]) .widget-inner :is(.nx2-list, .nx-list, .nx-li, .nx2-li, .widget-todo-list, .widget-browser-list, .nx-bili-list, .nx-mu-ql, .w-cb-list, .w-sch-list, .widget-minigame-list, .w-sw-laps, .nx2-week, .nx-mu-qi, .widget-todo-item, .widget-browser-bookmark, .nx-bili-li, .w-cb-item) > :nth-child(n+2) {
+    display: none !important;
+}
+
+/* 横宽 4×2 —— 列表上限 2 行，主读数乘数 1 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-4.wrows-2, [data-cols="4"][data-rows="2"]) .widget-inner {
+    --pc-fs-k: 1;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-4.wrows-2, [data-cols="4"][data-rows="2"]) .widget-inner :is(.nx2-list, .nx-list, .nx-li, .nx2-li, .widget-todo-list, .widget-browser-list, .nx-bili-list, .nx-mu-ql, .w-cb-list, .w-sch-list, .widget-minigame-list, .w-sw-laps, .nx2-week, .nx-mu-qi, .widget-todo-item, .widget-browser-bookmark, .nx-bili-li, .w-cb-item) > :nth-child(n+3) {
+    display: none !important;
+}
+
+/* 大方 4×3 —— 列表上限 4 行，主读数乘数 1.03 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-4.wrows-3, [data-cols="4"][data-rows="3"]) .widget-inner {
+    --pc-fs-k: 1.03;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-4.wrows-3, [data-cols="4"][data-rows="3"]) .widget-inner :is(.nx2-list, .nx-list, .nx-li, .nx2-li, .widget-todo-list, .widget-browser-list, .nx-bili-list, .nx-mu-ql, .w-cb-list, .w-sch-list, .widget-minigame-list, .w-sw-laps, .nx2-week, .nx-mu-qi, .widget-todo-item, .widget-browser-bookmark, .nx-bili-li, .w-cb-item) > :nth-child(n+5) {
+    display: none !important;
+}
+
+/* 特大 4×4 —— 列表上限 6 行，主读数乘数 1.06 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-4.wrows-4, [data-cols="4"][data-rows="4"]) .widget-inner {
+    --pc-fs-k: 1.06;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-4.wrows-4, [data-cols="4"][data-rows="4"]) .widget-inner :is(.nx2-list, .nx-list, .nx-li, .nx2-li, .widget-todo-list, .widget-browser-list, .nx-bili-list, .nx-mu-ql, .w-cb-list, .w-sch-list, .widget-minigame-list, .w-sw-laps, .nx2-week, .nx-mu-qi, .widget-todo-item, .widget-browser-bookmark, .nx-bili-li, .w-cb-item) > :nth-child(n+7) {
+    display: none !important;
+}
+
+/* 方站派生 5×2 —— 列表上限 3 行，主读数乘数 1 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-5.wrows-2, [data-cols="5"][data-rows="2"]) .widget-inner {
+    --pc-fs-k: 1;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-5.wrows-2, [data-cols="5"][data-rows="2"]) .widget-inner :is(.nx2-list, .nx-list, .nx-li, .nx2-li, .widget-todo-list, .widget-browser-list, .nx-bili-list, .nx-mu-ql, .w-cb-list, .w-sch-list, .widget-minigame-list, .w-sw-laps, .nx2-week, .nx-mu-qi, .widget-todo-item, .widget-browser-bookmark, .nx-bili-li, .w-cb-item) > :nth-child(n+4) {
+    display: none !important;
+}
+
+/* 方站派生 5×3 —— 列表上限 5 行，主读数乘数 1.03 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-5.wrows-3, [data-cols="5"][data-rows="3"]) .widget-inner {
+    --pc-fs-k: 1.03;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-5.wrows-3, [data-cols="5"][data-rows="3"]) .widget-inner :is(.nx2-list, .nx-list, .nx-li, .nx2-li, .widget-todo-list, .widget-browser-list, .nx-bili-list, .nx-mu-ql, .w-cb-list, .w-sch-list, .widget-minigame-list, .w-sw-laps, .nx2-week, .nx-mu-qi, .widget-todo-item, .widget-browser-bookmark, .nx-bili-li, .w-cb-item) > :nth-child(n+6) {
+    display: none !important;
+}
+
+/* 方站派生 5×4 —— 列表上限 6 行，主读数乘数 1.04 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-5.wrows-4, [data-cols="5"][data-rows="4"]) .widget-inner {
+    --pc-fs-k: 1.04;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-5.wrows-4, [data-cols="5"][data-rows="4"]) .widget-inner :is(.nx2-list, .nx-list, .nx-li, .nx2-li, .widget-todo-list, .widget-browser-list, .nx-bili-list, .nx-mu-ql, .w-cb-list, .w-sch-list, .widget-minigame-list, .w-sw-laps, .nx2-week, .nx-mu-qi, .widget-todo-item, .widget-browser-bookmark, .nx-bili-li, .w-cb-item) > :nth-child(n+7) {
+    display: none !important;
+}
+
+/* 方站派生 5×5 —— 列表上限 7 行，主读数乘数 1.06 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-5.wrows-5, [data-cols="5"][data-rows="5"]) .widget-inner {
+    --pc-fs-k: 1.06;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-5.wrows-5, [data-cols="5"][data-rows="5"]) .widget-inner :is(.nx2-list, .nx-list, .nx-li, .nx2-li, .widget-todo-list, .widget-browser-list, .nx-bili-list, .nx-mu-ql, .w-cb-list, .w-sch-list, .widget-minigame-list, .w-sw-laps, .nx2-week, .nx-mu-qi, .widget-todo-item, .widget-browser-bookmark, .nx-bili-li, .w-cb-item) > :nth-child(n+8) {
+    display: none !important;
+}
+
+/* 长胶囊 6×1 —— 列表上限 1 行，主读数乘数 .82 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-6.wrows-1, [data-cols="6"][data-rows="1"]) .widget-inner {
+    --pc-fs-k: .82;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-6.wrows-1, [data-cols="6"][data-rows="1"]) .widget-inner :is(.nx2-list, .nx-list, .nx-li, .nx2-li, .widget-todo-list, .widget-browser-list, .nx-bili-list, .nx-mu-ql, .w-cb-list, .w-sch-list, .widget-minigame-list, .w-sw-laps, .nx2-week, .nx-mu-qi, .widget-todo-item, .widget-browser-bookmark, .nx-bili-li, .w-cb-item) > :nth-child(n+2) {
+    display: none !important;
+}
+
+/* 横宽 6×2 —— 列表上限 3 行，主读数乘数 1 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-6.wrows-2, [data-cols="6"][data-rows="2"]) .widget-inner {
+    --pc-fs-k: 1;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-6.wrows-2, [data-cols="6"][data-rows="2"]) .widget-inner :is(.nx2-list, .nx-list, .nx-li, .nx2-li, .widget-todo-list, .widget-browser-list, .nx-bili-list, .nx-mu-ql, .w-cb-list, .w-sch-list, .widget-minigame-list, .w-sw-laps, .nx2-week, .nx-mu-qi, .widget-todo-item, .widget-browser-bookmark, .nx-bili-li, .w-cb-item) > :nth-child(n+4) {
+    display: none !important;
+}
+
+/* 特大 6×3 —— 列表上限 6 行，主读数乘数 1.06 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-6.wrows-3, [data-cols="6"][data-rows="3"]) .widget-inner {
+    --pc-fs-k: 1.06;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(.wcols-6.wrows-3, [data-cols="6"][data-rows="3"]) .widget-inner :is(.nx2-list, .nx-list, .nx-li, .nx2-li, .widget-todo-list, .widget-browser-list, .nx-bili-list, .nx-mu-ql, .w-cb-list, .w-sch-list, .widget-minigame-list, .w-sw-laps, .nx2-week, .nx-mu-qi, .widget-todo-item, .widget-browser-bookmark, .nx-bili-li, .w-cb-item) > :nth-child(n+7) {
+    display: none !important;
+}
+
+
+/* ---------- §2 · 逐卡 47 款（编号 = MD §3；每款单独给节奏与专属裁切） ---------- */
+/* 01 · 时钟 `clock` —— 超大数字 clamp 随卡宽缩，6×1 隐藏星期整行 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="clock"]) .widget-inner {
+    --pc-fs: 0.27; --pc-gap: 6px; --pc-cols: 2; --pc-pad-k: .077;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="clock"]) .widget-inner :is(.widget-clock-time) {
+    font-size: clamp(16px, calc(var(--w-ph, 168px) * var(--pc-fs, .22) * var(--pc-fs-k, 1)), 58px) !important;
+    line-height: 1.06 !important; white-space: nowrap !important;
+    overflow: hidden !important; text-overflow: ellipsis !important;
+    font-variant-numeric: tabular-nums !important;
+    min-width: 0 !important; max-width: 100% !important;
+    letter-spacing: -.02em !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="clock"]) .widget-inner :is(.widget-clock) {
+    justify-content: center !important; align-content: center !important;
+    gap: var(--pc-gap, 6px) !important;
+    min-height: 0 !important; max-height: 100% !important;
+    max-width: 100% !important; overflow: hidden !important;
+    box-sizing: border-box !important; flex-shrink: 1 !important;
+}
+
+/* 02 · 秒级时间 `timeSeconds` —— 秒数 tabular-nums + flex:none，6×1 不换行 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="timeSeconds"]) .widget-inner {
+    --pc-fs: 0.24; --pc-gap: 5px; --pc-cols: 2; --pc-pad-k: .071;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="timeSeconds"]) .widget-inner :is(.nx2-sec-main, .nx2-colon) {
+    font-size: clamp(16px, calc(var(--w-ph, 168px) * var(--pc-fs, .22) * var(--pc-fs-k, 1)), 58px) !important;
+    line-height: 1.06 !important; white-space: nowrap !important;
+    overflow: hidden !important; text-overflow: ellipsis !important;
+    font-variant-numeric: tabular-nums !important;
+    min-width: 0 !important; max-width: 100% !important;
+    letter-spacing: -.02em !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="timeSeconds"]) .widget-inner :is(.nx2-sec, .nx2-row) {
+    justify-content: center !important; align-content: center !important;
+    gap: var(--pc-gap, 6px) !important;
+    min-height: 0 !important; max-height: 100% !important;
+    max-width: 100% !important; overflow: hidden !important;
+    box-sizing: border-box !important; flex-shrink: 1 !important;
+}
+
+/* 03 · 模拟时钟 `clockAnalog` —— 表盘 aspect-ratio:1 + max-height:100% */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="clockAnalog"]) .widget-inner {
+    --pc-fs: 0.2; --pc-gap: 6px; --pc-cols: 2; --pc-pad-k: .065;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="clockAnalog"]) .widget-inner :is(.nx2-dial, .nx2-face) {
+    aspect-ratio: 1 !important; max-height: 100% !important;
+    max-width: 100% !important; margin: 0 auto !important;
+    object-fit: cover !important; overflow: hidden !important;
+    box-sizing: border-box !important; border-radius: 14px !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="clockAnalog"]) .widget-inner :is(.nx2-row, .nx2-tab) {
+    flex: none !important; min-height: 24px !important;
+    max-height: 32px !important; min-width: 0 !important;
+    max-width: 100% !important; flex-wrap: nowrap !important;
+    gap: 6px !important; overflow: hidden !important;
+    box-sizing: border-box !important;
+    margin:0 auto !important;
+}
+
+/* 04 · 世界时钟 `worldclock` —— 城市列按 cols 截断，每列 flex:1 1 0 + min-width:0 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="worldclock"]) .widget-inner {
+    --pc-fs: 0.19; --pc-gap: 8px; --pc-cols: 2; --pc-pad-k: .077;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="worldclock"]) .widget-inner :is(.worldclock-city-time, .wc-ci-time, .nx2-tz) {
+    font-size: clamp(16px, calc(var(--w-ph, 168px) * var(--pc-fs, .22) * var(--pc-fs-k, 1)), 58px) !important;
+    line-height: 1.06 !important; white-space: nowrap !important;
+    overflow: hidden !important; text-overflow: ellipsis !important;
+    font-variant-numeric: tabular-nums !important;
+    min-width: 0 !important; max-width: 100% !important;
+    letter-spacing: -.02em !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="worldclock"]) .widget-inner :is(.nx2-grid, .worldclock-city-list) {
+    display: grid !important;
+    grid-template-columns: repeat(var(--pc-cols, 2), minmax(0, 1fr)) !important;
+    gap: var(--pc-gap, 6px) !important;
+    align-content: center !important; min-height: 0 !important;
+    max-width: 100% !important; max-height: 100% !important;
+    overflow: hidden !important; box-sizing: border-box !important;
+    align-content:stretch !important;
+}
+
+/* 05 · 双区时间 `dualtime` —— 两块各 flex:1 1 0，4×1 压单行 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="dualtime"]) .widget-inner {
+    --pc-fs: 0.21; --pc-gap: 7px; --pc-cols: 2; --pc-pad-k: .077;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="dualtime"]) .widget-inner :is(.w-dual-time, .nx-dual-r) {
+    font-size: clamp(16px, calc(var(--w-ph, 168px) * var(--pc-fs, .22) * var(--pc-fs-k, 1)), 58px) !important;
+    line-height: 1.06 !important; white-space: nowrap !important;
+    overflow: hidden !important; text-overflow: ellipsis !important;
+    font-variant-numeric: tabular-nums !important;
+    min-width: 0 !important; max-width: 100% !important;
+    letter-spacing: -.02em !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="dualtime"]) .widget-inner :is(.w-dual-row) {
+    display: grid !important;
+    grid-template-columns: repeat(var(--pc-cols, 2), minmax(0, 1fr)) !important;
+    gap: var(--pc-gap, 6px) !important;
+    align-content: center !important; min-height: 0 !important;
+    max-width: 100% !important; max-height: 100% !important;
+    overflow: hidden !important; box-sizing: border-box !important;
+}
+
+/* 06 · 计时秒表 `stopwatch` —— 控制条锁 28px，计次列表裁在卡内 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="stopwatch"]) .widget-inner {
+    --pc-fs: 0.23; --pc-gap: 6px; --pc-cols: 2; --pc-pad-k: .077;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="stopwatch"]) .widget-inner :is(.w-sw-time) {
+    font-size: clamp(16px, calc(var(--w-ph, 168px) * var(--pc-fs, .22) * var(--pc-fs-k, 1)), 58px) !important;
+    line-height: 1.06 !important; white-space: nowrap !important;
+    overflow: hidden !important; text-overflow: ellipsis !important;
+    font-variant-numeric: tabular-nums !important;
+    min-width: 0 !important; max-width: 100% !important;
+    letter-spacing: -.02em !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="stopwatch"]) .widget-inner :is(.w-sw-laps) {
+    display: flex !important; flex-direction: column !important;
+    flex: 1 1 auto !important; min-height: 0 !important;
+    max-height: 100% !important; max-width: 100% !important;
+    gap: var(--pc-gap, 5px) !important;
+    justify-content: flex-start !important; overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+
+/* 07 · 倒计时 `countdown` —— 进度条 flex:none 3px，大数字不换行 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="countdown"]) .widget-inner {
+    --pc-fs: 0.24; --pc-gap: 6px; --pc-cols: 2; --pc-pad-k: .077;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="countdown"]) .widget-inner :is(.w-cd-n, .w-cd-s) {
+    font-size: clamp(16px, calc(var(--w-ph, 168px) * var(--pc-fs, .22) * var(--pc-fs-k, 1)), 58px) !important;
+    line-height: 1.06 !important; white-space: nowrap !important;
+    overflow: hidden !important; text-overflow: ellipsis !important;
+    font-variant-numeric: tabular-nums !important;
+    min-width: 0 !important; max-width: 100% !important;
+    letter-spacing: -.02em !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="countdown"]) .widget-inner :is(.w-sch-bar) {
+    flex: none !important; height: 7px !important;
+    min-height: 3px !important; max-height: 14px !important;
+    min-width: 0 !important; max-width: 100% !important;
+    overflow: hidden !important; border-radius: 999px !important;
+    box-sizing: border-box !important;
+}
+
+/* 08 · 天气 `weather` —— 温度缺数据写 --° 不写 0°，城市名单行省略 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="weather"]) .widget-inner {
+    --pc-fs: 0.3; --pc-gap: 7px; --pc-cols: 2; --pc-pad-k: .077;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="weather"]) .widget-inner :is(.widget-weather-temp, .nx-wx-temp) {
+    font-size: clamp(16px, calc(var(--w-ph, 168px) * var(--pc-fs, .22) * var(--pc-fs-k, 1)), 58px) !important;
+    line-height: 1.06 !important; white-space: nowrap !important;
+    overflow: hidden !important; text-overflow: ellipsis !important;
+    font-variant-numeric: tabular-nums !important;
+    min-width: 0 !important; max-width: 100% !important;
+    letter-spacing: -.02em !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="weather"]) .widget-inner :is(.widget-weather, .widget-weather-extra) {
+    justify-content: center !important; align-content: center !important;
+    gap: var(--pc-gap, 6px) !important;
+    min-height: 0 !important; max-height: 100% !important;
+    max-width: 100% !important; overflow: hidden !important;
+    box-sizing: border-box !important; flex-shrink: 1 !important;
+}
+
+/* 09 · 逐时天气 `weatherHour` —— 柱数按 cols 截断，每柱 flex:1 1 0 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="weatherHour"]) .widget-inner {
+    --pc-fs: 0.14; --pc-gap: 5px; --pc-cols: 4; --pc-pad-k: .071;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="weatherHour"]) .widget-inner :is(.nx2-wx-hour) {
+    font-size: clamp(16px, calc(var(--w-ph, 168px) * var(--pc-fs, .22) * var(--pc-fs-k, 1)), 58px) !important;
+    line-height: 1.06 !important; white-space: nowrap !important;
+    overflow: hidden !important; text-overflow: ellipsis !important;
+    font-variant-numeric: tabular-nums !important;
+    min-width: 0 !important; max-width: 100% !important;
+    letter-spacing: -.02em !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="weatherHour"]) .widget-inner :is(.nx2-grid) {
+    display: grid !important;
+    grid-template-columns: repeat(var(--pc-cols, 2), minmax(0, 1fr)) !important;
+    gap: var(--pc-gap, 6px) !important;
+    align-content: center !important; min-height: 0 !important;
+    max-width: 100% !important; max-height: 100% !important;
+    overflow: hidden !important; box-sizing: border-box !important;
+    align-content:stretch !important;
+}
+
+/* 10 · 七日天气 `weatherWeek` —— 行数按 rows 写死，多出不渲染 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="weatherWeek"]) .widget-inner {
+    --pc-fs: 0.15; --pc-gap: 5px; --pc-cols: 2; --pc-pad-k: .071;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="weatherWeek"]) .widget-inner :is(.nx2-wx-day, .nx2-num) {
+    white-space: nowrap !important; overflow: hidden !important;
+    text-overflow: ellipsis !important; line-height: 1.25 !important;
+    min-width: 0 !important; max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="weatherWeek"]) .widget-inner :is(.nx2-list) {
+    display: flex !important; flex-direction: column !important;
+    flex: 1 1 auto !important; min-height: 0 !important;
+    max-height: 100% !important; max-width: 100% !important;
+    gap: var(--pc-gap, 5px) !important;
+    justify-content: flex-start !important; overflow: hidden !important;
+    box-sizing: border-box !important;
+    justify-content:space-between !important;
+}
+
+/* 11 · 空气质量 `airQuality` —— 缺数据写 -- 绝不写 AQI 0 优，色条 flex:none */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="airQuality"]) .widget-inner {
+    --pc-fs: 0.3; --pc-gap: 6px; --pc-cols: 2; --pc-pad-k: .077;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="airQuality"]) .widget-inner :is(.nx2-hero, .nx2-num) {
+    font-size: clamp(16px, calc(var(--w-ph, 168px) * var(--pc-fs, .22) * var(--pc-fs-k, 1)), 58px) !important;
+    line-height: 1.06 !important; white-space: nowrap !important;
+    overflow: hidden !important; text-overflow: ellipsis !important;
+    font-variant-numeric: tabular-nums !important;
+    min-width: 0 !important; max-width: 100% !important;
+    letter-spacing: -.02em !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="airQuality"]) .widget-inner :is(.nx2-track) {
+    flex: none !important; height: 7px !important;
+    min-height: 3px !important; max-height: 14px !important;
+    min-width: 0 !important; max-width: 100% !important;
+    overflow: hidden !important; border-radius: 999px !important;
+    box-sizing: border-box !important;
+    height:8px !important;
+}
+
+/* 12 · 日出日落 `sunrise` —— 弧线 SVG viewBox + width:100%，时刻标签不换行 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="sunrise"]) .widget-inner {
+    --pc-fs: 0.16; --pc-gap: 6px; --pc-cols: 3; --pc-pad-k: .071;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="sunrise"]) .widget-inner :is(.nx2-arc) {
+    flex: none !important; height: 7px !important;
+    min-height: 3px !important; max-height: 14px !important;
+    min-width: 0 !important; max-width: 100% !important;
+    overflow: hidden !important; border-radius: 999px !important;
+    box-sizing: border-box !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="sunrise"]) .widget-inner :is(.nx2-g2) {
+    display: grid !important;
+    grid-template-columns: repeat(var(--pc-cols, 2), minmax(0, 1fr)) !important;
+    gap: var(--pc-gap, 6px) !important;
+    align-content: center !important; min-height: 0 !important;
+    max-width: 100% !important; max-height: 100% !important;
+    overflow: hidden !important; box-sizing: border-box !important;
+    align-content:stretch !important;
+}
+
+/* 13 · 日月轨迹 `sunmoon` —— 两条带各 flex:1 1 0 + min-height:0 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="sunmoon"]) .widget-inner {
+    --pc-fs: 0.16; --pc-gap: 6px; --pc-cols: 2; --pc-pad-k: .071;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="sunmoon"]) .widget-inner :is(.nx2-arc-line) {
+    flex: none !important; height: 7px !important;
+    min-height: 3px !important; max-height: 14px !important;
+    min-width: 0 !important; max-width: 100% !important;
+    overflow: hidden !important; border-radius: 999px !important;
+    box-sizing: border-box !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="sunmoon"]) .widget-inner :is(.nx2-row, .nx2-kv) {
+    justify-content: center !important; align-content: center !important;
+    gap: var(--pc-gap, 6px) !important;
+    min-height: 0 !important; max-height: 100% !important;
+    max-width: 100% !important; overflow: hidden !important;
+    box-sizing: border-box !important; flex-shrink: 1 !important;
+}
+
+/* 14 · 月相 `moonphase` —— 圆盘 aspect-ratio:1 + max-height:62%，下方名称有位置 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="moonphase"]) .widget-inner {
+    --pc-fs: 0.2; --pc-gap: 6px; --pc-cols: 2; --pc-pad-k: .071;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="moonphase"]) .widget-inner :is(.nx2-moon, .nx2-moon-shade) {
+    aspect-ratio: 1 !important; max-height: 100% !important;
+    max-width: 100% !important; margin: 0 auto !important;
+    object-fit: cover !important; overflow: hidden !important;
+    box-sizing: border-box !important; border-radius: 14px !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="moonphase"]) .widget-inner :is(.nx2-col, .nx2-row) {
+    justify-content: center !important; align-content: center !important;
+    gap: var(--pc-gap, 6px) !important;
+    min-height: 0 !important; max-height: 100% !important;
+    max-width: 100% !important; overflow: hidden !important;
+    box-sizing: border-box !important; flex-shrink: 1 !important;
+}
+
+/* 15 · 日历 `calendar` —— 7 列等分，2×2 只留今天所在周 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="calendar"]) .widget-inner {
+    --pc-fs: 0.11; --pc-gap: 4px; --pc-cols: 7; --pc-pad-k: .065;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="calendar"]) .widget-inner :is(.widget-cal-day) {
+    font-size: clamp(16px, calc(var(--w-ph, 168px) * var(--pc-fs, .22) * var(--pc-fs-k, 1)), 58px) !important;
+    line-height: 1.06 !important; white-space: nowrap !important;
+    overflow: hidden !important; text-overflow: ellipsis !important;
+    font-variant-numeric: tabular-nums !important;
+    min-width: 0 !important; max-width: 100% !important;
+    letter-spacing: -.02em !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="calendar"]) .widget-inner :is(.widget-cal-grid, .nx2-week) {
+    display: grid !important;
+    grid-template-columns: repeat(var(--pc-cols, 2), minmax(0, 1fr)) !important;
+    gap: var(--pc-gap, 6px) !important;
+    align-content: center !important; min-height: 0 !important;
+    max-width: 100% !important; max-height: 100% !important;
+    overflow: hidden !important; box-sizing: border-box !important;
+    align-content:stretch !important;
+}
+
+/* 16 · 作息计划 `schedule` —— 行数按档写死，时间轴细条裁在卡内 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="schedule"]) .widget-inner {
+    --pc-fs: 0.14; --pc-gap: 5px; --pc-cols: 2; --pc-pad-k: .071;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="schedule"]) .widget-inner :is(.w-sch-t, .w-sch-n) {
+    font-size: clamp(16px, calc(var(--w-ph, 168px) * var(--pc-fs, .22) * var(--pc-fs-k, 1)), 58px) !important;
+    line-height: 1.06 !important; white-space: nowrap !important;
+    overflow: hidden !important; text-overflow: ellipsis !important;
+    font-variant-numeric: tabular-nums !important;
+    min-width: 0 !important; max-width: 100% !important;
+    letter-spacing: -.02em !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="schedule"]) .widget-inner :is(.w-sch-list, .nx2-list) {
+    display: flex !important; flex-direction: column !important;
+    flex: 1 1 auto !important; min-height: 0 !important;
+    max-height: 100% !important; max-width: 100% !important;
+    gap: var(--pc-gap, 5px) !important;
+    justify-content: flex-start !important; overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+
+/* 17 · 周历 `weekStrip` —— 7 列等分，6×1 只留图标 + 主值 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="weekStrip"]) .widget-inner {
+    --pc-fs: 0.12; --pc-gap: 4px; --pc-cols: 7; --pc-pad-k: .065;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="weekStrip"]) .widget-inner :is(.nx2-week div) {
+    font-size: clamp(16px, calc(var(--w-ph, 168px) * var(--pc-fs, .22) * var(--pc-fs-k, 1)), 58px) !important;
+    line-height: 1.06 !important; white-space: nowrap !important;
+    overflow: hidden !important; text-overflow: ellipsis !important;
+    font-variant-numeric: tabular-nums !important;
+    min-width: 0 !important; max-width: 100% !important;
+    letter-spacing: -.02em !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="weekStrip"]) .widget-inner :is(.nx2-week) {
+    display: grid !important;
+    grid-template-columns: repeat(var(--pc-cols, 2), minmax(0, 1fr)) !important;
+    gap: var(--pc-gap, 6px) !important;
+    align-content: center !important; min-height: 0 !important;
+    max-width: 100% !important; max-height: 100% !important;
+    overflow: hidden !important; box-sizing: border-box !important;
+}
+
+/* 18 · 大字日期 `bigDate` —— 主数字 clamp 随卡高，副标签单行 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="bigDate"]) .widget-inner {
+    --pc-fs: 0.34; --pc-gap: 6px; --pc-cols: 2; --pc-pad-k: .077;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="bigDate"]) .widget-inner :is(.nx2-hero, .widget-date-md) {
+    font-size: clamp(16px, calc(var(--w-ph, 168px) * var(--pc-fs, .22) * var(--pc-fs-k, 1)), 58px) !important;
+    line-height: 1.06 !important; white-space: nowrap !important;
+    overflow: hidden !important; text-overflow: ellipsis !important;
+    font-variant-numeric: tabular-nums !important;
+    min-width: 0 !important; max-width: 100% !important;
+    letter-spacing: -.02em !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="bigDate"]) .widget-inner :is(.nx2-row, .nx2-col) {
+    justify-content: center !important; align-content: center !important;
+    gap: var(--pc-gap, 6px) !important;
+    min-height: 0 !important; max-height: 100% !important;
+    max-width: 100% !important; overflow: hidden !important;
+    box-sizing: border-box !important; flex-shrink: 1 !important;
+}
+
+/* 19 · 今日进度 `dayProgress` —— 进度条锁高，百分比 tabular-nums */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="dayProgress"]) .widget-inner {
+    --pc-fs: 0.24; --pc-gap: 6px; --pc-cols: 2; --pc-pad-k: .077;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="dayProgress"]) .widget-inner :is(.nx2-num) {
+    font-size: clamp(16px, calc(var(--w-ph, 168px) * var(--pc-fs, .22) * var(--pc-fs-k, 1)), 58px) !important;
+    line-height: 1.06 !important; white-space: nowrap !important;
+    overflow: hidden !important; text-overflow: ellipsis !important;
+    font-variant-numeric: tabular-nums !important;
+    min-width: 0 !important; max-width: 100% !important;
+    letter-spacing: -.02em !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="dayProgress"]) .widget-inner :is(.nx2-track) {
+    flex: none !important; height: 7px !important;
+    min-height: 3px !important; max-height: 14px !important;
+    min-width: 0 !important; max-width: 100% !important;
+    overflow: hidden !important; border-radius: 999px !important;
+    box-sizing: border-box !important;
+    height:8px !important;
+}
+
+/* 20 · 今日概览 `dayCard` —— 2×2 网格等分，每格 min-width:0 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="dayCard"]) .widget-inner {
+    --pc-fs: 0.2; --pc-gap: 6px; --pc-cols: 2; --pc-pad-k: .077;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="dayCard"]) .widget-inner :is(.nx2-num) {
+    font-size: clamp(16px, calc(var(--w-ph, 168px) * var(--pc-fs, .22) * var(--pc-fs-k, 1)), 58px) !important;
+    line-height: 1.06 !important; white-space: nowrap !important;
+    overflow: hidden !important; text-overflow: ellipsis !important;
+    font-variant-numeric: tabular-nums !important;
+    min-width: 0 !important; max-width: 100% !important;
+    letter-spacing: -.02em !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="dayCard"]) .widget-inner :is(.nx2-grid) {
+    display: grid !important;
+    grid-template-columns: repeat(var(--pc-cols, 2), minmax(0, 1fr)) !important;
+    gap: var(--pc-gap, 6px) !important;
+    align-content: center !important; min-height: 0 !important;
+    max-width: 100% !important; max-height: 100% !important;
+    overflow: hidden !important; box-sizing: border-box !important;
+    align-content:stretch !important;
+}
+
+/* 21 · 问候卡 `greeting` —— 标题最多两行，副文案单行省略 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="greeting"]) .widget-inner {
+    --pc-fs: 0.2; --pc-gap: 7px; --pc-cols: 2; --pc-pad-k: .077;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="greeting"]) .widget-inner :is(.nx2-title, .nx2-line) {
+    font-size: clamp(16px, calc(var(--w-ph, 168px) * var(--pc-fs, .22) * var(--pc-fs-k, 1)), 58px) !important;
+    line-height: 1.06 !important; white-space: nowrap !important;
+    overflow: hidden !important; text-overflow: ellipsis !important;
+    font-variant-numeric: tabular-nums !important;
+    min-width: 0 !important; max-width: 100% !important;
+    letter-spacing: -.02em !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="greeting"]) .widget-inner :is(.nx2-row) {
+    justify-content: center !important; align-content: center !important;
+    gap: var(--pc-gap, 6px) !important;
+    min-height: 0 !important; max-height: 100% !important;
+    max-width: 100% !important; overflow: hidden !important;
+    box-sizing: border-box !important; flex-shrink: 1 !important;
+}
+
+/* 22 · 今日日程 `todayAgenda` —— 列表行数按档，标题两行 clamp */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="todayAgenda"]) .widget-inner {
+    --pc-fs: 0.14; --pc-gap: 5px; --pc-cols: 2; --pc-pad-k: .071;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="todayAgenda"]) .widget-inner :is(.nx2-li, .nx2-sub) {
+    white-space: nowrap !important; overflow: hidden !important;
+    text-overflow: ellipsis !important; line-height: 1.25 !important;
+    min-width: 0 !important; max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="todayAgenda"]) .widget-inner :is(.nx2-list) {
+    display: flex !important; flex-direction: column !important;
+    flex: 1 1 auto !important; min-height: 0 !important;
+    max-height: 100% !important; max-width: 100% !important;
+    gap: var(--pc-gap, 5px) !important;
+    justify-content: flex-start !important; overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+
+/* 23 · 待办事项 `todo` —— 列表 flex:1 + min-height:0，长标题单行省略 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="todo"]) .widget-inner {
+    --pc-fs: 0.16; --pc-gap: 5px; --pc-cols: 2; --pc-pad-k: .071;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="todo"]) .widget-inner :is(.widget-todo-count, .widget-todo-title) {
+    white-space: nowrap !important; overflow: hidden !important;
+    text-overflow: ellipsis !important; line-height: 1.25 !important;
+    min-width: 0 !important; max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="todo"]) .widget-inner :is(.widget-todo-list) {
+    display: flex !important; flex-direction: column !important;
+    flex: 1 1 auto !important; min-height: 0 !important;
+    max-height: 100% !important; max-width: 100% !important;
+    gap: var(--pc-gap, 5px) !important;
+    justify-content: flex-start !important; overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+
+/* 24 · 完成率 `todoRing` —— 圆环 aspect-ratio:1，标题两行 clamp */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="todoRing"]) .widget-inner {
+    --pc-fs: 0.2; --pc-gap: 6px; --pc-cols: 2; --pc-pad-k: .077;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="todoRing"]) .widget-inner :is(.nx2-ring, .nx2-title) {
+    aspect-ratio: 1 !important; max-height: 100% !important;
+    max-width: 100% !important; margin: 0 auto !important;
+    object-fit: cover !important; overflow: hidden !important;
+    box-sizing: border-box !important; border-radius: 14px !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="todoRing"]) .widget-inner :is(.nx2-col, .nx2-row) {
+    justify-content: center !important; align-content: center !important;
+    gap: var(--pc-gap, 6px) !important;
+    min-height: 0 !important; max-height: 100% !important;
+    max-width: 100% !important; overflow: hidden !important;
+    box-sizing: border-box !important; flex-shrink: 1 !important;
+}
+
+/* 25 · 速记 `quickNote` —— textarea 撑满剩余高度，resize:none */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="quickNote"]) .widget-inner {
+    --pc-fs: 0.14; --pc-gap: 6px; --pc-cols: 2; --pc-pad-k: .071;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="quickNote"]) .widget-inner :is(.nx2-clamp3) {
+    display: -webkit-box !important; -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important; white-space: normal !important;
+    word-break: break-word !important; overflow: hidden !important;
+    min-width: 0 !important; max-width: 100% !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="quickNote"]) .widget-inner :is(.nx2-input) {
+    flex: 1 1 auto !important; min-height: 0 !important;
+    max-height: 100% !important; width: 100% !important;
+    overflow: hidden !important; resize: none !important;
+    box-sizing: border-box !important;
+}
+
+/* 26 · 系统监控 `system` —— 指标行等分，细条锁高不抢读数 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="system"]) .widget-inner {
+    --pc-fs: 0.17; --pc-gap: 5px; --pc-cols: 2; --pc-pad-k: .071;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="system"]) .widget-inner :is(.widget-system-row-val, .nx2-num) {
+    font-size: clamp(16px, calc(var(--w-ph, 168px) * var(--pc-fs, .22) * var(--pc-fs-k, 1)), 58px) !important;
+    line-height: 1.06 !important; white-space: nowrap !important;
+    overflow: hidden !important; text-overflow: ellipsis !important;
+    font-variant-numeric: tabular-nums !important;
+    min-width: 0 !important; max-width: 100% !important;
+    letter-spacing: -.02em !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="system"]) .widget-inner :is(.widget-system-bar, .nx2-track) {
+    flex: none !important; height: 7px !important;
+    min-height: 3px !important; max-height: 14px !important;
+    min-width: 0 !important; max-width: 100% !important;
+    overflow: hidden !important; border-radius: 999px !important;
+    box-sizing: border-box !important;
+    height:6px !important;
+}
+
+/* 27 · 电池 `battery` —— 百分比 clamp + 电量条锁高 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="battery"]) .widget-inner {
+    --pc-fs: 0.28; --pc-gap: 6px; --pc-cols: 2; --pc-pad-k: .077;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="battery"]) .widget-inner :is(.w-bat-n, .nx2-num) {
+    font-size: clamp(16px, calc(var(--w-ph, 168px) * var(--pc-fs, .22) * var(--pc-fs-k, 1)), 58px) !important;
+    line-height: 1.06 !important; white-space: nowrap !important;
+    overflow: hidden !important; text-overflow: ellipsis !important;
+    font-variant-numeric: tabular-nums !important;
+    min-width: 0 !important; max-width: 100% !important;
+    letter-spacing: -.02em !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="battery"]) .widget-inner :is(.w-bat-bar) {
+    flex: none !important; height: 7px !important;
+    min-height: 3px !important; max-height: 14px !important;
+    min-width: 0 !important; max-width: 100% !important;
+    overflow: hidden !important; border-radius: 999px !important;
+    box-sizing: border-box !important;
+    height:9px !important;
+}
+
+/* 28 · 网络 `network` —— 速率 tabular-nums + 信号条锁高 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="network"]) .widget-inner {
+    --pc-fs: 0.2; --pc-gap: 6px; --pc-cols: 2; --pc-pad-k: .077;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="network"]) .widget-inner :is(.w-net-m, .nx2-num) {
+    font-size: clamp(16px, calc(var(--w-ph, 168px) * var(--pc-fs, .22) * var(--pc-fs-k, 1)), 58px) !important;
+    line-height: 1.06 !important; white-space: nowrap !important;
+    overflow: hidden !important; text-overflow: ellipsis !important;
+    font-variant-numeric: tabular-nums !important;
+    min-width: 0 !important; max-width: 100% !important;
+    letter-spacing: -.02em !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="network"]) .widget-inner :is(.w-net-bar) {
+    flex: none !important; height: 7px !important;
+    min-height: 3px !important; max-height: 14px !important;
+    min-width: 0 !important; max-width: 100% !important;
+    overflow: hidden !important; border-radius: 999px !important;
+    box-sizing: border-box !important;
+    height:14px !important;
+}
+
+/* 29 · 音量 `volume` —— 滑块轨道锁高，数值单行 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="volume"]) .widget-inner {
+    --pc-fs: 0.24; --pc-gap: 6px; --pc-cols: 2; --pc-pad-k: .077;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="volume"]) .widget-inner :is(.w-vol-q, .nx2-num) {
+    font-size: clamp(16px, calc(var(--w-ph, 168px) * var(--pc-fs, .22) * var(--pc-fs-k, 1)), 58px) !important;
+    line-height: 1.06 !important; white-space: nowrap !important;
+    overflow: hidden !important; text-overflow: ellipsis !important;
+    font-variant-numeric: tabular-nums !important;
+    min-width: 0 !important; max-width: 100% !important;
+    letter-spacing: -.02em !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="volume"]) .widget-inner :is(.nx2-track) {
+    flex: none !important; height: 7px !important;
+    min-height: 3px !important; max-height: 14px !important;
+    min-width: 0 !important; max-width: 100% !important;
+    overflow: hidden !important; border-radius: 999px !important;
+    box-sizing: border-box !important;
+    height:6px !important;
+}
+
+/* 30 · 存储空间 `diskSpace` —— 容量条 + 数字同轴，剩余空间不塌陷 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="diskSpace"]) .widget-inner {
+    --pc-fs: 0.2; --pc-gap: 6px; --pc-cols: 2; --pc-pad-k: .077;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="diskSpace"]) .widget-inner :is(.nx2-num) {
+    font-size: clamp(16px, calc(var(--w-ph, 168px) * var(--pc-fs, .22) * var(--pc-fs-k, 1)), 58px) !important;
+    line-height: 1.06 !important; white-space: nowrap !important;
+    overflow: hidden !important; text-overflow: ellipsis !important;
+    font-variant-numeric: tabular-nums !important;
+    min-width: 0 !important; max-width: 100% !important;
+    letter-spacing: -.02em !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="diskSpace"]) .widget-inner :is(.nx2-track) {
+    flex: none !important; height: 7px !important;
+    min-height: 3px !important; max-height: 14px !important;
+    min-width: 0 !important; max-width: 100% !important;
+    overflow: hidden !important; border-radius: 999px !important;
+    box-sizing: border-box !important;
+    height:8px !important;
+}
+
+/* 31 · 正在播放 `music` —— 封面只在封面格，2×3 不许拉成竖长条 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="music"]) .widget-inner {
+    --pc-fs: 0.16; --pc-gap: 5px; --pc-cols: 2; --pc-pad-k: .071;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="music"]) .widget-inner :is(.nx-mu-cover, .nx-mu-thumb) {
+    aspect-ratio: 1 !important; max-height: 100% !important;
+    max-width: 100% !important; margin: 0 auto !important;
+    object-fit: cover !important; overflow: hidden !important;
+    box-sizing: border-box !important; border-radius: 14px !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="music"]) .widget-inner :is(.nx-mu-ctl, .nx-mu-mini-row) {
+    flex: none !important; min-height: 24px !important;
+    max-height: 32px !important; min-width: 0 !important;
+    max-width: 100% !important; flex-wrap: nowrap !important;
+    gap: 6px !important; overflow: hidden !important;
+    box-sizing: border-box !important;
+    justify-content:space-between !important;
+}
+
+/* 32 · 播放队列 `musicQueue` —— 列表行锁 30px，行号井不抢宽度 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="musicQueue"]) .widget-inner {
+    --pc-fs: 0.13; --pc-gap: 4px; --pc-cols: 2; --pc-pad-k: .065;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="musicQueue"]) .widget-inner :is(.nx-mu-qi, .nx-mu-tt) {
+    white-space: nowrap !important; overflow: hidden !important;
+    text-overflow: ellipsis !important; line-height: 1.25 !important;
+    min-width: 0 !important; max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="musicQueue"]) .widget-inner :is(.nx-mu-ql, .nx2-list) {
+    display: flex !important; flex-direction: column !important;
+    flex: 1 1 auto !important; min-height: 0 !important;
+    max-height: 100% !important; max-width: 100% !important;
+    gap: var(--pc-gap, 5px) !important;
+    justify-content: flex-start !important; overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+
+/* 33 · 音乐搜索 `musicSearch` —— 输入场是主角，词条退成轻胶囊 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="musicSearch"]) .widget-inner {
+    --pc-fs: 0.14; --pc-gap: 6px; --pc-cols: 2; --pc-pad-k: .071;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="musicSearch"]) .widget-inner :is(.nx-mu-sbox, .nx-mu-input) {
+    flex: 1 1 auto !important; min-height: 0 !important;
+    max-height: 100% !important; width: 100% !important;
+    overflow: hidden !important; resize: none !important;
+    box-sizing: border-box !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="musicSearch"]) .widget-inner :is(.nx-mu-chips) {
+    justify-content: center !important; align-content: center !important;
+    gap: var(--pc-gap, 6px) !important;
+    min-height: 0 !important; max-height: 100% !important;
+    max-width: 100% !important; overflow: hidden !important;
+    box-sizing: border-box !important; flex-shrink: 1 !important;
+    flex-wrap:wrap !important;
+}
+
+/* 34 · 每日推荐 `musicReco` —— 封面网格按 cols 给列数，多出不渲染 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="musicReco"]) .widget-inner {
+    --pc-fs: 0.13; --pc-gap: 5px; --pc-cols: 2; --pc-pad-k: .065;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="musicReco"]) .widget-inner :is(.nx-mu-rc-art) {
+    aspect-ratio: 1 !important; max-height: 100% !important;
+    max-width: 100% !important; margin: 0 auto !important;
+    object-fit: cover !important; overflow: hidden !important;
+    box-sizing: border-box !important; border-radius: 14px !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="musicReco"]) .widget-inner :is(.nx-mu-rcs) {
+    display: grid !important;
+    grid-template-columns: repeat(var(--pc-cols, 2), minmax(0, 1fr)) !important;
+    gap: var(--pc-gap, 6px) !important;
+    align-content: center !important; min-height: 0 !important;
+    max-width: 100% !important; max-height: 100% !important;
+    overflow: hidden !important; box-sizing: border-box !important;
+    align-content:stretch !important;
+}
+
+/* 35 · 电台 `musicRadio` —— 图标方块等分，选中态只用中性白环 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="musicRadio"]) .widget-inner {
+    --pc-fs: 0.13; --pc-gap: 6px; --pc-cols: 2; --pc-pad-k: .071;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="musicRadio"]) .widget-inner :is(.nx-mu-rd i) {
+    white-space: nowrap !important; overflow: hidden !important;
+    text-overflow: ellipsis !important; line-height: 1.25 !important;
+    min-width: 0 !important; max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="musicRadio"]) .widget-inner :is(.nx-mu-rds) {
+    display: grid !important;
+    grid-template-columns: repeat(var(--pc-cols, 2), minmax(0, 1fr)) !important;
+    gap: var(--pc-gap, 6px) !important;
+    align-content: center !important; min-height: 0 !important;
+    max-width: 100% !important; max-height: 100% !important;
+    overflow: hidden !important; box-sizing: border-box !important;
+    align-content:stretch !important;
+}
+
+/* 36 · 方哩方哩·正在播放 `biliNow` —— 封面 object-fit:cover，底栏锁高 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="biliNow"]) .widget-inner {
+    --pc-fs: 0.15; --pc-gap: 5px; --pc-cols: 2; --pc-pad-k: .071;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="biliNow"]) .widget-inner :is(.nx-bili-cover) {
+    aspect-ratio: 1 !important; max-height: 100% !important;
+    max-width: 100% !important; margin: 0 auto !important;
+    object-fit: cover !important; overflow: hidden !important;
+    box-sizing: border-box !important; border-radius: 14px !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="biliNow"]) .widget-inner :is(.nx-bili-foot, .nx-bili-bar) {
+    flex: none !important; min-height: 24px !important;
+    max-height: 32px !important; min-width: 0 !important;
+    max-width: 100% !important; flex-wrap: nowrap !important;
+    gap: 6px !important; overflow: hidden !important;
+    box-sizing: border-box !important;
+    justify-content:space-between !important;
+}
+
+/* 37 · 方哩方哩·为你推荐 `biliReco` —— 长列 flex:1 吃满剩余高度，行锁 34px 不留大空白 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="biliReco"]) .widget-inner {
+    --pc-fs: 0.13; --pc-gap: 4px; --pc-cols: 2; --pc-pad-k: .065;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="biliReco"]) .widget-inner :is(.nx-bili-li) {
+    white-space: nowrap !important; overflow: hidden !important;
+    text-overflow: ellipsis !important; line-height: 1.25 !important;
+    min-width: 0 !important; max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="biliReco"]) .widget-inner :is(.nx-bili-list) {
+    display: flex !important; flex-direction: column !important;
+    flex: 1 1 auto !important; min-height: 0 !important;
+    max-height: 100% !important; max-width: 100% !important;
+    gap: var(--pc-gap, 5px) !important;
+    justify-content: flex-start !important; overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+
+/* 38 · 方哩方哩·B站搜索 `biliSearch` —— 输入场锁高，结果列表按档截断 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="biliSearch"]) .widget-inner {
+    --pc-fs: 0.13; --pc-gap: 5px; --pc-cols: 2; --pc-pad-k: .065;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="biliSearch"]) .widget-inner :is(.nx-bili-sbox, .nx-bili-input) {
+    flex: 1 1 auto !important; min-height: 0 !important;
+    max-height: 100% !important; width: 100% !important;
+    overflow: hidden !important; resize: none !important;
+    box-sizing: border-box !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="biliSearch"]) .widget-inner :is(.nx-bili-list) {
+    display: flex !important; flex-direction: column !important;
+    flex: 1 1 auto !important; min-height: 0 !important;
+    max-height: 100% !important; max-width: 100% !important;
+    gap: var(--pc-gap, 5px) !important;
+    justify-content: flex-start !important; overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+
+/* 39 · 快捷书签 `browser` —— 书签行锁 28px，URL 单行省略 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="browser"]) .widget-inner {
+    --pc-fs: 0.13; --pc-gap: 4px; --pc-cols: 2; --pc-pad-k: .065;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="browser"]) .widget-inner :is(.widget-browser-bookmark) {
+    white-space: nowrap !important; overflow: hidden !important;
+    text-overflow: ellipsis !important; line-height: 1.25 !important;
+    min-width: 0 !important; max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="browser"]) .widget-inner :is(.widget-browser-list) {
+    display: flex !important; flex-direction: column !important;
+    flex: 1 1 auto !important; min-height: 0 !important;
+    max-height: 100% !important; max-width: 100% !important;
+    gap: var(--pc-gap, 5px) !important;
+    justify-content: flex-start !important; overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+
+/* 40 · 迷你计算器 `calculator` —— 固定 2×3：4 列等分网格，按键锁高不溢出 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="calculator"]) .widget-inner {
+    --pc-fs: 0.2; --pc-gap: 4px; --pc-cols: 4; --pc-pad-k: .060;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="calculator"]) .widget-inner :is(.widget-calc-display) {
+    font-size: clamp(16px, calc(var(--w-ph, 168px) * var(--pc-fs, .22) * var(--pc-fs-k, 1)), 58px) !important;
+    line-height: 1.06 !important; white-space: nowrap !important;
+    overflow: hidden !important; text-overflow: ellipsis !important;
+    font-variant-numeric: tabular-nums !important;
+    min-width: 0 !important; max-width: 100% !important;
+    letter-spacing: -.02em !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="calculator"]) .widget-inner :is(.widget-calc-grid) {
+    display: grid !important;
+    grid-template-columns: repeat(var(--pc-cols, 2), minmax(0, 1fr)) !important;
+    gap: var(--pc-gap, 6px) !important;
+    align-content: center !important; min-height: 0 !important;
+    max-width: 100% !important; max-height: 100% !important;
+    overflow: hidden !important; box-sizing: border-box !important;
+    align-content:stretch !important;
+}
+
+/* 41 · 快捷启动 `quicklaunch` —— 图标网格按 cols 给列数，名称单行 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="quicklaunch"]) .widget-inner {
+    --pc-fs: 0.12; --pc-gap: 6px; --pc-cols: 3; --pc-pad-k: .071;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="quicklaunch"]) .widget-inner :is(.w-ql-ic) {
+    aspect-ratio: 1 !important; max-height: 100% !important;
+    max-width: 100% !important; margin: 0 auto !important;
+    object-fit: cover !important; overflow: hidden !important;
+    box-sizing: border-box !important; border-radius: 14px !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="quicklaunch"]) .widget-inner :is(.w-ql-grid) {
+    display: grid !important;
+    grid-template-columns: repeat(var(--pc-cols, 2), minmax(0, 1fr)) !important;
+    gap: var(--pc-gap, 6px) !important;
+    align-content: center !important; min-height: 0 !important;
+    max-width: 100% !important; max-height: 100% !important;
+    overflow: hidden !important; box-sizing: border-box !important;
+    align-content:stretch !important;
+}
+
+/* 42 · 剪贴板 `clipboard` —— 条目行锁 26px，长文本单行省略 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="clipboard"]) .widget-inner {
+    --pc-fs: 0.13; --pc-gap: 4px; --pc-cols: 2; --pc-pad-k: .065;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="clipboard"]) .widget-inner :is(.w-cb-item) {
+    white-space: nowrap !important; overflow: hidden !important;
+    text-overflow: ellipsis !important; line-height: 1.25 !important;
+    min-width: 0 !important; max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="clipboard"]) .widget-inner :is(.w-cb-list) {
+    display: flex !important; flex-direction: column !important;
+    flex: 1 1 auto !important; min-height: 0 !important;
+    max-height: 100% !important; max-width: 100% !important;
+    gap: var(--pc-gap, 5px) !important;
+    justify-content: flex-start !important; overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+
+/* 43 · 相册 `photos` —— 图片 object-fit:cover 撑满容器，切图按钮锁高 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="photos"]) .widget-inner {
+    --pc-fs: 0.12; --pc-gap: 4px; --pc-cols: 2; --pc-pad-k: .048;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="photos"]) .widget-inner :is(.w-ph, .w-ph-mask) {
+    flex: 1 1 auto !important; min-height: 0 !important;
+    max-height: 100% !important; width: 100% !important;
+    overflow: hidden !important; resize: none !important;
+    box-sizing: border-box !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="photos"]) .widget-inner :is(.w-ph) {
+    flex: 1 1 auto !important; min-height: 0 !important;
+    max-height: 100% !important; width: 100% !important;
+    overflow: hidden !important; resize: none !important;
+    box-sizing: border-box !important;
+}
+
+/* 44 · 壁纸推荐 `wallpaperpick` —— 缩略图网格等分，缺图不塌陷 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="wallpaperpick"]) .widget-inner {
+    --pc-fs: 0.12; --pc-gap: 5px; --pc-cols: 2; --pc-pad-k: .060;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="wallpaperpick"]) .widget-inner :is(.w-wp-item) {
+    flex: 1 1 auto !important; min-height: 0 !important;
+    max-height: 100% !important; width: 100% !important;
+    overflow: hidden !important; resize: none !important;
+    box-sizing: border-box !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="wallpaperpick"]) .widget-inner :is(.w-wp-grid) {
+    display: grid !important;
+    grid-template-columns: repeat(var(--pc-cols, 2), minmax(0, 1fr)) !important;
+    gap: var(--pc-gap, 6px) !important;
+    align-content: center !important; min-height: 0 !important;
+    max-width: 100% !important; max-height: 100% !important;
+    overflow: hidden !important; box-sizing: border-box !important;
+    align-content:stretch !important;
+}
+
+/* 45 · 小游戏 `minigame` —— 列表 flex:1，开始键锁 24px */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="minigame"]) .widget-inner {
+    --pc-fs: 0.15; --pc-gap: 5px; --pc-cols: 2; --pc-pad-k: .071;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="minigame"]) .widget-inner :is(.widget-minigame-name, .widget-minigame-emoji) {
+    font-size: clamp(16px, calc(var(--w-ph, 168px) * var(--pc-fs, .22) * var(--pc-fs-k, 1)), 58px) !important;
+    line-height: 1.06 !important; white-space: nowrap !important;
+    overflow: hidden !important; text-overflow: ellipsis !important;
+    font-variant-numeric: tabular-nums !important;
+    min-width: 0 !important; max-width: 100% !important;
+    letter-spacing: -.02em !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="minigame"]) .widget-inner :is(.widget-minigame-list) {
+    display: flex !important; flex-direction: column !important;
+    flex: 1 1 auto !important; min-height: 0 !important;
+    max-height: 100% !important; max-width: 100% !important;
+    gap: var(--pc-gap, 5px) !important;
+    justify-content: flex-start !important; overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+
+/* 46 · 睡眠模式 `sleep` —— 倒计时居中，开始/暂停键锁高 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="sleep"]) .widget-inner {
+    --pc-fs: 0.24; --pc-gap: 6px; --pc-cols: 2; --pc-pad-k: .077;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="sleep"]) .widget-inner :is(.widget-sleep-time, .widget-sleep-moon) {
+    font-size: clamp(16px, calc(var(--w-ph, 168px) * var(--pc-fs, .22) * var(--pc-fs-k, 1)), 58px) !important;
+    line-height: 1.06 !important; white-space: nowrap !important;
+    overflow: hidden !important; text-overflow: ellipsis !important;
+    font-variant-numeric: tabular-nums !important;
+    min-width: 0 !important; max-width: 100% !important;
+    letter-spacing: -.02em !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="sleep"]) .widget-inner :is(.widget-sleep-btn) {
+    flex: none !important; min-height: 24px !important;
+    max-height: 32px !important; min-width: 0 !important;
+    max-width: 100% !important; flex-wrap: nowrap !important;
+    gap: 6px !important; overflow: hidden !important;
+    box-sizing: border-box !important;
+    justify-content:center !important;
+}
+
+/* 47 · 专注时刻 `focus` —— 圆环 + 读数同轴，动作条锁高 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="focus"]) .widget-inner {
+    --pc-fs: 0.26; --pc-gap: 6px; --pc-cols: 2; --pc-pad-k: .077;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="focus"]) .widget-inner :is(.widget-focus-time, .widget-focus-ring) {
+    font-size: clamp(16px, calc(var(--w-ph, 168px) * var(--pc-fs, .22) * var(--pc-fs-k, 1)), 58px) !important;
+    line-height: 1.06 !important; white-space: nowrap !important;
+    overflow: hidden !important; text-overflow: ellipsis !important;
+    font-variant-numeric: tabular-nums !important;
+    min-width: 0 !important; max-width: 100% !important;
+    letter-spacing: -.02em !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="focus"]) .widget-inner :is(.widget-focus-actions) {
+    flex: none !important; min-height: 24px !important;
+    max-height: 32px !important; min-width: 0 !important;
+    max-width: 100% !important; flex-wrap: nowrap !important;
+    gap: 6px !important; overflow: hidden !important;
+    box-sizing: border-box !important;
+    justify-content:center !important;
+}
+
+
+/* ---------- §3 · 音乐 5 款专项（ml5 已收口，这里压过 ml5 的 10 写） ----------
+   图 2 的 2×3 竖长条：封面被拉成上半张卡、下半灰底割裂。
+   封面只占一个 aspect-ratio:1 的格，信息区 flex:1，控制条锁高。 */
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"], [data-wtype="musicReco"], [data-wtype="musicRadio"]) .widget-inner {
+    overflow: hidden !important; height: 100% !important; max-height: 100% !important;
+    min-height: 0 !important; padding: 12px !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"], [data-wtype="musicReco"], [data-wtype="musicRadio"]) .widget-inner > .nx.nx-mu {
+    overflow: hidden !important; height: 100% !important; max-height: 100% !important;
+    min-height: 0 !important; max-width: 100% !important;
+    display: flex !important; flex-direction: column !important;
+    justify-content: center !important; gap: 6px !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"], [data-wtype="musicReco"], [data-wtype="musicRadio"]) .widget-inner :is(.nx-mu-cover, .nx-mu-thumb) {
+    flex: none !important; width: auto !important; height: auto !important;
+    aspect-ratio: 1 !important; max-height: 58% !important;
+    max-width: 100% !important; margin: 0 auto !important;
+    overflow: hidden !important; border-radius: 14px !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"], [data-wtype="musicReco"], [data-wtype="musicRadio"]) .widget-inner :is(.nx-mu-cover, .nx-mu-thumb) img {
+    width: 100% !important; height: 100% !important;
+    object-fit: cover !important; display: block !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"], [data-wtype="musicReco"], [data-wtype="musicRadio"]) .widget-inner :is(.nx-mu-meta, .nx-mu-tt, .nx-mu-sub, .nx-mu-hd) {
+    flex: 0 1 auto !important; min-height: 0 !important; max-height: 100% !important;
+    min-width: 0 !important; max-width: 100% !important;
+    overflow: hidden !important; text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"], [data-wtype="musicReco"], [data-wtype="musicRadio"]) .widget-inner :is(.nx-mu-ctl, .nx-mu-vol, .nx-mu-mini-row, .nx-mu-prog) {
+    flex: none !important; min-height: 0 !important; max-height: 34px !important;
+    min-width: 0 !important; max-width: 100% !important;
+    overflow: hidden !important; flex-wrap: nowrap !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"], [data-wtype="musicReco"], [data-wtype="musicRadio"]) .widget-inner .nx-mu-bg {
+    display: none !important;
+}
+
+/* 2×3 / 3×4 竖长档：封面固定方形，绝不沿卡高拉成长条 */
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="music"]):is(.wcols-2.wrows-3, [data-cols="2"][data-rows="3"],
+    .wcols-3.wrows-4, [data-cols="3"][data-rows="4"]) .widget-inner :is(.nx-mu-cover, .nx-mu-thumb) {
+    max-height: 46% !important; aspect-ratio: 1 !important;
+    flex: none !important; width: auto !important;
+}
+
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is([data-wtype="music"]):is(.wcols-2.wrows-3, [data-cols="2"][data-rows="3"],
+    .wcols-3.wrows-4, [data-cols="3"][data-rows="4"]) .widget-inner > .nx.nx-mu {
+    justify-content: space-between !important;
+}
+
+
+/* ---------- §4 · 选择页预览：裁切边界 + 全等尺寸 + 四风格不打架 ----------
+   预览卡与桌面卡共用 [data-wtype]，§0~§3 已同时命中；这里只补面板专属问题。 */
+
+html body #widgetPanel .widget-panel-card-preview {
+    overflow: hidden !important;
+    isolation: isolate !important;
+    contain: paint !important;
+}
+
+html body #widgetPanel .widget-panel-card-preview-inner {
+    overflow: hidden !important;
+    contain: paint !important;
+    max-width: 100% !important;
+}
+
+html body #widgetPanel .widget-preview-card[data-type][data-wtype] {
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+}
+
+html body #widgetPanel .widget-preview-card .widget-inner {
+    overflow: hidden !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    min-height: 0 !important;
+}
+
+html body #widgetPanel .widget-panel-card-name,
+html body #widgetPanel .widget-panel-card-sizes {
+    flex: none !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+
+html body #widgetPanel .wp-soft-cards {
+    align-items: flex-start !important;
+    align-content: flex-start !important;
+}

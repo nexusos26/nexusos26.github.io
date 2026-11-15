@@ -26,6 +26,38 @@
         }
     }
 
+    /* v2.10.21：Strata / Reelix / Float 这类打包产物不引 _app.js，
+       风格桥层由这里补挂（与 _app.js 的注入互为幂等，重复引也不会加载两份）。 */
+    (function ensureFuiBridge() {
+        try {
+            if (document.querySelector('script[src*="n26-fui-bridge.js"]')) return;
+            var s = document.currentScript || document.querySelector('script[src*="_theme-adapter.js"]');
+            var base = (s && s.src) ? s.src : location.href;
+            var sc = document.createElement('script');
+            sc.src = new URL('../ui/n26-fui-bridge.js?v=fb4', base).href;
+            sc.async = false;
+            (document.head || document.documentElement).appendChild(sc);
+        } catch (e) { }
+    })();
+
+    /* v2.10.23：Strata / Reelix / Float 这类打包产物不引 _app.js，
+       光学层由这里补挂（与 _app.js 的注入互为幂等，不会加载两份）。 */
+    (function ensureGlassOptics() {
+        try {
+            if (window.N26GlassOptics || document.querySelector('script[src*="n26-glass-optics.js"]')) return;
+            var s = document.currentScript || document.querySelector('script[src*="_theme-adapter.js"]');
+            var base = (s && s.src) ? s.src : location.href;
+            var l = document.createElement('link');
+            l.rel = 'stylesheet';
+            l.href = new URL('../ui/n26-glass-optics.css?v=go11', base).href;
+            (document.head || document.documentElement).appendChild(l);
+            var sc = document.createElement('script');
+            sc.src = new URL('../ui/n26-glass-optics.js?v=go8', base).href;
+            sc.async = false;
+            (document.head || document.documentElement).appendChild(sc);
+        } catch (e) { }
+    })();
+
     function boot() {
         sync();
         var mo = new MutationObserver(sync);

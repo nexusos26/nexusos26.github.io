@@ -1,5 +1,5 @@
 /* ============================================================
-   N26 DomKeep · 控件点击零刷新感（v2.9.96）
+   N26 DomKeep · 控件点击零刷新感（v2.9.96 / v2.10.35 零强制布局修订）
    ------------------------------------------------------------
    用户反馈「点击任何东西都会强制刷新页面」：应用商城点下载 / 进简介、
    音乐点搜索都会整页白闪一下、滚到最上面、输入框失焦。
@@ -22,6 +22,26 @@
    ★ iframe 是独立 realm，Element.prototype 互不相通：本模块由
      apps/_app.js 按自身 src 推导路径自动注入到每个应用文档，
      主壳则在 head 里直接加载。同一个文件，唯一真值源。
+
+   ★★ v2.10.35 P0（主线程「此页面没有响应」根治 · 第一处）
+     本模块是唯一一个「每次 innerHTML 赋值都必然经过」的全局劫持层，
+     主壳 + 每一个应用 iframe 都装了一份。旧版 restoreScroll() 是标准的
+     read-write-read 抖动：
+
+         if (Math.abs(s.el.scrollTop - s.y) > 1) s.el.scrollTop = s.y;   // 读→写
+         if (Math.abs(s.el.scrollLeft - s.x) > 1) s.el.scrollLeft = s.x; // 读→写
+
+     4 层祖先 × 2 个方向 = 8 次「写完又读」，每一次都把上一条写造成的
+     layout dirty 当场强制结算；再叠上 gpu-guard 在 pointerdown 给 body
+     挂类造成的全文档 style invalidation，一次切设置页就要同步重算
+     全文档十几次。Chrome 弹「此页面没有响应」要的正是这种量级的主线程占用，
+     而不是 GPU 慢。前五版分别去删折射贴图 / screen 混合层 / 磨砂 / 通配降级，
+     都没碰这条 read-after-write 链，所以一条都没根治。
+
+     本版改成「只写不读」：浏览器会自动把越界的 scrollTop 夹紧，
+     根本不需要读回来判断。快照里的 4 次读全部集中在写之前（一次结算），
+     写之后零布局读。滚动位置 / 焦点 / 输入值 / 选区保持行为完全不变，
+     视觉效果零变化。
    ============================================================ */
 (function () {
     'use strict';
@@ -77,9 +97,13 @@
             var s = list[i];
             if (!s.el || !s.el.isConnected) continue;
             try {
-                /* 内容变短时浏览器会自己夹紧，别把旧值硬顶回去造成跳变 */
-                if (Math.abs(s.el.scrollTop - s.y) > 1) s.el.scrollTop = s.y;
-                if (Math.abs(s.el.scrollLeft - s.x) > 1) s.el.scrollLeft = s.x;
+                /* ★ v2.10.35 P0：只写不读，杜绝 read-write-read 强制布局抖动。
+                   旧实现为了「内容变短别把旧值硬顶回去」回读了一次 scrollTop，
+                   结果每写一次就把 layout 当场结算一次；浏览器本来就会把
+                   越界滚动值自动夹紧，这个判断纯属多余。
+                   非零才写：绝大多数容器没滚动过，连一次写都不产生。 */
+                if (s.y) s.el.scrollTop = s.y;
+                if (s.x) s.el.scrollLeft = s.x;
             } catch (e) { }
         }
     }
@@ -162,8 +186,10 @@
     }
 
     window.N26DomKeep = {
-        version: '1.0-2.9.96',
+        version: '1.1-v2.10.35',
         hooked: hooked,
+        /* 自检标记：写回阶段绝无布局读（verify-n26-312 会扫源码复核） */
+        noLayoutReadAfterWrite: true,
         patch: patch,
         /* 供业务手动声明「这一块即使重建也不要动焦点/滚动」 */
         keep: function (fn) { if (typeof fn === 'function') fn(); }

@@ -1,0 +1,264 @@
+/* ==========================================================================
+   ui/n26-widget-tools.css · 戳 tool1 · 2026-11-13
+   --------------------------------------------------------------------------
+   ★ 按 docs/小组件设计规格-全量47款.md §3「工具族（9）」重做的第 7 族。
+     沿用 wt1 骨架：只写 **版式 / 尺寸节奏 / 格数行数上限 / 身份色点缀**。
+
+   覆盖：browser / calculator / quicklaunch / clipboard / photos /
+         wallpaperpick / minigame / sleep / focus（MD §3 的 39~47 号卡）
+
+   ★ 身份色消费 fam2 的 --wf（昼 #15803d / 夜 #86efac）；
+     实色件（等号键、开始键）用 --wf-ink 由 fam2 按昼夜自动翻。
+
+   ★★ 隐藏名单红线：相册 `.w-ph` / `.w-wp-item` 是真实图片层，
+     和 `.nx-mu-cover`、`.n26-sky-layer` 同属「绝不能 display:none」名单。
+     本层所有隐藏规则**逐条列名**，绝不写「隐藏内容层所有子元素」。
+
+   ★ 计算器只有固定 2×3 一档，MD §3 #40 要求「任何档不许横向滚动」，
+     所以键位必须 grid 等分 + 每格 min-width:0，结果区 flex:none。
+   ========================================================================== */
+
+/* ---------- 1 · 家族统一：表头 / 主读数 / 控件 ---------- */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="browser"], [data-wtype="calculator"], [data-wtype="quicklaunch"],
+    [data-wtype="clipboard"], [data-wtype="photos"], [data-wtype="wallpaperpick"],
+    [data-wtype="minigame"], [data-wtype="sleep"], [data-wtype="focus"])
+    .widget-inner :is(.widget-browser-title, .widget-minigame-title,
+    .w-ql-hd, .w-cb-hd, .w-wp-hd) {
+    flex: none !important;
+    flex-wrap: nowrap !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="browser"], [data-wtype="calculator"], [data-wtype="quicklaunch"],
+    [data-wtype="clipboard"], [data-wtype="photos"], [data-wtype="wallpaperpick"],
+    [data-wtype="minigame"], [data-wtype="sleep"], [data-wtype="focus"])
+    .widget-inner :is(.widget-calc-display, .widget-sleep-time, .widget-focus-time) {
+    font-variant-numeric: tabular-nums !important;
+    font-feature-settings: "tnum" 1 !important;
+    white-space: nowrap !important;
+    line-height: 1.06 !important;
+    letter-spacing: -.035em !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-size: clamp(20px, 2.8vw, 40px) !important;
+    font-weight: 620 !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-rows="1"][data-rows="1"], .wrows-1.wrows-1):is(
+    [data-wtype="browser"], [data-wtype="calculator"], [data-wtype="quicklaunch"],
+    [data-wtype="clipboard"], [data-wtype="photos"], [data-wtype="wallpaperpick"],
+    [data-wtype="minigame"], [data-wtype="sleep"], [data-wtype="focus"])
+    .widget-inner :is(.widget-calc-display, .widget-sleep-time, .widget-focus-time) {
+    font-size: clamp(16px, 1.8vw, 24px) !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="browser"], [data-wtype="calculator"], [data-wtype="quicklaunch"],
+    [data-wtype="clipboard"], [data-wtype="photos"], [data-wtype="wallpaperpick"],
+    [data-wtype="minigame"], [data-wtype="sleep"], [data-wtype="focus"])
+    .widget-inner :is(.widget-browser-bookmark-name, .widget-browser-bookmark-url,
+    .w-ql-nm, .w-cb-item, .widget-minigame-name, .widget-sleep-label,
+    .widget-focus-label, .w-wp-mask, .widget-browser-title i) {
+    font-size: clamp(9px, .8vw, 11px) !important;
+    line-height: 1.3 !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+/* ---------- 2 · 身份色：等号键 / 开始键 / 表头图标 / 环形进度 ---------- */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="browser"], [data-wtype="calculator"], [data-wtype="quicklaunch"],
+    [data-wtype="clipboard"], [data-wtype="photos"], [data-wtype="wallpaperpick"],
+    [data-wtype="minigame"], [data-wtype="sleep"], [data-wtype="focus"])
+    .widget-inner :is(.widget-browser-title i, .widget-minigame-title i,
+    .widget-minigame-play, .widget-sleep-btn, .widget-focus-btn,
+    .widget-calc-btn.eq) {
+    color: var(--wf, #15803d) !important;
+    -webkit-text-fill-color: var(--wf, #15803d) !important;
+}
+/* 等号键是唯一实色身份件：底 --wf、字 --wf-ink */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="calculator"]) .widget-inner .widget-calc-btn.eq {
+    background-color: var(--wf, #15803d) !important;
+    color: var(--wf-ink, #ffffff) !important;
+    -webkit-text-fill-color: var(--wf-ink, #ffffff) !important;
+}
+/* 专注环的进度弧是 SVG stroke，不吃 color —— 只给身份色，不重绘图形 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="focus"]) .widget-inner .widget-focus-ring > svg > circle:last-child {
+    stroke: var(--wf, #15803d) !important;
+}
+
+/* ---------- 3 · 计算器：固定 2×3，grid 等分、零横向滚动 ---------- */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="calculator"]) .widget-inner .widget-calc {
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="calculator"]) .widget-inner .widget-calc-display {
+    flex: none !important;
+    min-height: 0 !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="calculator"]) .widget-inner .widget-calc-grid {
+    flex: 1 1 auto !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    grid-auto-rows: minmax(0, 1fr) !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="calculator"]) .widget-inner .widget-calc-btn {
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    box-sizing: border-box !important;
+}
+
+/* ---------- 4 · 图标格 / 书签格 / 壁纸格：等分且能收缩 ---------- */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="quicklaunch"], [data-wtype="wallpaperpick"], [data-wtype="browser"])
+    .widget-inner :is(.w-ql-grid, .w-wp-grid, .widget-browser-list) {
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="quicklaunch"]) .widget-inner .w-ql-ic {
+    width: auto !important;
+    height: auto !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    aspect-ratio: 1 / 1 !important;
+    flex: 0 1 auto !important;
+    overflow: hidden !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="quicklaunch"], [data-wtype="browser"], [data-wtype="wallpaperpick"])
+    .widget-inner :is(.w-ql-btn, .widget-browser-bookmark, .w-wp-item) {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+/* 图片层只裁切、不隐藏（fam2 §7.4 红线） */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="photos"], [data-wtype="wallpaperpick"])
+    .widget-inner :is(.w-ph, .w-wp-item, .w-wp-mask) {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="photos"], [data-wtype="wallpaperpick"])
+    .widget-inner img {
+    object-fit: cover !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+}
+
+/* ---------- 5 · 列表：裁在卡内，条数按 rows 上限截断 ---------- */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="browser"], [data-wtype="clipboard"], [data-wtype="minigame"])
+    .widget-inner :is(.widget-browser-list, .w-cb-list, .widget-minigame-list) {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="browser"], [data-wtype="clipboard"], [data-wtype="minigame"])
+    .widget-inner :is(.widget-browser-bookmark, .w-cb-item, .widget-minigame-item) {
+    flex: none !important;
+    flex-wrap: nowrap !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+/* 2×2 → 2 条；3×2/4×2 → 3 条；4×3 以上 → 5 条 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-cols="2"][data-rows="2"], .wcols-2.wrows-2):is(
+    [data-wtype="browser"], [data-wtype="clipboard"], [data-wtype="minigame"])
+    .widget-inner :is(.widget-browser-bookmark, .w-cb-item, .widget-minigame-item):nth-child(n+3) {
+    display: none !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-rows="3"], [data-rows="4"], .wrows-3, .wrows-4):is(
+    [data-wtype="browser"], [data-wtype="clipboard"], [data-wtype="minigame"])
+    .widget-inner :is(.widget-browser-bookmark, .w-cb-item, .widget-minigame-item):nth-child(n+6) {
+    display: none !important;
+}
+/* 快捷启动：图标数按 cols 截断（MD §3 #41） */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-cols="2"], .wcols-2):is([data-wtype="quicklaunch"])
+    .widget-inner .w-ql-btn:nth-child(n+3) {
+    display: none !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-cols="3"], .wcols-3):is([data-wtype="quicklaunch"])
+    .widget-inner .w-ql-btn:nth-child(n+4) {
+    display: none !important;
+}
+
+/* ---------- 6 · 睡眠 / 专注：圆盘只缩不溢，控制条锁高 ---------- */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="focus"]) .widget-inner .widget-focus-ring {
+    width: auto !important;
+    height: auto !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    aspect-ratio: 1 / 1 !important;
+    flex: 0 1 auto !important;
+    overflow: hidden !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="sleep"], [data-wtype="focus"])
+    .widget-inner :is(.widget-focus-actions, .widget-sleep-btn) {
+    flex: none !important;
+    flex-wrap: nowrap !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="sleep"], [data-wtype="focus"])
+    .widget-inner :is(.widget-focus-btn, .widget-sleep-btn) {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: 26px !important;
+    overflow: hidden !important;
+}
+
+/* ---------- 7 · 胶囊档：只留一个主值 / 一张图 / 一个动作 ---------- */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-rows="1"][data-rows="1"], .wrows-1.wrows-1):is(
+    [data-wtype="browser"], [data-wtype="calculator"], [data-wtype="quicklaunch"],
+    [data-wtype="clipboard"], [data-wtype="photos"], [data-wtype="wallpaperpick"],
+    [data-wtype="minigame"], [data-wtype="sleep"], [data-wtype="focus"])
+    .widget-inner :is(.widget-calc-grid, .widget-browser-list, .w-cb-list,
+    .widget-minigame-list, .widget-focus-ring, .widget-focus-actions,
+    .widget-sleep-moon, .w-wp-mask, .widget-browser-title,
+    .widget-minigame-title, .w-ql-nm) {
+    display: none !important;
+}

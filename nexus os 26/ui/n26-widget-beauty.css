@@ -1,0 +1,275 @@
+/* ==========================================================================
+   Nexus OS 26 · 小组件整包美化层 / 戳 beau4 · 2026-11-13
+   --------------------------------------------------------------------------
+   ★ 收口版：替换 beau1。用户 11-12 原话「其他的还是不太好看」，
+     beau1 不是最终定案。本次按 docs/小组件设计规格-全量47款.md §1/§5
+     重写**同一个文件**（不叠新层、层序不变），只改这个文件 + 引用戳。
+
+   ★ beau1 四处具体病因（逐条修掉，不是玄学「更好看一点」）：
+     ① §3.1 给 47 张卡的表头图标套了 21×19px 实色身份胶囊 —— 一屏
+        彩色小方块，像贴了一排标签纸，不是真系统。→ 删，图标回纤细单色。
+     ② §3.3/3.4 把芯片、分隔线、冒号、秒数、**次级主数字 .nx2-num**
+        全刷成身份色；颜色过多且和 wr7 昼墨夜白打架。→ 删，颜色交回
+        fam2(家族 tint) + 6 个族层(精确点名的点缀件)。
+     ③ 6 条 keyframes + 8 张 55ms 错落 + 内容层浮起 + 进度生长 +
+        列表行 6 档 stagger + 选中态弹跳，47 张卡同时演 = 太闹。
+        → 只留「卡片入场 / 落位」两条，一物一条动画。
+     ④ 隐藏层叠坑：beau1 用 8 写 [data-wtype] 写 letter-spacing / 颜色，
+        排在族层之前却靠权重把族层(6 写)的版式压掉了 —— 族层写了不生效。
+        → beau2 只写族层**不碰**的属性（材质/阴影/圆角/动画/令牌），
+          字体、字号、字距、文字色、语义件配色一律交出去。
+
+   ★ 保留（用户钦定，不许丢）：
+     · FangUI 四风格 id 实测 flat / neu-solid / neu-glass / liquid
+       （n26-fui-bridge.js:20，DEFAULT=liquid）；四风格各有皮。
+     · **只有 Neu / 玻璃拟物有凹凸**（凸=上亮下暗可按的；凹=上暗下亮
+       承载信息的）；Flat / 液态玻璃 共用「平」骨架，只靠透明度、圆角、
+       描边、贴边亮芯区分。
+     · 昼/夜/深色四风格各自镜像；卡面不扭曲（零 radial / conic / 位移
+       折射 / backdrop 重采样），发光一律 box-shadow。
+     · 11-13 去黄：--wf-d-tint / --wf-n-tint 全部归零，只留 --wf-2 供进度渐变用
+       八族淡色调平涂的消费点，必须留；本次把 16~22% 收回 11~15%，
+       解决「一片惨白」但不变成 47 张实色补丁。
+
+   ★ 性能纪律：零 will-change 常驻、零 filter / backdrop-filter、零新伪
+     元素、零逐卡片 JS、零布局读；hover 只改颜色（侧栏 P0 教训）；
+     transition 一律逐属性白名单，绝不 transition:all；
+     prefers-reduced-motion 全量降级（抬到 10 写压过 !important 动画）。
+
+   覆盖：字典 61 类型 / 面板可见 47 类型，仍是整包，不是局部补几个。
+   ★ fb2 勘误（11-15，推翻 ws/beau4 轮「挂载点不存在」结论）：
+     html[data-ui] 其实由 fui-bridge.js boot 写入（读持久化），但运行中切换风格时
+     setFanguiStyle 只更新 data-ui/data-neu，data-ui 停在 boot 旧值 —— 挂它的规则
+     「刷新才对、切了不动」。本文件全部规则已迁到实时挂载点 html[data-ui]+html[data-neu]。
+   ========================================================================== */
+
+/* ============================ 1 · 家族色扩色令牌 ============================
+   只发令牌不刷色。--wf-* 由 fam2 §1 定昼/夜，本层补 tint 与第二色；
+   消费方是 fam2 §7 的平涂与 §3 的进度渐变。数值统一收到 11~15%。 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="clock"], [data-wtype="dualtime"], [data-wtype="stopwatch"],
+    [data-wtype="countdown"], [data-wtype="timeSeconds"], [data-wtype="clockAnalog"],
+    [data-wtype="worldclock"], [data-wtype="time"], [data-wtype="alarm"],
+    [data-wtype="pomodoro"]) {
+    --wf-d-tint: transparent !important;  --wf-n-tint: transparent !important;
+    --wf-2: #22d3ee !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="weather"], [data-wtype="weatherHour"], [data-wtype="weatherWeek"],
+    [data-wtype="airQuality"], [data-wtype="sunrise"], [data-wtype="sunmoon"],
+    [data-wtype="moonphase"]) {
+    --wf-d-tint: transparent !important;  --wf-n-tint: transparent !important;
+    --wf-2: #0ea5e9 !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="calendar"], [data-wtype="schedule"], [data-wtype="weekStrip"],
+    [data-wtype="bigDate"], [data-wtype="dayProgress"], [data-wtype="dayCard"],
+    [data-wtype="greeting"], [data-wtype="todayAgenda"], [data-wtype="date"]) {
+    --wf-d-tint: transparent !important;  --wf-n-tint: transparent !important;
+    --wf-2: #ea580c !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="todo"], [data-wtype="todoRing"], [data-wtype="note"],
+    [data-wtype="quickNote"]) {
+    --wf-d-tint: transparent !important;  --wf-n-tint: transparent !important;
+    --wf-2: #14b8a6 !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="system"], [data-wtype="battery"], [data-wtype="network"],
+    [data-wtype="volume"], [data-wtype="diskSpace"], [data-wtype="cleaner"],
+    [data-wtype="toggles"], [data-wtype="smartdevice"], [data-wtype="news"],
+    [data-wtype="health"], [data-wtype="recentfiles"], [data-wtype="friends"],
+    [data-wtype="stocks"], [data-wtype="searchbar"]) {
+    --wf-d-tint: transparent !important;  --wf-n-tint: transparent !important;
+    --wf-2: #64748b !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) {
+    --wf-d-tint: transparent !important;  --wf-n-tint: transparent !important;
+    --wf-2: #3b82f6 !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="biliNow"], [data-wtype="biliReco"], [data-wtype="biliSearch"]) {
+    --wf-d-tint: transparent !important;  --wf-n-tint: transparent !important;
+    --wf-2: #e57d9f !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="browser"], [data-wtype="calculator"], [data-wtype="quicklaunch"],
+    [data-wtype="clipboard"], [data-wtype="minigame"], [data-wtype="sleep"],
+    [data-wtype="focus"], [data-wtype="wallpaperpick"], [data-wtype="photos"]) {
+    --wf-d-tint: transparent !important;  --wf-n-tint: transparent !important;
+    --wf-2: #22c55e !important;
+}
+
+/* ============================ 2 · FangUI 四风格材质 ============================
+   ★ 只写族层不碰的：圆角 / 描边 / 阴影 / 过渡。
+     不写 font-size / letter-spacing / color / background-image ——
+     那些归 fam2 / wr7 §8 / 6 个族层，8 写权重压过去会出人命。
+   ★ 描边改中性细边：beau1 的 rgba(255,255,255,.62~.72) 白描边
+     在昼浅玻璃上就是用户反复骂过的「白色硬框」。 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] {
+    transition: box-shadow 260ms cubic-bezier(.2, .7, .2, 1),
+                border-color 260ms cubic-bezier(.2, .7, .2, 1),
+                border-radius 260ms cubic-bezier(.2, .7, .2, 1) !important;
+}
+
+/* ---------- 2.1 扁平 Flat：纯平、中性细边、极轻投影 ---------- */
+html[data-ui="flat"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] {
+    --w-radius: 18px !important; --w-inner-radius: 18px !important;
+    border: 1px solid rgba(16, 24, 40, .10) !important;
+    border-radius: 18px !important;
+    box-shadow: 0 1px 5px rgba(16, 24, 40, .05) !important;
+}
+html[data-ui="flat"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner {
+    border-radius: 18px !important;
+}
+html[data-ui="flat"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]
+    :is(.nx-btn, .nx-icon-btn, .nx2-btn, .nx2-chip, .nx2-tab, .nx2-well,
+        .nx2-panel, .nx2-cell, .nx-li, .nx2-li, .nx2-track, .nx-cal-cell) {
+    box-shadow: none !important;
+}
+
+/* ---------- 2.2 轻拟物 Neu：凸=上亮下暗 / 凹=上暗下亮 ----------
+   强度整体下调（beau1 的 4px±4px + 白 .92 在浅玻璃上像塑料块）。 */
+html[data-ui="neu"][data-neu="solid"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] {
+    --w-radius: 16px !important; --w-inner-radius: 16px !important;
+    border: 1px solid rgba(16, 24, 40, .08) !important;
+    border-radius: 16px !important;
+    box-shadow: 2px 2px 7px rgba(17, 24, 39, .10),
+                -2px -2px 7px rgba(255, 255, 255, .56) !important;
+}
+html[data-ui="neu"][data-neu="solid"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner {
+    border-radius: 16px !important;
+}
+html[data-ui="neu"][data-neu="solid"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]
+    :is(.nx-btn, .nx-icon-btn, .nx2-btn, .nx2-chip, .nx2-tab,
+        .widget-calc-btn, .nx-mu-btn, .nx-cal-cell) {
+    box-shadow: 1px 1px 3px rgba(17, 24, 39, .10),
+                -1px -1px 3px rgba(255, 255, 255, .62) !important;
+}
+html[data-ui="neu"][data-neu="solid"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]
+    :is(.nx2-well, .nx2-panel, .nx2-track, .nx-li, .nx2-li, .nx2-cell) {
+    box-shadow: inset 2px 2px 4px rgba(17, 24, 39, .09),
+                inset -2px -2px 4px rgba(255, 255, 255, .58) !important;
+}
+
+/* ---------- 2.3 玻璃拟物 Neu-Glass：磨砂 + 凸凹 + 内缘亮线 ---------- */
+html[data-ui="neu"][data-neu="glass"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] {
+    --w-radius: 20px !important; --w-inner-radius: 20px !important;
+    border: 1px solid rgba(255, 255, 255, .34) !important;
+    border-radius: 20px !important;
+    box-shadow: 2px 2px 8px rgba(17, 24, 39, .08),
+                -2px -2px 8px rgba(255, 255, 255, .38),
+                inset 0 1px 0 rgba(255, 255, 255, .46) !important;
+}
+html[data-ui="neu"][data-neu="glass"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner {
+    border-radius: 20px !important;
+}
+html[data-ui="neu"][data-neu="glass"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]
+    :is(.nx-btn, .nx-icon-btn, .nx2-btn, .nx2-chip, .nx2-tab,
+        .widget-calc-btn, .nx-mu-btn, .nx-cal-cell) {
+    box-shadow: 1px 1px 4px rgba(17, 24, 39, .08),
+                inset 0 1px 0 rgba(255, 255, 255, .42) !important;
+}
+html[data-ui="neu"][data-neu="glass"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]
+    :is(.nx2-well, .nx2-panel, .nx2-track, .nx-li, .nx2-li, .nx2-cell) {
+    box-shadow: inset 2px 2px 4px rgba(17, 24, 39, .08),
+                inset 0 1px 0 rgba(255, 255, 255, .34) !important;
+}
+
+/* ---------- 2.4 液态玻璃 Liquid：平、更透、四边贴边亮芯 ----------
+   ★ 与 Flat 共用「平」骨架，只靠透明度 / 大圆角 / 亮芯区分；
+     亮芯是贴边的直线 inset shadow，不是 radial 油斑（go8 导光板定案）。 */
+html[data-ui="liquid"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] {
+    --w-radius: 24px !important; --w-inner-radius: 24px !important;
+    border: 1px solid rgba(255, 255, 255, .22) !important;
+    border-radius: 24px !important;
+    box-shadow: 0 4px 16px rgba(16, 24, 40, .08),
+                inset 0 1px 0 rgba(255, 255, 255, .34),
+                inset 1px 0 0 rgba(255, 255, 255, .12),
+                inset -1px 0 0 rgba(255, 255, 255, .08) !important;
+}
+html[data-ui="liquid"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner {
+    border-radius: 24px !important;
+}
+html[data-ui="liquid"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]
+    :is(.nx-btn, .nx-icon-btn, .nx2-btn, .nx2-chip, .nx2-tab, .nx2-well, .nx2-track) {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .28) !important;
+}
+
+/* ---------- 2.5 夜 / 深色：四风格各自镜像，不用一套黑走天下 ---------- */
+html[data-ui="flat"] body.dark-mode .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype],
+html[data-ui="flat"][data-n26-phase="night"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] {
+    border-color: rgba(255, 255, 255, .10) !important;
+    box-shadow: 0 1px 7px rgba(0, 0, 0, .24) !important;
+}
+html[data-ui="neu"][data-neu="solid"] body.dark-mode .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype],
+html[data-ui="neu"][data-neu="solid"][data-n26-phase="night"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] {
+    border-color: rgba(255, 255, 255, .07) !important;
+    box-shadow: 2px 2px 7px rgba(0, 0, 0, .34),
+                -2px -2px 7px rgba(255, 255, 255, .05) !important;
+}
+html[data-ui="neu"][data-neu="glass"] body.dark-mode .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype],
+html[data-ui="neu"][data-neu="glass"][data-n26-phase="night"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] {
+    border-color: rgba(255, 255, 255, .12) !important;
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, .28),
+                inset 0 1px 0 rgba(255, 255, 255, .10) !important;
+}
+html[data-ui="liquid"] body.dark-mode .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype],
+html[data-ui="liquid"][data-n26-phase="night"] body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] {
+    border-color: rgba(255, 255, 255, .10) !important;
+    box-shadow: 0 5px 18px rgba(0, 0, 0, .26),
+                inset 0 1px 0 rgba(255, 255, 255, .13),
+                inset 1px 0 0 rgba(255, 255, 255, .05) !important;
+}
+
+/* ============================ 3 · 颜色：只留一个落点 ============================
+   ★ 收口后「颜色丰富」的载体 = fam2 §7 的八族淡色调平涂 + 6 个族层
+     精确点名的点缀件（冒号 / 秒针 / 今日 / 进度 / 表头图标）。
+     本层只保留**进度填充**这一处身份色→第二色的线性渐变：
+     它是信息本身、有方向性、不是 radial、不扭曲；其余一律不刷。 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]
+    :is(.nx2-fill, .widget-music-progress-fill, .widget-system-bar-fill, .nx2-orb) {
+    background: linear-gradient(90deg, var(--wf, #0284c7) 0%, var(--wf-2, #38bdf8) 100%) !important;
+}
+
+/* ============================ 4 · 动画：一物一条，只两条 ============================
+   ★ beau1 的 6 条 keyframes / 8 张 55ms 错落 / 内容层浮起 / 进度生长 /
+     列表行 6 档 stagger / 选中态弹跳全部作废 —— 47 张卡同时演太闹，
+     而且每秒刷新的时钟 textContent 不该带任何动画。
+   ★ 保留「长写属性、不写 animation-delay」的纪律：简写会重置 delay；
+     入场与落位靠 :not(.n26-drop-in) 互斥，一物一条动画。 */
+@keyframes n26BeauIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes n26BeauDrop {
+    0%   { opacity: 0; transform: translateY(10px) scale(.96); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+/* 4.1 卡片入场：面板预览卡不参与、落位卡走 4.2 */
+html body #desktopWidgets .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:not(.widget-preview-card):not(.n26-drop-in) {
+    animation-name: n26BeauIn !important;
+    animation-duration: 320ms !important;
+    animation-timing-function: cubic-bezier(.16, 1, .3, 1) !important;
+    animation-fill-mode: both !important;
+}
+/* 4.2 落位：覆盖 widgets.css 的 n26DropIn，仍是同一对象上唯一一条动画 */
+html body #desktopWidgets .desktop-widget-card.n26-drop-in {
+    animation: n26BeauDrop 300ms cubic-bezier(.16, 1, .3, 1) both !important;
+}
+/* 4.3 reduced-motion 全量降级
+   ★ 抬到 10 写 [data-wtype] 才压得过上面那些 8 写 !important 动画；
+     落位卡单独再写一条（它可能不带 data-wtype）。 */
+@media (prefers-reduced-motion: reduce) {
+    html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] {
+        animation: none !important;
+        transition: none !important;
+    }
+    html body #desktopWidgets .desktop-widget-card.n26-drop-in {
+        animation: none !important;
+    }
+}
+/* hover 只改颜色，不改 box-shadow、不加 transform（侧栏 P0 教训）。
+   本层不给任何控件写 hover —— 交给 fam2 §3 与族层，避免重复叠皮。 */

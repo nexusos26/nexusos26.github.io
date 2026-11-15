@@ -56,12 +56,12 @@
       if (!document.querySelector('link[href*="n26-icon-squircle.css"]')) {
         var l = document.createElement('link');
         l.rel = 'stylesheet';
-        l.href = new URL('../ui/n26-icon-squircle.css?v=sq1', _base).href;
+        l.href = new URL('../ui/n26-icon-squircle.css?v=sq2', _base).href;
         (document.head || document.documentElement).appendChild(l);
       }
       if (!window.N26DomKeep && !document.querySelector('script[src*="n26-dom-keep.js"]')) {
         var sc = document.createElement('script');
-        sc.src = new URL('../ui/n26-dom-keep.js?v=dk1', _base).href;
+        sc.src = new URL('../ui/n26-dom-keep.js?v=dk2', _base).href;
         sc.async = false;
         (document.head || document.documentElement).appendChild(sc);
       }
@@ -71,7 +71,58 @@
         gc.async = false;
         (document.head || document.documentElement).appendChild(gc);
       }
+      /* v2.10.21：四风格桥层。29 个第一方应用一行 HTML 都不用改，
+         桥自己注入 CSS、挂 data-fui-auto，并从四路兜底取当前风格。 */
+      if (!window.N26Fui && !document.querySelector('script[src*="n26-fui-bridge.js"]')) {
+        var fb = document.createElement('script');
+        fb.src = new URL('../ui/n26-fui-bridge.js?v=fb4', _base).href;
+        fb.async = false;
+        (document.head || document.documentElement).appendChild(fb);
+      }
+      /* 3.9.108：共享控件层兜底。fui-bridge.js 会补挂同一份 CSS，
+         这里再加一次幂等挂载 —— 桥脚本加载失败 / file:// 被挡时，
+         四风格在 iframe 里仍有规则可用，不会只剩液态。 */
+      if (!document.querySelector('link[href*="n26-fui-controls.css"]')) {
+        var fcL = document.createElement('link');
+        fcL.rel = 'stylesheet';
+        fcL.href = new URL('../ui/n26-fui-controls.css?v=fc2', _base).href;
+        (document.head || document.documentElement).appendChild(fcL);
+      }
+      /* v2.10.23：液态玻璃光学层。宿主 head 的 CSS 与 SVG 滤镜都到不了 iframe，
+         色散彩虹、按下亮光、侧栏折射必须在每个应用文档里各挂一份。 */
+      if (!window.N26GlassOptics && !document.querySelector('script[src*="n26-glass-optics.js"]')) {
+        var goL = document.createElement('link');
+        goL.rel = 'stylesheet';
+        goL.href = new URL('../ui/n26-glass-optics.css?v=go11', _base).href;
+        (document.head || document.documentElement).appendChild(goL);
+        var goS = document.createElement('script');
+        goS.src = new URL('../ui/n26-glass-optics.js?v=go8', _base).href;
+        goS.async = false;
+        (document.head || document.documentElement).appendChild(goS);
+      }
     } catch (e) { /* 静默：共享层缺失不该挡住应用启动 */ }
+  })();
+
+  /* v2.10.21：四风格开放 API。_bridge.js 全项目无版本戳，扩展挂在这里
+     随 _app.js 一起更新，避免改 36 个 HTML。所有方法都兼容「桥还没加载完」。 */
+  (function extendFuiApi() {
+    try {
+      var NX = window.Nexus;
+      if (!NX || NX.getFuiStyle) return;
+      NX.getFuiStyle = function () {
+        if (window.N26Fui) return Promise.resolve(N26Fui.current());
+        return NX.call('osControl', 'getSetting', { key: 'fanguiStyle' });
+      };
+      NX.setFuiStyle = function (s) {
+        if (window.N26Fui) { N26Fui.set(s); return Promise.resolve(s); }
+        return NX.call('osControl', 'setSetting', { key: 'fanguiStyle', value: s });
+      };
+      NX.onFuiStyle = function (cb) {
+        if (window.N26Fui) return N26Fui.on(cb);
+        NX.on('fuistyle', cb);
+        return function () { };
+      };
+    } catch (e) { }
   })();
 
   /* 图标字体补全：
@@ -124,7 +175,9 @@
     // FangUI：模式与风格落到 <html>
     var root = document.documentElement;
     root.setAttribute('data-mode', data.dark ? 'dark' : 'light');
-    if (data.settings && data.settings.fanguiStyle) _lastUi = data.settings.fanguiStyle;
+    /* v2.10.21：theme 广播现在直接带 fanguiStyle（后开应用也拿得到当前风格） */
+    if (data.fanguiStyle) _lastUi = data.fanguiStyle;
+    else if (data.settings && data.settings.fanguiStyle) _lastUi = data.settings.fanguiStyle;
     applyUi(root, _lastUi);
     ensureFangUI();
   }

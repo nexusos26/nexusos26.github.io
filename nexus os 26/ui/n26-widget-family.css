@@ -1,0 +1,448 @@
+/* ==========================================================================
+   Nexus OS 26 · 小组件家族设计层 / 戳 fam5 · 2026-11-14（去惨白）
+   --------------------------------------------------------------------------
+   ★ fam2（11-12 13:16）：老截图定调「不扭曲的平整玻璃」——封死折射/位移/
+     大 radial 光斑，卡面只允许线性渐变；同时给 8 族一层淡色调治惨白。
+   ★★ fam3（11-13，用户原话「我说了不是惨白，你就搞黄色是吧？」）：
+     **整卡染色整套作废**。fam2 时间族的琥珀整卡薄涂与 beau2
+     重复刷的 8 族 tint 全归零（--wf-d-tint / --wf-n-tint: transparent）。
+     卡面一律**中性半透磨砂玻璃**：昼 rgba(251,252,255,.42) /
+     夜 rgba(13,19,35,.48) + blur(18px)，绝不纯黑、绝不刷黄。
+     颜色只来自内容里的 --wf / --wf-2 点缀，以及 sky4 的真实天气 × 9 时段
+     实景底图；家族身份不再靠给整张卡刷色。
+     §7.4 不再一刀禁 backdrop-filter（磨砂本来就要它），只封死 filter 位移、
+     mix-blend-mode / background-blend-mode 与误注入的 optics 子层。
+   --------------------------------------------------------------------------
+   矩阵：软件家族 × 功能 × 尺寸
+     · 家族 8 个，覆盖字典里全部 61 个类型（其中 47 个面板可见）
+     · 同一家族：同一支身份色 + 同一套控件骨架 + 同一套昼夜玻璃
+     · 家族之间：只靠身份色区分，玻璃 / 文字 / 圆角 / 字号节奏全系统一致
+     · 同尺寸不同功能（2x2 有 40 种 / 4x2 有 40 种）→ 靠 §4 统一内边距与字号节奏
+     · 同功能不同尺寸（每个类型 1~6 档，共 198 档）→ 靠 §4 的 wsize-s/m/l/胶囊档
+
+   ★ 为什么必须单独一层：
+     .nx（n26-widgets-v2.css:12）把 --w-accent 写死 #3b82f6，
+     .nx.nx-mu（n26-widget-music.css:45）写死 #ffffff，
+     .nx-bili / .widget-* 旧根也各自带白令牌。
+     CSS 变量在**最近祖先**解析：卡级 !important 传不进内容层根。
+     所以本层除了在卡上发令牌，还要在 §2 把令牌**再打一次到内容层根**。
+
+   ★ 铁律继承：wr7 昼墨 / 夜白对比度不变；音乐族无外圈硬框不变；
+     全面禁紫；零 filter 位移 / 零 mix-blend-mode / 零 transition:all / 零新 ::before 层；
+     backdrop-filter **只允许 fam3 §7.1~7.3 这一层中性磨砂**，不许再叠折射重采样。
+   ========================================================================== */
+
+/* ============================ 1a · 家族常量（与昼夜无关） ============================
+   每族 6 个常量：昼色 / 夜色 / 昼浅底 / 夜浅底 / 昼描边 / 夜描边。
+   六写 [data-wtype] 抬权重，压过 redesign §1/§3 的卡级 --w-accent。 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="clock"], [data-wtype="dualtime"], [data-wtype="stopwatch"],
+    [data-wtype="countdown"], [data-wtype="timeSeconds"], [data-wtype="clockAnalog"],
+    [data-wtype="worldclock"], [data-wtype="time"], [data-wtype="alarm"],
+    [data-wtype="pomodoro"]) {
+    --wf-d: #0e7490 !important;  --wf-n: #67e8f9 !important;
+    --wf-d-wash: rgba(14, 116, 144, .12) !important;  --wf-n-wash: rgba(103, 232, 249, .16) !important;
+    --wf-d-line: rgba(14, 116, 144, .30) !important;  --wf-n-line: rgba(103, 232, 249, .34) !important;
+    --wf-name: "时间" !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="weather"], [data-wtype="weatherHour"], [data-wtype="weatherWeek"],
+    [data-wtype="airQuality"], [data-wtype="sunrise"], [data-wtype="sunmoon"],
+    [data-wtype="moonphase"]) {
+    --wf-d: #0369a1 !important;  --wf-n: #7dd3fc !important;
+    --wf-d-wash: rgba(3, 105, 161, .12) !important;  --wf-n-wash: rgba(125, 211, 252, .16) !important;
+    --wf-d-line: rgba(3, 105, 161, .30) !important;  --wf-n-line: rgba(125, 211, 252, .34) !important;
+    --wf-name: "天气" !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="calendar"], [data-wtype="schedule"], [data-wtype="weekStrip"],
+    [data-wtype="bigDate"], [data-wtype="dayProgress"], [data-wtype="dayCard"],
+    [data-wtype="greeting"], [data-wtype="todayAgenda"], [data-wtype="date"]) {
+    --wf-d: #c2410c !important;  --wf-n: #fdba74 !important;
+    --wf-d-wash: rgba(194, 65, 12, .12) !important;  --wf-n-wash: rgba(253, 186, 116, .16) !important;
+    --wf-d-line: rgba(194, 65, 12, .30) !important;  --wf-n-line: rgba(253, 186, 116, .34) !important;
+    --wf-name: "日历" !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="todo"], [data-wtype="todoRing"], [data-wtype="note"],
+    [data-wtype="quickNote"]) {
+    --wf-d: #0f766e !important;  --wf-n: #5eead4 !important;
+    --wf-d-wash: rgba(15, 118, 110, .12) !important; --wf-n-wash: rgba(94, 234, 212, .16) !important;
+    --wf-d-line: rgba(15, 118, 110, .30) !important; --wf-n-line: rgba(94, 234, 212, .34) !important;
+    --wf-name: "待办" !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="system"], [data-wtype="battery"], [data-wtype="network"],
+    [data-wtype="volume"], [data-wtype="diskSpace"], [data-wtype="cleaner"],
+    [data-wtype="toggles"], [data-wtype="smartdevice"], [data-wtype="news"],
+    [data-wtype="health"], [data-wtype="recentfiles"], [data-wtype="friends"],
+    [data-wtype="stocks"], [data-wtype="searchbar"]) {
+    --wf-d: #475569 !important;  --wf-n: #cbd5e1 !important;
+    --wf-d-wash: rgba(71, 85, 105, .12) !important;  --wf-n-wash: rgba(203, 213, 225, .16) !important;
+    --wf-d-line: rgba(71, 85, 105, .30) !important;  --wf-n-line: rgba(203, 213, 225, .34) !important;
+    --wf-name: "系统" !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"],
+    [data-wtype="musicReco"], [data-wtype="musicRadio"]) {
+    --wf-d: #1d4ed8 !important;  --wf-n: #93c5fd !important;
+    --wf-d-wash: rgba(29, 78, 216, .12) !important;  --wf-n-wash: rgba(147, 197, 253, .16) !important;
+    --wf-d-line: rgba(29, 78, 216, .30) !important;  --wf-n-line: rgba(147, 197, 253, .34) !important;
+    --wf-name: "音乐" !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="biliNow"], [data-wtype="biliReco"], [data-wtype="biliSearch"]) {
+    --wf-d: #d95c86 !important;  --wf-n: #f9a8c4 !important;
+    --wf-d-wash: rgba(217, 92, 134, .12) !important; --wf-n-wash: rgba(249, 168, 196, .16) !important;
+    --wf-d-line: rgba(217, 92, 134, .30) !important; --wf-n-line: rgba(249, 168, 196, .34) !important;
+    --wf-name: "方哩方哩" !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="browser"], [data-wtype="calculator"], [data-wtype="quicklaunch"],
+    [data-wtype="clipboard"], [data-wtype="minigame"], [data-wtype="sleep"],
+    [data-wtype="focus"], [data-wtype="wallpaperpick"], [data-wtype="photos"]) {
+    --wf-d: #15803d !important;  --wf-n: #86efac !important;
+    --wf-d-wash: rgba(21, 128, 61, .12) !important;  --wf-n-wash: rgba(134, 239, 172, .16) !important;
+    --wf-d-line: rgba(21, 128, 61, .30) !important;  --wf-n-line: rgba(134, 239, 172, .34) !important;
+    --wf-name: "工具" !important;
+}
+
+/* ============================ 1b · 昼：常量 → 当前令牌 ============================ */
+html:not([data-n26-phase="night"]) body:not(.dark-mode)
+.desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] {
+    --wf: var(--wf-d, #0284c7) !important;
+    --wf-wash: var(--wf-d-wash, rgba(2, 132, 199, .12)) !important;
+    --wf-line: var(--wf-d-line, rgba(2, 132, 199, .30)) !important;
+    --wf-ink: #ffffff !important;
+    --w-accent: var(--wf) !important;
+    --w-accent-wash: var(--wf-wash) !important;
+    --w-accent-line: var(--wf-line) !important;
+    --nx-acc-text: var(--wf) !important;
+    --nx-acc-tint: var(--wf-wash) !important;
+    --nx-acc-line: var(--wf-line) !important;
+}
+
+/* ============================ 1c · 夜 / 深色：同一套结构，只换色 ============================ */
+html[data-n26-phase="night"] body
+.desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype],
+html body.dark-mode
+.desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] {
+    --wf: var(--wf-n, #7cc4f8) !important;
+    --wf-wash: var(--wf-n-wash, rgba(124, 196, 248, .16)) !important;
+    --wf-line: var(--wf-n-line, rgba(124, 196, 248, .34)) !important;
+    --wf-ink: #0b1220 !important;
+    --w-accent: var(--wf) !important;
+    --w-accent-wash: var(--wf-wash) !important;
+    --w-accent-line: var(--wf-line) !important;
+    --nx-acc-text: var(--wf) !important;
+    --nx-acc-tint: var(--wf-wash) !important;
+    --nx-acc-line: var(--wf-line) !important;
+}
+
+/* ============================ 2 · 令牌打进内容层根 ============================
+   ★ 全家桶：卡片 → 内容层根再发一次，否则 .nx 自带的 #3b82f6 会吃掉家族色。
+   .nx.nx-mu（音乐封面档）刻意排除：它必须保持白图标 / 白进度，见 §5。 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .widget-inner,
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]
+    :is(.nx:not(.nx-mu), .nx2, .nx-bili, .widget-browser, .widget-calc, .widget-music) {
+    --w-accent: var(--wf, #0284c7) !important;
+    --w-accent-wash: var(--wf-wash, rgba(2, 132, 199, .12)) !important;
+    --w-accent-line: var(--wf-line, rgba(2, 132, 199, .30)) !important;
+    --nx-acc-text: var(--wf, #0284c7) !important;
+    --nx-acc-tint: var(--wf-wash, rgba(2, 132, 199, .12)) !important;
+    --nx-acc-line: var(--wf-line, rgba(2, 132, 199, .30)) !important;
+}
+
+/* ============================ 3 · 家族统一控件骨架 ============================
+   同一族的 5 张音乐卡 / 3 张方站卡 / 7 张时间卡，表头、按钮、胶囊、轨道、
+   列表行全部同一套皮；家族之间只有 --wf 那一支色不同。 */
+
+/* 3.1 表头：同一支身份色图标 + 同一档字号 + 统一的副标题对齐 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]
+    :is(.nx-hd, .nx2-hd, .widget-browser-title, .widget-minigame-title) > i {
+    color: var(--wf, #0284c7) !important;
+    font-size: 12px !important;
+    width: 15px !important;
+    text-align: center !important;
+    flex: 0 0 auto !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]
+    :is(.nx-hd, .nx2-hd, .widget-browser-title, .widget-minigame-title) > span {
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    letter-spacing: .25px !important;
+    color: var(--w-text-strong) !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]
+    :is(.nx-hd-sub, .nx2-hd-sub) {
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    color: var(--w-text-faint) !important;
+    margin-left: auto !important;
+}
+
+/* 3.2 按钮 / 胶囊：统一圆角、统一身份色浅底与描边；强调按钮单独留给 §5 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]
+    :is(.nx-btn:not(.nx-btn-accent), .nx-icon-btn, .nx2-btn, .nx2-chip, .nx2-tab,
+        .nx-wx-chip, .nx-dual-chip, .nx-wp-i, .widget-calc-btn,
+        .widget-todo-add, .widget-focus-btn, .widget-sleep-btn, .widget-alarm-toggle-btn) {
+    border-radius: 10px !important;
+    border-color: var(--wf-line) !important;
+    background-color: var(--wf-wash) !important;
+    color: var(--w-text) !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]
+    :is(.nx-btn, .nx-icon-btn, .nx2-btn, .nx2-chip, .nx2-tab, .widget-calc-btn):hover {
+    border-color: var(--wf-line) !important;
+    background-color: var(--wf-wash) !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .nx-cal-chips > span {
+    border-radius: 999px !important;
+    border-color: var(--wf-line) !important;
+    background-color: var(--wf-wash) !important;
+    color: var(--w-text) !important;
+}
+
+/* 3.3 轨道 / 填充 / 环 / 光点：一支身份色贯穿所有族的进度语言 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]
+    :is(.nx-bar, .nx-sys-bar, .nx-net-bar, .nx-clk-yr-bar, .nx-td-prog,
+        .nx2-track, .widget-music-progress, .widget-system-bar) {
+    background-color: var(--wf-wash) !important;
+    border-color: var(--wf-line) !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .nx-bar > span,
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .nx-sys-bar > span,
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .nx-net-bar > span,
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]
+    :is(.nx2-fill, .widget-music-progress-fill, .widget-system-bar-fill, .nx2-orb) {
+    background: var(--wf, #0284c7) !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .nx2-ring {
+    background: conic-gradient(var(--wf, #0284c7) var(--nx2-p, 0%), var(--w-well) 0) !important;
+}
+
+/* 3.4 选中 / 今天 / 正在播：实色身份底 + 昼夜反转的墨字，全系统同一套 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]
+    :is(.nx2-chip.on, .nx2-tab.on, .nx-wp-on, .widget-cal-day.today),
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .nx2-week > div.on {
+    background-color: var(--wf, #0284c7) !important;
+    border-color: transparent !important;
+    color: var(--wf-ink) !important;
+    -webkit-text-fill-color: var(--wf-ink) !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]
+    :is(.nx2-chip.on, .nx2-tab.on, .nx-wp-on, .widget-cal-day.today) *,
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .nx2-week > div.on * {
+    color: var(--wf-ink) !important;
+    -webkit-text-fill-color: var(--wf-ink) !important;
+}
+
+/* 3.5 列表行 / 空态：同一档圆角与浅底，悬停不改阴影、不新建合成层 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]
+    :is(.nx-li, .nx2-li, .nx-td-row, .nx-sch-li, .nx2-row, .nx2-cell,
+        .widget-todo-item, .widget-browser-bookmark),
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .nx2-week > div {
+    border-radius: 10px !important;
+    border-color: var(--w-hair) !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]
+    :is(.nx-empty, .nx2-empty, .nx-bili-empty, .nx-cal-emp, .nx-sw-emp) > i {
+    color: var(--wf, #0284c7) !important;
+    font-size: 18px !important;
+}
+
+/* ============================ 4 · 尺寸节奏（同尺寸不同功能也像一家） ============================
+   只统一内边距与主数字的字号带，不碰 display / width / flex，避免撑破 47 种版式。 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype].wsize-s .widget-inner {
+    --w-pad: 12px !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype].wsize-m .widget-inner {
+    --w-pad: 15px !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype].wsize-l .widget-inner {
+    --w-pad: 19px !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype].wsize-capsule .widget-inner {
+    --w-pad: 9px !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype].wsize-s
+    :is(.nx2-hero, .nx2-big, .nx2-sec-main, .widget-clock-time, .widget-weather-temp) {
+    font-size: clamp(22px, 3.6vw, 34px) !important;
+    letter-spacing: -1.4px !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype].wsize-l
+    :is(.nx2-hero, .nx2-big, .nx2-sec-main, .widget-clock-time, .widget-weather-temp) {
+    font-size: clamp(34px, 5.4vw, 56px) !important;
+    letter-spacing: -2.2px !important;
+}
+
+/* ============================ 5 · 例外恢复（不动这些就会毁掉既有修复） ============================ */
+
+/* 5.1 音乐封面档：.white on cover 必须留住，家族色只给非封面档 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]
+    .nx.nx-mu:not(.has-art) {
+    --w-accent: var(--wf, #1d4ed8) !important;
+    --nx-acc-text: var(--wf, #1d4ed8) !important;
+    --nx-acc-tint: var(--wf-wash, rgba(29, 78, 216, .12)) !important;
+    --nx-acc-line: var(--wf-line, rgba(29, 78, 216, .30)) !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]
+    .nx.nx-mu.has-art {
+    --w-accent: #ffffff !important;
+    --nx-acc-text: #ffffff !important;
+    --nx-acc-tint: rgba(255, 255, 255, .16) !important;
+    --nx-acc-line: rgba(255, 255, 255, .30) !important;
+}
+/* 5.2 有封面的音乐卡里所有控件：白系，不吃家族浅底 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]
+    .nx.nx-mu.has-art :is(.nx-btn, .nx-icon-btn, .nx-mu-btn, .nx2-chip, .nx2-tab) {
+    background-color: rgba(255, 255, 255, .16) !important;
+    border-color: rgba(255, 255, 255, .30) !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+/* 5.3 深色底 / 图片蒙层 / 强调按钮：wr7 §8.2c 的白字不许被 §3 吃掉 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]
+    :is(.nx-btn-accent, .nx-btn-accent *, .widget-remove-btn, .widget-todo-add,
+        .nx-ph-cap, .nx-ph-cap *, .w-ph-mask, .w-ph-mask *,
+        .nx-mu.has-art, .nx-mu.has-art *) {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+/* 5.4 方哩方哩：身份粉只做点缀，表头文字仍是昼墨 / 夜白（wr7 §3 语义不变） */
+html:not([data-n26-phase="night"]) body:not(.dark-mode)
+.desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]
+    .nx-bili :is(.nx-hd, .nx-bili-empty) {
+    color: rgba(16, 24, 40, .66) !important;
+}
+html:not([data-n26-phase="night"]) body:not(.dark-mode)
+.desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .nx-bili .nx-hd > span,
+html:not([data-n26-phase="night"]) body:not(.dark-mode)
+.desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] .nx-bili .nx-bili-empty > b {
+    color: #0b1220 !important;
+}
+
+/* 5.5 两个圆形动作键：旧 CSS 给的是浅底 + 白字（对比度倒挂），统一改实色身份底。
+   昼 --wf-ink=白 / 夜 --wf-ink=墨，正好跟 wr7 §8.2c 的白天白字对齐，夜里自动反转。 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]
+    :is(.widget-todo-add, .widget-remove-btn) {
+    background: var(--wf, #0284c7) !important;
+    border-color: transparent !important;
+    border-radius: 50% !important;
+    color: var(--wf-ink) !important;
+    -webkit-text-fill-color: var(--wf-ink) !important;
+    box-shadow: none !important;
+}
+
+/* ============================ 6 · 面板预览卡 ============================
+   .widget-preview-card 同样带 data-type / data-wtype，§1~§5 全部自动生效；
+   这里只补一条：预览卡不允许出现缩放以外的形变，尺寸切换时家族色不跳。 */
+html body .desktop-widget-card.widget-preview-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] {
+    --w-radius: 22px !important;
+    --w-inner-radius: 22px !important;
+}
+
+/* ============================ 7 · fam2 不扭曲玻璃 + 家族色调 ============================
+   ★ 用户 13:16 原话：「你往上面敷了一层液态玻璃，所以刚才才是这种扭曲的，
+     要把它搞成这种不扭曲的，就正常的」「现在还是一片惨白」。
+   老截图里那些从角上扫过去的大弧形光带 = liquid 档 radial 高光 + palette 对角
+   色斑 + 位移折射层。这一段把它们全部压死，只留平整线性玻璃 + 一层中性磨砂（11-13 去黄定案）。 */
+
+/* 7.1 中性令牌（11-13 推翻 8 族淡色调）
+   ★ 用户原话：「我说了不是惨白，你就搞黄色是吧？」
+   旧 fam2 给时间族刷琥珀薄涂、日历族刷橙，beau2 又覆盖一遍，
+   等于给每张玻璃刷一层实色 —— 不是惨白就是发黄，两条都错。
+   定案：卡面一律中性半透磨砂，不给玻璃染色；颜色只来自两处：
+     ① 内容里的身份色点缀 --wf / --wf-2（进度条、图标、今日圆点）
+     ② 天空层的真实天气 × 9 档时段实景图（时间/天气族）/ 淡时段色调（日历族）
+   这 8 段只保留变量占位，值为 transparent，让老消费点安静失效。 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="clock"], [data-wtype="dualtime"], [data-wtype="stopwatch"], [data-wtype="countdown"], [data-wtype="timeSeconds"], [data-wtype="clockAnalog"], [data-wtype="worldclock"], [data-wtype="time"], [data-wtype="alarm"], [data-wtype="pomodoro"]) {
+    --wf-d-tint: transparent !important;  --wf-n-tint: transparent !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="weather"], [data-wtype="weatherHour"], [data-wtype="weatherWeek"], [data-wtype="airQuality"], [data-wtype="sunrise"], [data-wtype="sunmoon"], [data-wtype="moonphase"]) {
+    --wf-d-tint: transparent !important;  --wf-n-tint: transparent !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="calendar"], [data-wtype="schedule"], [data-wtype="weekStrip"], [data-wtype="bigDate"], [data-wtype="dayProgress"], [data-wtype="dayCard"], [data-wtype="greeting"], [data-wtype="todayAgenda"], [data-wtype="date"]) {
+    --wf-d-tint: transparent !important;  --wf-n-tint: transparent !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="todo"], [data-wtype="todoRing"], [data-wtype="note"], [data-wtype="quickNote"]) {
+    --wf-d-tint: transparent !important;  --wf-n-tint: transparent !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="system"], [data-wtype="battery"], [data-wtype="network"], [data-wtype="volume"], [data-wtype="diskSpace"], [data-wtype="cleaner"], [data-wtype="toggles"], [data-wtype="smartdevice"], [data-wtype="news"], [data-wtype="health"], [data-wtype="recentfiles"], [data-wtype="friends"], [data-wtype="stocks"], [data-wtype="searchbar"]) {
+    --wf-d-tint: transparent !important;  --wf-n-tint: transparent !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="music"], [data-wtype="musicQueue"], [data-wtype="musicSearch"], [data-wtype="musicReco"], [data-wtype="musicRadio"]) {
+    --wf-d-tint: transparent !important;  --wf-n-tint: transparent !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="biliNow"], [data-wtype="biliReco"], [data-wtype="biliSearch"]) {
+    --wf-d-tint: transparent !important;  --wf-n-tint: transparent !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]:is(
+    [data-wtype="browser"], [data-wtype="calculator"], [data-wtype="quicklaunch"], [data-wtype="clipboard"], [data-wtype="minigame"], [data-wtype="sleep"], [data-wtype="focus"], [data-wtype="wallpaperpick"], [data-wtype="photos"]) {
+    --wf-d-tint: transparent !important;  --wf-n-tint: transparent !important;
+}
+
+/* 7.2 昼：一张中性磨砂玻璃，真吃壁纸（drw1 · 11-14 去惨白，fam5）
+   ★ 用户 11-14 截图「怎么又变成一片惨白的界面了」：旧值 rgba(251,252,255,.42)
+     在明亮壁纸上就是一层白漆，卡面和壁纸糊成一片、文字发飘。
+     现在改成真正透壁纸的中性磨砂：极淡冷灰给玻璃「灰」而不是「白」，
+     极淡墨压住亮壁纸的泛白，上沿只在 8% 内留一条中性白高光交代厚度。
+     不纯黑、不刷黄、不带彩；昼墨 #0b1220 不变，对比度靠这层墨与细边守住。 */
+html:not([data-n26-phase="night"]) body:not(.dark-mode)
+.desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] {
+    background-color: rgba(226, 234, 244, .20) !important;
+    background-image:
+        linear-gradient(0deg, var(--wf-wash, transparent), var(--wf-wash, transparent)),
+        linear-gradient(180deg, rgba(255, 255, 255, .58) 0%, rgba(255, 255, 255, 0) 8%),
+        linear-gradient(158deg, rgba(15, 23, 42, .055) 0%, rgba(15, 23, 42, .02) 100%),
+        var(--sky-tint-soft, linear-gradient(158deg, transparent 0%, transparent 100%)) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(165%) !important;
+    backdrop-filter: blur(20px) saturate(165%) !important;
+    box-shadow: 0 10px 26px rgba(8, 14, 26, .14),
+                inset 0 1px 0 rgba(255, 255, 255, .66),
+                inset 0 0 0 1px rgba(255, 255, 255, .24) !important;
+}
+/* 7.3 夜 / 深色：同一张中性磨砂，半透深蓝、绝不纯黑 */
+html[data-n26-phase="night"] body
+.desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype],
+html body.dark-mode
+.desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] {
+    background-color: rgba(13, 19, 35, .42) !important;
+    background-image:
+        linear-gradient(0deg, var(--wf-wash, transparent), var(--wf-wash, transparent)),
+        linear-gradient(180deg, rgba(255, 255, 255, .14) 0%, rgba(255, 255, 255, 0) 10%),
+        var(--sky-tint-soft, linear-gradient(158deg, transparent 0%, transparent 100%)) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(150%) !important;
+    backdrop-filter: blur(20px) saturate(150%) !important;
+    box-shadow: 0 10px 26px rgba(0, 0, 0, .22),
+                inset 0 1px 0 rgba(255, 255, 255, .16),
+                inset 0 0 0 1px rgba(255, 255, 255, .08) !important;
+}
+
+/* 7.4 不扭曲（11-13 修订）：只禁「位移折射 / 混合 / 重采样」。
+   ★ 纯 blur 磨砂是用户明确要的（「不是磨砂的」），不再一刀禁 backdrop-filter。
+   旧 style.css 的 radial 光晕、palette 对角斑、optics iris/faces/bulb 子层仍全禁。
+   有实景天空图的卡自带底图，关掉 blur 省一层合成。 */
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] {
+    filter: none !important;
+    mix-blend-mode: normal !important;
+    background-blend-mode: normal !important;
+    --w-mat-bg-img: none !important;
+}
+html body .desktop-widget-card[data-sky="1"][data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype] {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
+html body .desktop-widget-card[data-type][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype][data-wtype]
+    :is(.n26-go-iris, .n26-go-face, .n26-go-bulb, .n26-go-ghost) {
+    display: none !important;
+}
+/* 7.5 隐藏名单刻意不含音乐封面 / 相册图 / .n26-sky-layer —— 它们是真实图片层，
+   不是折射层。尤其 .nx-mu-cover 在无封面时本来就该隐藏，绝不许在这里强行 display。 */

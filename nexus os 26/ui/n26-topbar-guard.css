@@ -1,0 +1,18 @@
+/* ==========================================================================
+   ui/n26-topbar-guard.css · 全屏系统态顶栏守卫 · 戳 tg1
+   --------------------------------------------------------------------------
+   实机截图（2026-11-15）：OOBE（#install-screen）期间顶部导航栏（#finder-bar，
+   z 9200）还悬在顶端——OOBE 自身 z-index 1000 压不过它。定案：OOBE 是全屏
+   系统态，顶栏 / Dock / dockBar / 左右胶囊一律不该在。
+   机制：#install-screen 靠内联 style.display='flex' 显隐（55587 / 62897），
+   CSS :has() + 属性子串匹配即可零 JS 跟随；隐藏态 display:'none' 不含 flex
+   不会误命中，收尾顶栏自动回来。零 MO / 零定时器 / 零业务接线。
+   ========================================================================== */
+
+html body:has(#install-screen[style*="flex"]) #finder-bar,
+html body:has(#install-screen[style*="flex"]) #dock,
+html body:has(#install-screen[style*="flex"]) #dockBar,
+html body:has(#install-screen[style*="flex"]) #n26LeftDock,
+html body:has(#install-screen[style*="flex"]) #n26RightDock {
+    display: none !important;
+}
